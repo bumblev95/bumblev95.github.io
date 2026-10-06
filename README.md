@@ -9,3 +9,6 @@ Google AdSense account ownership uses publisher `ca-pub-9723666081819297`. Adver
 GitHub Pages publishing source: `main` branch, `/(root)` folder. `.nojekyll` serves these static files directly.
 
 When the source homepage HTML changes, update this homepage while preserving the base URL. Shared asset and data updates are loaded automatically.
+
+The 2026-10-05 readiness update synchronizes the homepage and exposes original learning/methods/operator/contact/privacy pages from the project. `robots.txt` advertises `sitemap.xml`; the sitemap lists the same hostname's canonical public pages. `ads.txt` uses the supplied publisher ID with Google's standard seller syntax. Neither file means Google has approved the site or that advertising is enabled. See [the readiness review](https://github.com/bumblev95/S-P-500-/blob/main/research/ADSENSE-READINESS.md) for findings and limits.
+
