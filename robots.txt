@@ -3,3 +3,4 @@ Allow: /
 
 Sitemap: https://bumblev95.github.io/sitemap.xml
 Sitemap: https://bumblev95.github.io/sitemap.txt
+Sitemap: https://bumblev95.github.io/Aion2-Daeva-Atlas/sitemap.xml
