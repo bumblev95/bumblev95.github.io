@@ -1,19 +1,38 @@
-# 그때 우리 · fixed-link preview
+# 그때 우리 · 고정 주소와 멀티플레이
 
-This directory is separate from the existing market homepage. Do not change the root homepage, ads, sitemap, or other applications when updating this preview.
+이 디렉터리는 기존 시장 홈페이지와 분리돼 있다. root 홈페이지, 광고, sitemap 또는 다른 앱은 수정하지 않는다.
 
-## Scope
+## 버전과 배포 상태
 
-v0.2.0 preserves the v0.1 cream/peach/green UI, sample-photo quiz, local custom photo/question editor, rotating question author, and results. This public static preview uses simulated participants. It does not host multiplayer rooms or call an AI service. Selected photos and questions stay in browser memory; refreshing or closing the page loses that session. No analytics, photo upload, localStorage, IndexedDB, or service-worker photo cache is used.
+- 공개 v0.2.0은 가상 친구를 사용하는 화면 체험판이었다.
+- v0.3.0은 기존 크림·피치·그린 디자인을 보존하며 별도 Node 서버에 연결하는 멀티플레이 코드와 테스트를 추가한다.
+- `runtime-config.json`의 `apiBase`는 현재 `null`이다. 서버가 설정되지 않은 공개 프런트는 체험 모드만 제공한다. 실제 친구 테스트가 배포 완료됐다는 의미가 아니다.
+- AI 자동 출제는 아직 연결하지 않았다.
 
-## Stable releases
+## 재사용한 코드
 
-`index.html` loads `boot-v1.js`. The loader fetches `version.json` with a cache-busting parameter, validates the version, and loads the immutable `releases/<version>/` JavaScript and CSS. Future releases must use a new directory. Publish all files and the updated `version.json` atomically. Keep old releases available for already open tabs.
+v0.1의 백엔드 규칙은 v0.2.0의 `logic.js`와 동일했다. 서버의 방장 승인·방별 잠금·HttpOnly 세션 지원·사진 검증·디스크 복원·SSE·만료 정리를 재사용했다. v0.3.0은 규칙 파일을 서버와 브라우저가 공유하고, GitHub Pages에서 별도 HTTPS API로 연결할 수 있도록 정확한 CORS origin과 Bearer 세션/SSE·인증된 사진 fetch를 추가했다. 서드파티 쿠키에 의존하지 않는다.
 
-The page displays the loaded version and release notes. Checks run once a minute while visible and when returning to the page or reconnecting. A new release never forces a reload. Apply is disabled during a lobby/game and while a dialog is open. Home/results may apply an update. The manifest is scoped only to `/geuttae-uri/`; internet is required at launch. No service worker is registered, so this app cannot control other paths on this hostname.
+## 구현 범위
 
-## Verification
+초대 링크·8자리 방 코드, 2–8명 참가, 승인 대기와 방장 관리, 각자 사진·문제 등록, 실시간 문제·답변·점수 동기화, 출제자 교대, 정답당 100점, 공동 우승, 재접속, 사진 접근 제한·종료 삭제·24시간 방 만료를 포함한다. 출제자는 자신의 문제에 답하거나 점수를 받을 수 없다. 승인 전에는 다른 참가자·문제·사진을 볼 수 없다.
 
-The unchanged v0.1 backend/rules baseline passed 31 Node tests before preparing this preview. Browser UI and update controls passed an offline Playwright harness: three rounds, author exclusion, tied winners, local photo/question editing, update deferral, release notes, and no horizontal overflow at widths 320/390/768/1440. Release fetches/module loading were simulated in that local harness due to environment navigation restrictions; it is not a real-device/network test. Product JavaScript is separately syntax-checked. CI checks the published HTTP resources and browser-rendered home page where Chrome is available.
+사진 원본은 휴대폰에 유지한다. 공유 완료 시 축소 JPG 사본만 서버에 업로드한다. 승인된 참가자는 본인 사진과 현재 문제의 사진에만 접근할 수 있다. 임시 사본은 종료 또는 방 생성 후 24시간 만료 시 삭제하며, 장애 중 물리 삭제가 늦어지더라도 만료·삭제 대기 사진의 API 접근은 먼저 차단한다. 서버는 지속 실행하고 임시 볼륨은 백업에서 제외해야 한다.
 
-The live multiplayer backend, private cloud storage, AI photo analysis, adult mode, native Android/iOS builds, and actual-device two-player QA are separate work and are not provided by this static deployment.
+사진·질문은 localStorage·IndexedDB·service worker에 저장하지 않는다. 멀티플레이 접근 키만 해당 탭의 sessionStorage에 기록해 새로고침 후 승인·진행을 복원한다. 체험 모드의 사진은 서버로 전송하지 않는다.
+
+## 고정 링크와 업데이트
+
+`index.html` → `boot-v2.js` → `version.json` → 불변 `releases/<version>/` 파일을 로드한다. old v0.2.0 및 boot-v1.js는 보존한다. 새 버전도 로비·게임·다이얼로그 도중에는 강제 적용하지 않는다. 업데이트 확인과 런타임 설정은 `/geuttae-uri/`에만 적용되며 다른 홈페이지 콘텐츠를 제어하지 않는다.
+
+실제 서버가 준비되면 apiBase에 그 HTTPS origin만 설정하고 검증된 PR을 병합한다. 사용자 주소는 계속 https://bumblev95.github.io/geuttae-uri/ 이다.
+
+## 실행·검증·외부 설정
+
+- [서버 배포와 휴대폰 검증 절차](server/DEPLOYMENT.md)
+- [실제로 수행한 검증과 미확인 항목](server/TEST-REPORT.md)
+- 실행: `cd geuttae-uri/server` 후 `node src/server.mjs`
+- 테스트: 같은 폴더에서 `node --test tests/*.test.mjs`
+- 브라우저 CI: `.github/workflows/geuttae-multiplayer-checks.yml`
+
+36개 자동 테스트가 실제 HTTP/SSE 통신, 권한·중복 답변·재접속·사진 삭제를 검증했다. 실제 휴대폰 두 대의 인터넷 플레이와 공개 서버 운영은 아직 확인하지 않았다.

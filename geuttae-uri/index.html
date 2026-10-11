@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#fbf8f1"><meta name="description" content="친구와 가족, 사진 한 장으로 다시 만나는 우리의 기억. 비공개 사진 추억 퀴즈 그때 우리.">
 <meta name="robots" content="noindex,nofollow"><meta property="og:title" content="그때 우리"><meta property="og:description" content="사진 한 장, 다시 만나는 우리. 친구·가족끼리 즐기는 추억 퀴즈.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>그때 우리 · 사진 한 장, 다시 만나는 우리</title>
 <link rel="icon" href="./assets/icon.svg" type="image/svg+xml"><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./assets/icon-192.png">
 <link rel="stylesheet" href="./shell-v1.css">
@@ -17,9 +17,9 @@
 <main id="app" tabindex="-1"><div class="loading-state">우리의 추억을 펼치는 중이에요…</div></main>
 <footer class="app-footer"><button data-action="privacy">사진은 어떻게 보관되나요?</button><span id="footer-build">그때 우리 · 온라인 체험판</span></footer>
 </div>
-<dialog id="release-dialog" aria-labelledby="release-heading"><div class="release-modal-body"><h2 id="release-heading">이번 업데이트</h2><p id="release-date"></p><ul id="release-items"></ul><p>체험 진행과 사진은 저장되지 않아요.</p><button type="button" id="close-release">닫기</button></div></dialog>
+<dialog id="release-dialog" aria-labelledby="release-heading"><div class="release-modal-body"><h2 id="release-heading">이번 업데이트</h2><p id="release-date"></p><ul id="release-items"></ul><p>사진과 문제는 이 기기의 저장소에 기록하지 않아요. 멀티플레이에서는 임시 서버 사본과 재접속용 접근 키를 사용해요.</p><button type="button" id="close-release">닫기</button></div></dialog>
 <dialog id="modal" aria-labelledby="modal-title"></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 <noscript>사진 퀴즈를 즐기려면 브라우저의 JavaScript를 켜 주세요.</noscript>
-<script type="module" src="./boot-v1.js"></script>
+<script type="module" src="./boot-v2.js"></script>
 </body></html>

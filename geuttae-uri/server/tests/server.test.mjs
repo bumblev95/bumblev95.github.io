@@ -1,0 +1,71 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {mkdtemp,rm,readFile,writeFile,access} from 'node:fs/promises';import {tmpdir} from 'node:os';import path from 'node:path';
+import {createApp} from '../src/server.mjs';
+const jpeg=await readFile(new URL('./fixtures/sample.jpg',import.meta.url));
+async function harness(t){
+ const dir=await mkdtemp(path.join(tmpdir(),'geuttae-test-'));let app=await createApp({dataDir:dir});
+ async function listen(){await new Promise(r=>app.server.listen(0,'127.0.0.1',r));return `http://127.0.0.1:${app.server.address().port}`;}
+ let base=await listen();t.after(async()=>{await app.close();await rm(dir,{recursive:true,force:true});});
+ async function request(url,{cookie,body,raw,headers={}}={}){const res=await fetch(base+url,{method:body!==undefined||raw!==undefined?'POST':'GET',headers:{...(body!==undefined||raw!==undefined?{'Origin':base,'Content-Type':raw?'image/jpeg':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...headers},body:raw|| (body===undefined?undefined:JSON.stringify(body)),signal:AbortSignal.timeout(5000)});const type=res.headers.get('content-type')||'';const data=type.includes('application/json')?await res.json():Buffer.from(await res.arrayBuffer());return {status:res.status,data,cookie:res.headers.get('set-cookie')?.split(';')[0],headers:res.headers};}
+ async function create(name='방장'){const r=await request('/api/rooms',{body:{nickname:name,consent:true}});assert.equal(r.status,201);return {cookie:r.cookie,code:r.data.code,id:r.data.view.you};}
+ async function call(p,route,body,extra={}){return request(`/api/rooms/${p.code}/${route}`,{cookie:p.cookie,...(body===undefined?{}:{body}),...extra});}
+ async function join(host,name='친구'){const r=await request(`/api/rooms/${host.code}/join`,{body:{nickname:name,consent:true}});assert.equal(r.status,200);return {cookie:r.cookie,code:host.code,id:r.data.you};}
+ async function approve(host,p){assert.equal((await call(host,'approve',{playerId:p.id})).status,200);}
+ async function photo(p){const r=await call(p,'upload',undefined,{raw:jpeg,headers:{'X-Photo-Consent':'yes'}});assert.equal(r.status,201);return r.data.photoId;}
+ async function question(p,id){const photoId=id||await photo(p);const r=await call(p,'action',{type:'submitQuestion',photoId,prompt:'우리 추억은?',options:['바다','산','카페','집'],correctIndex:0,story:'SECRET-STORY',confirmed:true});assert.equal(r.status,200);return photoId;}
+ return {dir,get base(){return base;},request,create,call,join,approve,photo,question,get app(){return app;},async restart(){await app.close();app=await createApp({dataDir:dir});base=await listen();}};
+}
+test('nickname, consent and same-origin checks',async t=>{const h=await harness(t);assert.equal((await h.request('/api/rooms',{body:{nickname:'A',consent:false}})).status,400);assert.equal((await h.request('/api/rooms',{body:{nickname:'A',consent:true},headers:{Origin:'https://other.example'}})).status,403);assert.equal((await h.request('/api/rooms',{body:{nickname:'x'.repeat(17),consent:true}})).status,400);});
+test('pending participant cannot see photos, participants, or answers until approved',async t=>{const h=await harness(t),host=await h.create(),id=await h.question(host),guest=await h.join(host);const p=await h.call(guest,'state');assert.equal(p.data.access,'pending');assert.equal(p.data.view,undefined);assert.equal((await h.call(guest,'photo/'+id)).status,403);assert.equal((await h.call(guest,'approve',{playerId:guest.id})).status,403);await h.approve(host,guest);assert.equal((await h.call(guest,'photo/'+id)).status,403);assert.equal((await h.call(guest,'state')).data.view.myQuestion,null);});
+test('session spoofing and cross-room reads are refused',async t=>{const h=await harness(t),a=await h.create(),b=await h.create('다른방');assert.equal((await h.request(`/api/rooms/${a.code}/state`)).status,401);assert.equal((await h.request(`/api/rooms/${a.code}/state`,{cookie:b.cookie})).status,401);assert.equal((await h.request(`/api/rooms/${a.code}/state`,{cookie:`gu_${a.code}=${a.id}`})).status,401);});
+test('only the owner can submit a photo; unknown photo IDs do not bypass access checks',async t=>{const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.photo(a);const result=await h.call(b,'action',{type:'submitQuestion',photoId:id,prompt:'질문',options:['1','2','3','4'],correctIndex:0,story:'',confirmed:true});assert.equal(result.status,403);assert.equal((await h.call(b,'photo/'+id)).status,403);});
+test('upload requires consent and actual bounded JPEG bytes',async t=>{const h=await harness(t),a=await h.create();assert.equal((await h.call(a,'upload',undefined,{raw:jpeg})).status,400);assert.equal((await h.call(a,'upload',undefined,{raw:Buffer.from('<script>fake</script>'),headers:{'X-Photo-Consent':'yes'}})).status,400);});
+test('author excluded, correct answer hidden, scoring atomic under concurrent duplicate submissions',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a,'친구B'),c=await h.join(a,'친구C');await h.approve(a,b);await h.approve(a,c);await h.question(a);await h.question(b);await h.question(c);await h.call(a,'action',{type:'start'});
+ const view=(await h.call(b,'state')).data.view;assert.equal(view.current.correctIndex,undefined);assert.equal(view.current.story,undefined);assert.equal((await h.call(b,'photo/'+view.current.photoId)).status,200);
+ assert.equal((await h.call(a,'action',{type:'answer',round:0,choice:0,playerId:b.id})).status,409);
+ const attempts=await Promise.all([h.call(b,'action',{type:'answer',round:0,choice:0}),h.call(b,'action',{type:'answer',round:0,choice:0})]);assert.deepEqual(attempts.map(x=>x.status).sort(),[200,409]);
+ const result=await h.call(c,'action',{type:'answer',round:0,choice:1});assert.equal(result.data.view.phase,'reveal');assert.deepEqual(result.data.view.players.map(p=>p.score),[0,100,0]);
+});
+test('full two-person game ends, deletes all temporary photos, and rejects photo access',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});await h.call(a,'action',{type:'answer',round:1,choice:0});const end=await h.call(a,'action',{type:'next',round:1});assert.equal(end.data.mediaStatus,'done');assert.equal(end.data.view.phase,'finished');assert.equal((await h.call(a,'photo/'+id)).status,410);await assert.rejects(access(path.join(h.dir,'rooms',a.code,'media')));assert.deepEqual(end.data.view.result.winners.sort(),[a.id,b.id].sort());
+});
+test('report hides all room photos and ends the game without declaring a winner',async t=>{const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});const r=await h.call(b,'action',{type:'report',reason:'privacy'});assert.equal(r.data.mediaStatus,'done');assert.equal(r.data.view.endReason,'reported');assert.deepEqual(r.data.view.result.winners,[]);assert.equal((await h.call(a,'photo/'+id)).status,410);});
+test('host kick deletes member media and makes existing session unusable',async t=>{const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);await h.question(b);await h.call(a,'kick',{playerId:b.id});assert.equal((await h.call(b,'state')).data.access,'blocked');assert.equal((await h.call(b,'action',{type:'start'})).status,403);assert.equal((await h.call(b,'join',{nickname:'new',consent:true})).status,403);});
+test('server restart restores sessions and game state from disk',async t=>{const h=await harness(t),a=await h.create();await h.question(a);await h.restart();const r=await h.call(a,'state');assert.equal(r.status,200);assert.equal(r.data.view.you,a.id);assert.equal(r.data.view.myQuestion.prompt,'우리 추억은?');});
+test('expiry refuses access and deletes abandoned room data',async t=>{const h=await harness(t),a=await h.create();await h.question(a);const file=path.join(h.dir,'rooms',a.code,'room.json'),r=JSON.parse(await readFile(file,'utf8'));r.expiresAt=Date.now()-1;await writeFile(file,JSON.stringify(r));assert.equal((await h.call(a,'state')).status,410);await assert.rejects(access(file));});
+test('private state and photos are no-store; no data files can be served as static assets',async t=>{const h=await harness(t),a=await h.create(),id=await h.question(a);for(const route of ['state','photo/'+id]){const r=await h.call(a,route);assert.equal(r.headers.get('cache-control'),'no-store');assert.equal(r.headers.get('x-content-type-options'),'nosniff');}assert.equal((await h.request(`/data/rooms/${a.code}/room.json`)).status,404);});
+async function eventReader(h,p){
+ const abort=new AbortController();const res=await fetch(`${h.base}/api/rooms/${p.code}/events`,{headers:{Cookie:p.cookie},signal:abort.signal});assert.equal(res.status,200);
+ const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='';
+ return {async next(predicate){
+  const timer=setTimeout(()=>abort.abort(),3000);
+  try{for(;;){let end;while((end=buffer.indexOf('\n\n'))>=0){const chunk=buffer.slice(0,end);buffer=buffer.slice(end+2);const data=chunk.split('\n').find(s=>s.startsWith('data: '));if(data){const value=JSON.parse(data.slice(6));if(predicate(value))return value;}}
+   const chunk=await reader.read();assert.equal(chunk.done,false,'SSE closed prematurely');buffer+=decoder.decode(chunk.value,{stream:true});
+  }}finally{clearTimeout(timer);}
+ },async close(){abort.abort();try{await reader.cancel();}catch{}}};
+}
+test('real SSE transports deliver join and approval to two independent sessions',async t=>{
+ const h=await harness(t),a=await h.create();const aEvents=await eventReader(h,a);
+ let bEvents;
+ try{
+  await aEvents.next(v=>v.view?.you===a.id);
+  const b=await h.join(a,'새친구');bEvents=await eventReader(h,b);
+  const pending=await bEvents.next(v=>v.access==='pending');assert.equal(pending.view,undefined);
+  const host=await aEvents.next(v=>v.pending?.some(p=>p.id===b.id));assert.equal(host.pending[0].name,'새친구');
+  await h.approve(a,b);
+  const approved=await bEvents.next(v=>v.access==='active');assert.equal(approved.view.players.length,2);assert.equal(approved.view.you,b.id);
+  assert.equal(approved.view.questions,undefined);
+ }finally{await aEvents.close();if(bEvents)await bEvents.close();}
+});
+test('SSE score changes reach both players with role-specific views',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);await h.question(a);await h.question(b);
+ const x=await eventReader(h,a),y=await eventReader(h,b);
+ try{
+  await h.call(a,'action',{type:'start'});
+  const author=await x.next(v=>v.view?.phase==='question'),answerer=await y.next(v=>v.view?.phase==='question');
+  assert.equal(author.view.current.correctIndex,0);assert.equal(answerer.view.current.correctIndex,undefined);
+  await h.call(b,'action',{type:'answer',round:0,choice:0});
+  for(const events of [x,y]){const r=await events.next(v=>v.view?.phase==='reveal');assert.equal(r.view.players.find(p=>p.id===b.id).score,100);assert.equal(r.view.players.find(p=>p.id===a.id).score,0);}
+ }finally{await x.close();await y.close();}
+});
