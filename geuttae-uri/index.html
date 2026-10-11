@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf8f1"><meta name="description" content="친구와 가족, 사진 한 장으로 다시 만나는 우리의 기억. 비공개 사진 추억 퀴즈 그때 우리.">
+<meta name="robots" content="noindex,nofollow"><meta property="og:title" content="그때 우리"><meta property="og:description" content="사진 한 장, 다시 만나는 우리. 친구·가족끼리 즐기는 추억 퀴즈.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>그때 우리 · 사진 한 장, 다시 만나는 우리</title>
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml"><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./assets/icon-192.png">
+<link rel="stylesheet" href="./shell-v1.css">
+</head>
+<body>
+<div class="release-tools"><span id="build-label">테스트 버전 확인 중</span><button type="button" id="release-notes" disabled>변경 내용</button><button type="button" id="check-update" disabled>업데이트 확인</button></div>
+<div class="update-notice" id="update-notice" role="status" hidden><span id="update-message"></span><button type="button" id="apply-update" hidden>새 버전 적용</button></div>
+<div class="app-shell">
+<header class="brand-bar"><button class="brand" data-action="home" aria-label="그때 우리 홈"><img src="./assets/icon.svg" width="38" height="38" alt=""><span>그때 우리<small>사진 한 장, 다시 만나는 우리</small></span></button><button class="help-button" data-action="help" aria-label="이용 안내">?</button></header>
+<main id="app" tabindex="-1"><div class="loading-state">우리의 추억을 펼치는 중이에요…</div></main>
+<footer class="app-footer"><button data-action="privacy">사진은 어떻게 보관되나요?</button><span id="footer-build">그때 우리 · 온라인 체험판</span></footer>
+</div>
+<dialog id="release-dialog" aria-labelledby="release-heading"><div class="release-modal-body"><h2 id="release-heading">이번 업데이트</h2><p id="release-date"></p><ul id="release-items"></ul><p>체험 진행과 사진은 저장되지 않아요.</p><button type="button" id="close-release">닫기</button></div></dialog>
+<dialog id="modal" aria-labelledby="modal-title"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript>사진 퀴즈를 즐기려면 브라우저의 JavaScript를 켜 주세요.</noscript>
+<script type="module" src="./boot-v1.js"></script>
+</body></html>

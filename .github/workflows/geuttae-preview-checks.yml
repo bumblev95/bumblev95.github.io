@@ -1,0 +1,65 @@
+name: Then Us preview deployment checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'geuttae-uri/**'
+      - '.github/workflows/geuttae-preview-checks.yml'
+permissions:
+  contents: read
+concurrency:
+  group: then-us-preview-checks
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Check JavaScript syntax
+        run: |
+          node --check geuttae-uri/boot-v1.js
+          for file in geuttae-uri/releases/*/*.js; do node --check "$file"; done
+      - name: Verify the published HTTPS files match this commit
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, time, urllib.request
+          root = pathlib.Path('geuttae-uri')
+          base = 'https://bumblev95.github.io/geuttae-uri/'
+          version = json.loads((root / 'version.json').read_text())['version']
+          paths = ['index.html', 'boot-v1.js', 'shell-v1.css', 'version.json', 'manifest.webmanifest']
+          paths += [str(p.relative_to(root)) for p in sorted((root / 'assets').glob('*')) if p.is_file()]
+          paths += [str(p.relative_to(root)) for p in sorted((root / 'releases' / version).glob('*')) if p.is_file()]
+          expected = {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths}
+          for attempt in range(30):
+              try:
+                  for path in paths:
+                      request = urllib.request.Request(base + path + '?check=' + str(time.time_ns()), headers={'Cache-Control': 'no-cache', 'User-Agent': 'ThenUsDeploymentCheck/1.0'})
+                      with urllib.request.urlopen(request, timeout=15) as response:
+                          assert response.status == 200, path
+                          actual = hashlib.sha256(response.read()).hexdigest()
+                      assert actual == expected[path], 'Published file not current: ' + path
+                  print('HTTPS PASS:', base, 'version', version, '-', len(paths), 'files match the committed source')
+                  break
+              except Exception as error:
+                  print('Deployment check', attempt + 1, type(error).__name__, str(error), flush=True)
+                  if attempt == 29:
+                      raise
+                  time.sleep(6)
+          PY
+      - name: Verify the rendered public homepage in Chrome
+        run: |
+          set -euo pipefail
+          browser=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          timeout 60s "$browser" --headless --no-sandbox --disable-gpu --no-first-run --virtual-time-budget=10000 --dump-dom 'https://bumblev95.github.io/geuttae-uri/' > /tmp/then-us-dom.html 2>/tmp/then-us-chrome.log
+          python3 - <<'PY'
+          import json, pathlib
+          version = json.loads(pathlib.Path('geuttae-uri/version.json').read_text())['version']
+          html = pathlib.Path('/tmp/then-us-dom.html').read_text()
+          for expected in ['TEST v' + version, '먼저 체험해 보기', 'data-screen="home"']:
+              assert expected in html, 'Public homepage did not render: ' + expected
+          print('CHROME PASS: public homepage rendered with TEST v' + version + ' and the demo start button')
+          PY
+          printf '### Then Us preview\n\nHTTPS source hashes and Chrome homepage rendering passed.\n\nReal-device multiplayer and AI generation are not included in this static preview.\n' >> "$GITHUB_STEP_SUMMARY"

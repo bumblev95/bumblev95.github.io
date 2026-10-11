@@ -1,0 +1,24 @@
+{
+  "id": "./",
+  "name": "그때 우리 · 테스트",
+  "short_name": "그때 우리",
+  "description": "사진 한 장, 다시 만나는 우리. 온라인 화면 체험판.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf8f1",
+  "theme_color": "#fbf8f1",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
