@@ -1,0 +1,44 @@
+name: Prepare Then Us preview files
+on:
+  push:
+    branches: [preview/geuttae-uri-v0.2]
+    paths: [geuttae-uri-bootstrap.json]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: preview/geuttae-uri-v0.2
+      - name: Verify and unpack the reviewed static preview
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, io, json, pathlib, tarfile
+          bundle = json.loads(pathlib.Path('geuttae-uri-bootstrap.json').read_text())
+          archive = base64.b64decode(bundle['data'], validate=True)
+          assert hashlib.sha256(archive).hexdigest() == bundle['sha256'], 'Archive checksum mismatch'
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as tar:
+              for member in tar.getmembers():
+                  path = pathlib.PurePosixPath(member.name)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert path.parts[0] == 'geuttae-uri' and member.isfile(), 'Unexpected archive entry'
+              tar.extractall('.', filter='data')
+          root = pathlib.Path('geuttae-uri')
+          for name, expected in bundle['files'].items():
+              assert hashlib.sha256((root / name).read_bytes()).hexdigest() == expected, name
+          print('Verified', len(bundle['files']), 'preview files. Existing homepage is unchanged.')
+          PY
+          node --check geuttae-uri/boot-v1.js
+          node --check geuttae-uri/releases/0.2.0/client.js
+          node --check geuttae-uri/releases/0.2.0/logic.js
+      - name: Commit only the separate preview directory
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add geuttae-uri
+          if ! git diff --cached --quiet; then
+            git commit -m 'Build Then Us v0.2.0 static preview from verified source bundle'
+            git push origin HEAD:preview/geuttae-uri-v0.2
+          fi
