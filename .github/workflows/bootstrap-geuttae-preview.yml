@@ -17,7 +17,10 @@ jobs:
           python3 - <<'PY'
           import base64, hashlib, io, json, pathlib, tarfile
           bundle = json.loads(pathlib.Path('geuttae-uri-bootstrap.json').read_text())
-          archive = base64.b64decode(bundle['data'], validate=True)
+          for name in bundle['parts']:
+              assert name.startswith('.bootstrap-geuttae/part-') and '..' not in name
+          payload = ''.join(pathlib.Path(name).read_text().strip() for name in bundle['parts'])
+          archive = base64.b64decode(payload, validate=True)
           assert hashlib.sha256(archive).hexdigest() == bundle['sha256'], 'Archive checksum mismatch'
           with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as tar:
               for member in tar.getmembers():
