@@ -27,6 +27,8 @@ export async function createApp(options={}){
  if(publicOrigin){const u=new URL(publicOrigin);if(u.origin!==publicOrigin||u.protocol!=='https:')throw new Error('PUBLIC_ORIGIN must be an HTTPS origin without a path.');}
  const frontendOrigins=new Set((options.frontendOrigins||process.env.FRONTEND_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
  for(const origin of frontendOrigins){const u=new URL(origin);if(u.origin!==origin||u.protocol!=='https:')throw new Error('FRONTEND_ORIGINS must contain exact HTTPS origins.');}
+ const healthcheckHost=options.healthcheckHost||'';
+ if(healthcheckHost&&healthcheckHost!=='healthcheck.railway.app')throw new Error('Unsupported healthcheck host.');
  const ttl=options.roomTtlMs??24*60*60*1000;
  check(Number.isFinite(ttl)&&ttl>0&&ttl<=24*60*60*1000,500,'올바르지 않은 방 만료 설정');
  const streams=new Map(),locks=new Map(),rateBuckets=new Map();
@@ -63,7 +65,8 @@ export async function createApp(options={}){
  }
  function originFor(req){
   let u;try{u=new URL('http://'+req.headers.host);}catch{throw new ApiError(400,'주소를 확인해 주세요.');}
-  check(localHosts.has(u.hostname.toLowerCase())||(publicOrigin&&u.host===new URL(publicOrigin).host),421,'허용되지 않은 서버 주소예요.');
+  const platformProbe=healthcheckHost&&(req.headers.host===healthcheckHost||req.headers.host===healthcheckHost+':'+req.socket.localPort)&&req.method==='GET'&&req.url==='/api/health'&&req.headers.origin===undefined;
+  check(platformProbe||localHosts.has(u.hostname.toLowerCase())||(publicOrigin&&u.host===new URL(publicOrigin).host),421,'허용되지 않은 서버 주소예요.');
   return publicOrigin||u.origin;
  }
  function limit(req,kind,max,period=60_000){
