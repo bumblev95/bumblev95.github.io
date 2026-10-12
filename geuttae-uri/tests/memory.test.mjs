@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.2.1/memory.js';
-import {setup,applyAction,viewFor} from '../releases/0.2.1/logic.js';
+import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.2.2/memory.js';
+import {setup,applyAction,viewFor} from '../releases/0.2.2/logic.js';
 const players=[{id:'a',name:'가영'},{id:'b',name:'잭'}];
 function revealed(){let s=setup(players);for(const p of players)s=applyAction(s,p.id,{type:'submitQuestion',photoId:p.id,prompt:'누가 기억할까?',options:['가','나','다','라'],correctIndex:0,story:'즐거운 날',confirmed:true});s=applyAction(s,'a',{type:'start'});return applyAction(s,'b',{type:'answer',choice:0,round:0});}
 test('only revealed, explicitly allowed memories can be captured',()=>{const v=viewFor(revealed(),'b');assert.equal(captureMemory(v,false),null);assert.equal(captureMemory(v,undefined),null);assert.equal(captureMemory({...v,phase:'question'},true),null);const entry=captureMemory(v,true);assert.equal(entry.author,'가영');assert.deepEqual(entry.responses,[{name:'잭',answer:'가',correct:true}]);assert.equal(entry.correctIndex,0);});
@@ -9,3 +9,20 @@ test('early termination and reports cannot produce a book',()=>{const v=viewFor(
 test('export does not change quiz scoring or include transport identifiers',()=>{const s=revealed(),v=viewFor(s,'b'),entry=captureMemory(v,true);const book=buildMemoryBook({title:'함께',date:'2026',view:{...v,phase:'finished',endReason:'completed'},entries:[entry]});assert.deepEqual(book.players,[{name:'잭',score:100},{name:'가영',score:0}]);const html=renderMemoryHTML(book,{a:'data:image/jpeg;base64,YQ=='});assert.ok(html.includes('data:image/jpeg;base64,YQ=='));for(const secret of ['sessionToken','DEMO2026','Bearer ','authorId','photoId','/api/'])assert.ok(!html.includes(secret),secret);assert.equal(s.players.find(p=>p.id==='a').score,0);assert.equal(s.players.find(p=>p.id==='b').score,100);});
 test('untrusted text and remote or executable image content cannot run',()=>{const v=viewFor(revealed(),'b'),entry=captureMemory(v,true);entry.prompt='<script>alert(1)</script>';entry.story='<img src=x onerror=alert(1)>';entry.author='"><svg onload=alert(1)>';entry.options[0]='</li><script>x</script>';const book=buildMemoryBook({title:'<script>x</script>',date:'today',view:{...v,phase:'finished',endReason:'completed'},entries:[entry]});for(const image of ['https://example.com/track','blob:secret','data:image/svg+xml;base64,YQ==','data:image/jpeg;base64,YQ==" onerror="x']){const html=renderMemoryHTML(book,{a:image});assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<img src=x'));assert.ok(!html.includes('<svg onload'));assert.ok(!html.includes('https://example.com'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('이 사진은 포함하지 않았어요.'));}});
 test('sample export is never treated as a paid entitlement',()=>{assert.equal(memoryProduct.paymentEnabled,false);assert.equal(memoryProduct.price,'US$0.99');assert.equal(memoryProduct.billing,'one-time');const v=viewFor(revealed(),'b');const book=buildMemoryBook({title:'체험',date:'오늘',view:{...v,phase:'finished',endReason:'completed'},entries:[]});assert.ok(renderMemoryHTML(book).includes('실제 결제 없음'));});
+test('all agreed templates retain actual memories, cover and tied winners',()=>{
+ const v=viewFor(revealed(),'b'),entry=captureMemory(v,true);
+ const book=buildMemoryBook({title:'우리 모임',date:'오늘',view:{...v,phase:'finished',endReason:'completed',players:v.players.map(p=>({...p,score:100}))},entries:[entry]});
+ for(const template of ['photobook','polaroid','album'])for(const palette of ['cream','peach','sage']){
+  const html=renderMemoryHTML(book,{a:'data:image/jpeg;base64,YQ=='},{template,palette});
+  assert.ok(html.includes(`class="memory-book template-${template} palette-${palette}"`));
+  for(const text of ['book-cover','book-ending','누가 기억할까?','즐거운 날','오늘의 공동 기억왕','가영 · 잭'])assert.ok(html.includes(text),text);
+  assert.equal((html.match(/<img class="memory-image"/g)||[]).length,2);
+ }
+});
+test('design values are allowlisted and cannot inject styles or executable markup',()=>{
+ const v=viewFor(revealed(),'b'),entry=captureMemory(v,true);
+ const book=buildMemoryBook({title:'우리',date:'오늘',view:{...v,phase:'finished',endReason:'completed'},entries:[entry]});
+ const html=renderMemoryHTML(book,{}, {template:'"><script>evil()</script>',palette:'sage; background:url(https://tracker.test)'});
+ assert.ok(html.includes('class="memory-book template-photobook palette-cream"'));
+ assert.ok(!html.includes('evil()'));assert.ok(!html.includes('tracker.test'));
+});

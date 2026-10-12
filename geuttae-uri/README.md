@@ -4,7 +4,7 @@ This directory is separate from the existing market homepage. Do not change the 
 
 ## Scope
 
-v0.2.1 preserves the cream/peach/green UI, sample-photo quiz, local custom photo/question editor, rotating question author, and results. This public static preview uses simulated participants. It does not host multiplayer rooms or call an AI service. Selected photos and questions stay in browser memory; returning home, starting a new demo, refreshing or closing the page clears the memory-book session. No analytics, photo upload, localStorage, IndexedDB, or service-worker photo cache is used. A file is downloaded only when the user explicitly clicks the free test export button; downloaded files remain on the device.
+v0.2.2 preserves the cream/peach/green UI, sample-photo quiz, local custom photo/question editor, rotating question author, and results. This public static preview uses simulated participants. It does not host multiplayer rooms or call an AI service. Selected photos and questions stay in browser memory; returning home, starting a new demo, refreshing or closing the page clears the memory-book session. No analytics, photo upload, localStorage, IndexedDB, or service-worker photo cache is used. A file is downloaded only when the user explicitly clicks the free test export button; downloaded files remain on the device.
 
 ## One optional purchase: a memory book
 
@@ -33,3 +33,7 @@ The page displays the loaded version and release notes. Checks run once a minute
 Run `npm ci`, `npm test`, `npx playwright install --with-deps chromium`, then `node tests/browser-qa.mjs` from this directory. The browser harness uses a real local HTTP origin, a simulated quiz, a real generated JPEG upload, save denial, export/download/render/print, update deferral and widths 320/390/768/1440. It asserts no APIs, external requests, browser storage or service workers. The memory workflow runs this harness on pull requests; the existing deployment workflow verifies the fixed public HTTPS files after publishing. These are browser tests, not physical-phone or actual-payment tests.
 
 The live multiplayer backend, private cloud storage, AI photo analysis, adult mode, native Android/iOS builds, and actual-device two-player QA are separate work and are not provided by this static deployment.
+
+## Memory templates (v0.2.2)
+
+The existing saved-memory flow now offers Photobook, Polaroid and Clean Album templates with cream, peach or sage palettes. One shared, scoped stylesheet renders the app preview and self-contained export. A consented representative photo appears on the cover; revealed quizzes, correct answers, author stories and actual answers follow; the final page includes participants, scores and all tied winners. No fabricated comments are added. Invalid template or palette identifiers fall back to Photobook/Cream. Template selection adds no product or purchase step; current exports are free tests, not paid entitlements or cloud storage. Membership pricing and real payment integration remain outside this preview change.

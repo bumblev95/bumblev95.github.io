@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.2.1',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.2.2',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -43,28 +43,54 @@ try{
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),1);
  assert.match(await page.locator('.memory-offer').innerText(),/US\$0.99/);
  assert.match(await page.locator('.memory-offer').innerText(),/추억 2개/);
- await page.screenshot({path:path.join(out,'results.png'),fullPage:true});
+ await page.screenshot({path:path.join(out,'results.png'),fullPage:true,animations:'disabled'});
  await page.locator('[data-action="memory-preview"]').click();await page.locator('[data-action="memory-save"]').waitFor();
  assert.equal(await page.locator('.book-preview .memory-page').count(),2);
- assert.equal(await page.locator('.book-preview .memory-image').count(),2);
+ assert.equal(await page.locator('.book-preview .memory-image').count(),3);
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-NOT-FOR-EXPORT'));
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-STORY'));
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`preview width ${width}`);assert.equal(await page.locator('#modal').evaluate(el=>el.scrollWidth>el.clientWidth),false);}
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'memory-preview.png'),fullPage:true});
  // Version application remains blocked with a private album dialog open.
- await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.2.2';await route.fulfill({response:r,json:v});});
+ await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.2.3';await route.fulfill({response:r,json:v});});
  await page.evaluate(()=>document.getElementById('check-update').click());await page.locator('#apply-update').waitFor();assert.equal(await page.locator('#apply-update').isDisabled(),true);
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();const download=await downloadEvent;
  assert.equal(download.suggestedFilename(),'Then-Us-Memory-Book-TEST.html');await download.saveAs(path.join(out,'memory.html'));
  const album=await readFile(path.join(out,'memory.html'),'utf8');assert.ok(!album.includes('PRIVATE-STORY'));assert.ok(!album.includes('PRIVATE-NOT-FOR-EXPORT'));assert.ok(album.includes('실제 결제 없음'));assert.ok(album.includes('data:image/jpeg;base64,'));
  assert.ok(!album.includes('blob:'));assert.ok(!album.includes('DEMO2026'));assert.ok(!album.includes('<script'));
- // Render the exported album as its own document, including print layout.
- const saved=await context.newPage();await saved.goto('file://'+path.join(out,'memory.html'));await saved.locator('.memory-image').first().waitFor();await saved.screenshot({path:path.join(out,'album.png'),fullPage:true});await saved.pdf({path:path.join(out,'album.pdf'),format:'A4',printBackground:true});await saved.close();
- await page.locator('#modal .modal-close').click();assert.equal(await page.locator('#apply-update').isDisabled(),false);
+ // All styles and palettes use the same preview/export markup; check mobile and print.
+ for(const template of ['photobook','polaroid','album']){
+   await page.locator('#memory-template').selectOption(template);
+   for(const palette of ['cream','peach','sage']){
+     await page.locator('#memory-palette').selectOption(palette);
+     assert.equal(await page.locator(`.book-preview .template-${template}.palette-${palette}`).count(),1);
+     for(const width of [320,390,768,1440]){
+       await page.setViewportSize({width,height:900});
+       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${template}/${palette}/${width}`);
+       assert.equal(await page.locator('#modal').evaluate(el=>el.scrollWidth>el.clientWidth),false);
+     }
+   }
+   await page.setViewportSize({width:390,height:844});
+   await page.screenshot({path:path.join(out,`${template}-preview.png`),fullPage:true,animations:'disabled'});
+   const pending=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();
+   const chosen=await pending;const file=path.join(out,`${template}.html`);await chosen.saveAs(file);
+   const content=await readFile(file,'utf8');assert.ok(content.includes(`class="memory-book template-${template} palette-sage"`));
+   assert.ok(!content.includes('PRIVATE-STORY'));assert.ok(!content.includes('PRIVATE-NOT-FOR-EXPORT'));
+   const saved=await context.newPage();await saved.goto('file://'+file);await saved.locator('.memory-image').first().waitFor();
+   assert.equal(await saved.locator('.book-cover').count(),1);assert.equal(await saved.locator('.book-ending').count(),1);
+   assert.equal(await saved.locator('.memory-page').count(),2);
+   const previewCSS=await page.locator('.memory-book').evaluate(el=>getComputedStyle(el).getPropertyValue('--paper'));
+   assert.equal(await saved.locator('.memory-book').evaluate(el=>getComputedStyle(el).getPropertyValue('--paper')),previewCSS);
+   await saved.setViewportSize({width:390,height:844});
+   assert.equal(await saved.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await saved.screenshot({path:path.join(out,`${template}-album.png`),fullPage:true});
+   await saved.pdf({path:path.join(out,`${template}.pdf`),format:'A4',printBackground:true});await saved.close();
+ }
+ await page.locator('#modal .modal-close').click();assert.equal(await page.evaluate(()=>document.activeElement?.dataset.action),'memory-preview');assert.equal(await page.locator('#apply-update').isDisabled(),false);
  await page.locator('[data-action="home"]').last().click();await page.locator('#modal [data-action="confirm"]').click();assert.equal(await page.evaluate(()=>document.body.dataset.screen),'home');
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.evaluate(()=>localStorage.length),0);assert.equal(await page.evaluate(()=>sessionStorage.length),0);assert.equal(await page.evaluate(()=>navigator.serviceWorker.getRegistrations().then(r=>r.length)),0);
  assert.ok(!requests.some(url=>url.includes('/api/')));assert.ok(!requests.some(url=>!url.startsWith(base)&&!url.startsWith('data:')&&!url.startsWith('blob:')&&!url.startsWith('file:')));
  assert.deepEqual(errors,[]);
- console.log('BROWSER PASS: free quiz, one optional product, upload save permission off, denied photo/story excluded, one post-game ad placeholder, local album download/render/print, update deferral, privacy reset and 320/390/768/1440 widths. No real billing, ad requests or multiplayer.');
+ console.log('BROWSER PASS: free quiz, one optional product, upload save permission off, denied photo/story excluded, one post-game ad placeholder, three templates and three palettes, local album download/render/print, update deferral, privacy reset and 320/390/768/1440 widths. No real billing, ad requests or multiplayer.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}
