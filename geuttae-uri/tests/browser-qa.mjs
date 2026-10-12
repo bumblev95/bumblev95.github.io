@@ -82,6 +82,8 @@ try{
    const previewCSS=await page.locator('.memory-book').evaluate(el=>getComputedStyle(el).getPropertyValue('--paper'));
    assert.equal(await saved.locator('.memory-book').evaluate(el=>getComputedStyle(el).getPropertyValue('--paper')),previewCSS);
    await saved.setViewportSize({width:390,height:844});
+   const textStyle=el=>{const s=getComputedStyle(el);return [s.fontSize,s.lineHeight,s.color,s.letterSpacing]};
+   assert.deepEqual(await saved.locator('.responses p').first().evaluate(textStyle),await page.locator('.responses p').first().evaluate(textStyle));
    assert.equal(await saved.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await saved.screenshot({path:path.join(out,`${template}-album.png`),fullPage:true});
    await saved.pdf({path:path.join(out,`${template}.pdf`),format:'A4',printBackground:true});await saved.close();
