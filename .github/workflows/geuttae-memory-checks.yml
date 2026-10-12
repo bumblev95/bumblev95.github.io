@@ -1,0 +1,40 @@
+name: Then Us memory pack checks
+on:
+  pull_request:
+    paths: ['geuttae-uri/**', '.github/workflows/geuttae-memory-checks.yml']
+  push:
+    branches: [main]
+    paths: ['geuttae-uri/**', '.github/workflows/geuttae-memory-checks.yml']
+permissions:
+  contents: read
+jobs:
+  memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned QA dependencies
+        working-directory: geuttae-uri
+        run: npm ci
+      - name: Check syntax and consent/export rules
+        working-directory: geuttae-uri
+        run: |
+          for file in releases/0.2.1/*.js; do node --check "$file"; done
+          npm test
+      - name: Install Chromium
+        working-directory: geuttae-uri
+        run: npx playwright install --with-deps chromium
+      - name: Verify quiz, save permission, export, print and mobile layouts
+        working-directory: geuttae-uri
+        run: node tests/browser-qa.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: memory-pack-qa
+          path: geuttae-uri/tests/qa-output/
+          retention-days: 7
