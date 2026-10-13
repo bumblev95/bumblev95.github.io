@@ -30,3 +30,6 @@ jobs:
       - name: Test two mobile browser sessions against real server
         working-directory: geuttae-uri/server
         run: node tests/browser-qa.mjs
+      - name: Test author review and draft quotas with a fixture provider
+        working-directory: geuttae-uri/server
+        run: node tests/ai-browser-qa.mjs
