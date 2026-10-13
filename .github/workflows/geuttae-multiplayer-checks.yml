@@ -33,3 +33,6 @@ jobs:
       - name: Test author review and draft quotas with a fixture provider
         working-directory: geuttae-uri/server
         run: node tests/ai-browser-qa.mjs
+      - name: Test product preview while payments remain disabled
+        working-directory: geuttae-uri/server
+        run: node tests/commerce-browser-qa.mjs

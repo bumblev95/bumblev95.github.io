@@ -4,11 +4,12 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.3.2/logic.js';
-import {captureMemory,buildMemoryBook} from '../../releases/0.3.2/memory.js';
+import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.3.3/logic.js';
+import {captureMemory,buildMemoryBook} from '../../releases/0.3.3/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
-import {validateDraftInput,assembleDraft} from '../../releases/0.3.2/draft.js';
+import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
+import {openCommerceLedger,createCommerce,CommerceError} from './commerce.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -41,11 +42,15 @@ export async function createApp(options={}){
  const ai=options.aiProvider===undefined?await createAiProvider():options.aiProvider;
  if(ai)check(typeof ai.generate==='function'&&Number.isInteger(ai.roomLimit)&&ai.roomLimit>0&&ai.roomLimit<=20&&Number.isInteger(ai.dailyLimit)&&ai.dailyLimit>0&&ai.dailyLimit<=1000,500,'올바르지 않은 AI 제한 설정');
  const aiBudget=ai?await createAiBudget(dataDir,ai.dailyLimit):null;
+ const ledger=await openCommerceLedger(path.join(dataDir,'commerce.sqlite'),{now:options.commerceClock||Date.now});
+ let commerce;
+ try{commerce=createCommerce({...options.commerceFixture,ledger,fixture:!!options.commerceFixture});ledger.recoverPending();}catch(error){ledger.close();throw error;}
  const aiFlights=new Map(),aiCache=new Map();
  const aiKey=(code,id)=>code+'|'+id;
  function aiStatus(room){
   const used=room.aiUsage?.successes||0,pending=Object.values(room.aiUsage?.requests||{}).filter(x=>x.status==='pending').length;
-  return ai?{enabled:true,remaining:Math.max(0,ai.roomLimit-used-pending),limit:ai.roomLimit,textOnly:true}:{enabled:false,reason:'not-connected',textOnly:true};
+  if(ai&&commerce.usesCredits)return {enabled:true,remaining:ledger.balance(commerce.hostFor(room)).total,mode:'fixture-credits',textOnly:true};
+  return ai?{enabled:true,remaining:Math.max(0,ai.roomLimit-used-pending),limit:ai.roomLimit,mode:'room-test',textOnly:true}:{enabled:false,reason:'not-connected',textOnly:true};
  }
  function cancelAi(code,actorId){
   for(const [key,flight] of aiFlights)if(key.startsWith(code+'|')&&(!actorId||flight.actorId===actorId))flight.control.abort();
@@ -109,10 +114,10 @@ export async function createApp(options={}){
  }
  function activeSession(room,req){const s=sessionFor(room,req);check(s&&s.status==='active',403,'참가 승인을 받은 뒤 이용할 수 있어요.');return s;}
  function safeState(room,s){
-  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.2',revision:room.revision};
+  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision};
   if(s.status!=='active')return {...base,nickname:s.name};
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
-  return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
+  return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
  }
  function publish(room,memorySnapshot=null){
   for(const [res,id] of streams.get(room.code)||[]){
@@ -194,17 +199,19 @@ export async function createApp(options={}){
    const old=room.aiUsage.requests[id];
    if(old){
     check(old.inputHash===inputHash,409,'같은 요청으로 다른 내용을 보낼 수 없어요. 새 초안 요청을 시작해 주세요.');
-    const cached=aiCache.get(key);if(cached)return {cached:{status:200,data:{draft:cached.draft,remaining:aiStatus(room).remaining,revision:room.revision,requestId:input.requestId}}};
+    const cached=aiCache.get(key);if(cached){check(!old.creditReservation||ledger.replayAllowed(old.creditReservation),409,'이 초안의 이용권 권한이 만료되거나 회수됐어요.');return {cached:{status:200,data:{draft:cached.draft,remaining:aiStatus(room).remaining,revision:room.revision,requestId:input.requestId}}};}
     const flight=aiFlights.get(key);if(flight)return {flight,leader:false};
     throw new ApiError(409,'이 요청은 이미 처리됐거나 중단됐어요. 다시 호출하지 않았어요. 직접 작성하거나 새 초안을 요청해 주세요.');
    }
    check(aiStatus(room).remaining>0,429,'이 모임의 AI 초안 허용 횟수를 다 썼어요. 직접 출제는 계속 이용할 수 있어요.');
-   let reserved;try{reserved=await aiBudget.reserve();}catch{throw new ApiError(503,'AI 사용 한도를 확인하지 못했어요. 직접 출제를 이용해 주세요.');}
+   const creditReservation=commerce.usesCredits?commerce.reserveAi(room,s,id,inputHash):null;
+   let reserved;try{reserved=await aiBudget.reserve();}catch{if(creditReservation)ledger.releaseAi(creditReservation);throw new ApiError(503,'AI 사용 한도를 확인하지 못했어요. 직접 출제를 이용해 주세요.');}
+   if(!reserved&&creditReservation)ledger.releaseAi(creditReservation);
    check(reserved,429,'오늘의 AI 테스트 한도에 도달했어요. 직접 출제를 이용해 주세요.');
    let resolve;const promise=new Promise(r=>{resolve=r;}),control=new AbortController();
-   const flight={promise,resolve,control,actorId:s.id,inputHash};aiFlights.set(key,flight);
-   room.aiUsage.requests[id]={actorId:s.id,inputHash,status:'pending'};
-   try{await save(room);}catch(error){aiFlights.delete(key);throw error;}
+   const flight={promise,resolve,control,actorId:s.id,inputHash,creditReservation};aiFlights.set(key,flight);
+   room.aiUsage.requests[id]={actorId:s.id,inputHash,status:'pending',...(creditReservation?{creditReservation}:{})};
+   try{await save(room);}catch(error){aiFlights.delete(key);if(creditReservation)ledger.releaseAi(creditReservation);throw error;}
    publish(room);return {leader:true,flight,id,key};
   });
   if(prepared.cached)return respond(res,prepared.cached.status,prepared.cached.data);
@@ -222,12 +229,17 @@ export async function createApp(options={}){
     finally{clearTimeout(timeout);}
     try{return await locked(code,async()=>{
      const room=await load(code),s=room.sessions.find(x=>x.id===flight.actorId);
-     const eligible=s?.status==='active'&&room.game.phase==='lobby',allowed=eligible&&!flight.control.signal.aborted;
+     const eligible=s?.status==='active'&&room.game.phase==='lobby';let allowed=eligible&&!flight.control.signal.aborted;
      const entry=room.aiUsage?.requests[id];
+     allowed=allowed&&entry?.status==='pending';
      if(entry){entry.status=draft&&allowed?'succeeded':'failed';if(draft&&allowed)room.aiUsage.successes++;await save(room);}
+     if(draft&&allowed&&flight.creditReservation&&!ledger.commitAi(flight.creditReservation)){
+      allowed=false;entry.status='failed';room.aiUsage.successes--;await save(room);
+     }
+     if((!draft||!allowed)&&flight.creditReservation)ledger.releaseAi(flight.creditReservation);
      if(draft&&allowed){aiCache.set(key,{draft,actorId:flight.actorId});publish(room);return {status:200,data:{draft,remaining:aiStatus(room).remaining,revision:room.revision,requestId:input.requestId}};}
      publish(room);return {status:eligible?502:409,data:{error:eligible?'초안을 만들지 못했어요. 허용 횟수는 차감하지 않았어요. 직접 작성하거나 새 초안을 요청해 주세요.':'모임 상태가 바뀌어 초안을 받지 않았어요. 허용 횟수는 차감하지 않았어요.'}};
-    });}catch{return {status:410,data:{error:'이 모임의 초안을 더 이상 받을 수 없어요.'}};}
+    });}catch{if(flight.creditReservation)ledger.releaseAi(flight.creditReservation);return {status:410,data:{error:'이 모임의 초안을 더 이상 받을 수 없어요.'}};}
    };
    run().then(result=>{aiFlights.delete(key);flight.resolve(result);},()=>{aiFlights.delete(key);flight.resolve({status:503,data:{error:'AI 초안을 처리하지 못했어요. 직접 출제를 이용해 주세요.'}});});
   }
@@ -247,7 +259,8 @@ export async function createApp(options={}){
     return respond(res,204,Buffer.alloc(0),{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Photo-Consent','Access-Control-Max-Age':'600'});
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
-   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.2',aiEnabled:!!ai,storage:'private-server-files',deployment:'single-instance'});
+   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
+   if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,commerce.catalog);
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
     check(nameValid(b.nickname),400,'닉네임을 1~16자로 적어 주세요.');
@@ -259,7 +272,7 @@ export async function createApp(options={}){
     await fs.mkdir(path.join(roomsDir,code),{recursive:false,mode:0o700});await save(room);
     return respond(res,201,{...safeState(room,room.sessions[0]),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
    }
-   const m=u.pathname.match(/^\/api\/rooms\/([A-HJ-NP-Z2-9]{8})\/(join|state|events|action|upload|approve|deny|kick|leave|ai-draft|photo\/([a-f0-9-]{36}))$/);
+   const m=u.pathname.match(/^\/api\/rooms\/([A-HJ-NP-Z2-9]{8})\/(join|state|events|action|upload|approve|deny|kick|leave|ai-draft|benefits|verify-purchase|photo\/([a-f0-9-]{36}))$/);
    if(m){
     const [,code,route,photoId]=m;
     if(route==='ai-draft'){check(method==='POST',405,'지원하지 않는 요청이에요.');return await aiDraft(req,res,code);}
@@ -288,6 +301,12 @@ export async function createApp(options={}){
       return;
      }
      const s=activeSession(room,req);
+     if(route==='benefits'&&method==='GET')return respond(res,200,commerce.statusFor(room,s));
+     if(route==='verify-purchase'&&method==='POST'){
+      limit(req,'purchase-check',6);const body=await jsonBody(req);
+      await commerce.verifyPurchase(room,s,body);await save(room);publish(room);
+      return respond(res,200,{...safeState(room,s),testOnly:true});
+     }
      if(route.startsWith('photo/')&&method==='GET'){
       check(room.game.phase!=='finished'&&room.deletion!=='pending',410,'이 사진은 더 이상 볼 수 없어요.');
       const photo=room.photos[photoId],q=room.game.questions[room.game.order[room.game.round]];
@@ -349,7 +368,7 @@ export async function createApp(options={}){
    if(u.pathname==='/')return respond(res,302,Buffer.alloc(0),{Location:'/geuttae-uri/'});
    check(u.pathname.startsWith('/geuttae-uri/'),404,'찾을 수 없는 파일이에요.');
    let filename=u.pathname==='/geuttae-uri/'?'index.html':decodeURIComponent(u.pathname.slice('/geuttae-uri/'.length));
-   check(filename==='index.html'||['boot-v1.js','boot-v2.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|draft.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
+   check(filename==='index.html'||['boot-v1.js','boot-v2.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|draft.js|products.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
    let file=path.resolve(publicDir,filename);
    check(file.startsWith(publicDir+path.sep),404,'찾을 수 없는 파일이에요.');
    const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json'};
@@ -359,21 +378,21 @@ export async function createApp(options={}){
    if(method==='HEAD'){res.writeHead(200,{...commonHeaders,'Content-Type':contentType,'Content-Length':bytes.length});res.end();return;}
    return respond(res,200,bytes,{'Content-Type':contentType});
   }catch(e){
-   if(!(e instanceof ApiError))console.error('Request failed safely; no photo or request content logged.');
+   if(!(e instanceof ApiError)&&!(e instanceof CommerceError))console.error('Request failed safely; no photo or request content logged.');
    if(res.headersSent){res.end();return;}
-   respond(res,e instanceof ApiError?e.status:500,{error:e instanceof ApiError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
+   respond(res,e instanceof ApiError||e instanceof CommerceError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
   }
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;server.keepAliveTimeout=5_000;
  const cleanup=setInterval(()=>sweep().catch(()=>console.error('Cleanup will retry.')),options.cleanupEveryMs??30_000);cleanup.unref();
  const heartbeat=setInterval(()=>{for(const bucket of streams.values())for(const [res] of bucket){try{res.write(': connected\n\n');}catch{res.destroy();}}},15_000);heartbeat.unref();
  await sweep();
- return {server,dataDir,sweep,async close(){clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));}};
+ return {server,dataDir,sweep,commerce,async close(){clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));ledger.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const app=await createApp();const port=Number(process.env.PORT||3000),host=process.env.HOST||'127.0.0.1';
  app.server.listen(port,host,()=>{
-  console.log(`\n그때 우리 v0.3.2 — http://localhost:${port}/geuttae-uri/`);
+  console.log(`\n그때 우리 v0.3.3 — http://localhost:${port}/geuttae-uri/`);
   if(host==='0.0.0.0')for(const addresses of Object.values(safeInterfaces()))for(const a of addresses||[])if(a.family==='IPv4'&&!a.internal)console.log(`같은 Wi-Fi 휴대폰: http://${a.address}:${port}/geuttae-uri/`);
   if(!process.env.PUBLIC_ORIGIN)console.log('로컬 테스트용 HTTP입니다. 민감한 사진은 사용하지 마세요.');
   console.log('종료: Ctrl+C\n');
