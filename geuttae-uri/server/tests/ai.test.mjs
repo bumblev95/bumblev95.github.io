@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {aiConfig,createAiProvider,createAiBudget} from '../src/ai.mjs';
-import {validateDraftInput,validateDraftOutput,assembleDraft} from '../../releases/0.3.2/draft.js';
+import {validateDraftInput,validateDraftOutput,assembleDraft} from '../../releases/0.3.3/draft.js';
 
 const input=()=>({requestId:randomUUID(),memory:'짐을 풀기 전에 바다를 보러 갔어요.',answer:'바다 보러 가기',focus:'activity',consent:true});
 const output={prompt:'바다에 도착해서 가장 먼저 한 일은?',distractors:['점심 먹기','짐 풀기','기념품 고르기']};

@@ -1,10 +1,10 @@
 {
   "name": "geuttae-uri-multiplayer",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "start": "node src/server.mjs",

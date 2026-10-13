@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {draftOutputSchema,validateDraftOutput} from '../../releases/0.3.2/draft.js';
+import {draftOutputSchema,validateDraftOutput} from '../../releases/0.3.3/draft.js';
 
 const positive=(value,max,label)=>{const n=Number(value);if(!/^\d+$/.test(String(value))||!Number.isSafeInteger(n)||n<1||n>max)throw new Error(`Set ${label} to an explicit integer from 1 to ${max}.`);return n;};
 export function aiConfig(env=process.env){
