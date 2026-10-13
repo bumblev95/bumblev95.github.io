@@ -101,7 +101,7 @@ function mockAPI({healthPatch = {}, headerPatch = {}, allowEvil = false} = {}) {
     if (options.method === 'OPTIONS') {
       return new Response(null, {status: 204, headers: {...headers, 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Photo-Consent', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'}});
     }
-    return new Response(JSON.stringify({ok: true, version: '0.3.1', deployment: 'single-instance', storage: 'private-server-files', ...healthPatch}), {status: 200, headers});
+    return new Response(JSON.stringify({ok: true, version: '0.3.2', deployment: 'single-instance', storage: 'private-server-files', ...healthPatch}), {status: 200, headers});
   };
   return {fetchImpl, calls};
 }

@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.1',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.2',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -52,7 +52,7 @@ try{
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`preview width ${width}`);assert.equal(await page.locator('#modal').evaluate(el=>el.scrollWidth>el.clientWidth),false);}
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'memory-preview.png'),fullPage:true});
  // Version application remains blocked with a private album dialog open.
- await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.2';await route.fulfill({response:r,json:v});});
+ await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.3';await route.fulfill({response:r,json:v});});
  await page.evaluate(()=>document.getElementById('check-update').click());await page.locator('#apply-update').waitFor();assert.equal(await page.locator('#apply-update').isDisabled(),true);
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();const download=await downloadEvent;
  assert.equal(download.suggestedFilename(),'Then-Us-Memory-Book-TEST.html');await download.saveAs(path.join(out,'memory.html'));

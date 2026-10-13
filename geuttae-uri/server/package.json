@@ -1,6 +1,6 @@
 {
   "name": "geuttae-uri-multiplayer",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,5 +12,9 @@
   },
   "devDependencies": {
     "playwright": "1.56.1"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.93",
+    "ai": "7.0.139"
   }
 }
