@@ -1,0 +1,31 @@
+# Optional Node/Docker host template; does not provision a server or incur charges.
+# Exclude temporary-room-data from provider snapshots/backups to honor photo retention.
+services:
+  quiz:
+    build:
+      context: ../..
+      dockerfile: geuttae-uri/server/Dockerfile
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /app/data
+      PUBLIC_ORIGIN: https://${QUIZ_DOMAIN:?Set QUIZ_DOMAIN to the API hostname}
+      FRONTEND_ORIGINS: https://bumblev95.github.io
+    volumes:
+      - temporary-room-data:/app/data
+    expose: ['3000']
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      QUIZ_DOMAIN: ${QUIZ_DOMAIN:?Set QUIZ_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - tls-data:/data
+      - tls-config:/config
+    depends_on: [quiz]
+volumes:
+  temporary-room-data:
+  tls-data:
+  tls-config:

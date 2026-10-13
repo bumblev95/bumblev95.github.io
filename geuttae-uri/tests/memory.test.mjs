@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.2.2/memory.js';
-import {setup,applyAction,viewFor} from '../releases/0.2.2/logic.js';
+import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.3.1/memory.js';
+import {setup,applyAction,viewFor} from '../releases/0.3.1/logic.js';
 const players=[{id:'a',name:'가영'},{id:'b',name:'잭'}];
 function revealed(){let s=setup(players);for(const p of players)s=applyAction(s,p.id,{type:'submitQuestion',photoId:p.id,prompt:'누가 기억할까?',options:['가','나','다','라'],correctIndex:0,story:'즐거운 날',confirmed:true});s=applyAction(s,'a',{type:'start'});return applyAction(s,'b',{type:'answer',choice:0,round:0});}
 test('only revealed, explicitly allowed memories can be captured',()=>{const v=viewFor(revealed(),'b');assert.equal(captureMemory(v,false),null);assert.equal(captureMemory(v,undefined),null);assert.equal(captureMemory({...v,phase:'question'},true),null);const entry=captureMemory(v,true);assert.equal(entry.author,'가영');assert.deepEqual(entry.responses,[{name:'잭',answer:'가',correct:true}]);assert.equal(entry.correctIndex,0);});

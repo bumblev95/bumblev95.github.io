@@ -1,39 +1,61 @@
-# 그때 우리 · fixed-link preview
+# 그때 우리 · 친구와 추억집 연결
 
-This directory is separate from the existing market homepage. Do not change the root homepage, ads, sitemap, or other applications when updating this preview.
+기존 시장 홈페이지와 분리된 `/geuttae-uri/` 앱이다. root 홈페이지, 다른 앱, 광고, sitemap은 변경하지 않는다.
 
-## Scope
+## 현재 상태
 
-v0.2.2 preserves the cream/peach/green UI, sample-photo quiz, local custom photo/question editor, rotating question author, and results. This public static preview uses simulated participants. It does not host multiplayer rooms or call an AI service. Selected photos and questions stay in browser memory; returning home, starting a new demo, refreshing or closing the page clears the memory-book session. No analytics, photo upload, localStorage, IndexedDB, or service-worker photo cache is used. A file is downloaded only when the user explicitly clicks the free test export button; downloaded files remain on the device.
+- 공개 고정 주소: https://bumblev95.github.io/geuttae-uri/
+- 고정 주소 연결 릴리스: v0.3.1, 실제 멀티플레이 서버와 최신 추억집 템플릿. 이 커밋의 Pages 게시 검사가 통과한 뒤 고정 주소에서 제공된다.
+- Railway 멀티플레이 테스트 서버는 2026-10-13 배포 SUCCESS: https://geuttae-api-test-production.up.railway.app/geuttae-uri/
+- 저장소의 `runtime-config.json`에는 검증된 Railway HTTPS API origin만 넣는다. 접근 키나 비밀값은 포함하지 않는다. Railway가 제공하는 테스트 페이지도 같은 API를 사용한다.
+- 실제 서버에서 두 독립 API 참가자의 사진 업로드·SSE·재접속·출제 교대·점수·동의된 추억집 전달·종료 후 사진 접근 차단을 통과했다. 2026-10-13 운영 점검에서 종료된 네 방의 실제 JPG 파일 0개, 삭제 대기 0개, 비공개 디렉터리 권한 0700을 확인했다. 사진 볼륨 백업은 없으며 현재 Trial에서는 새 백업·일정을 만들 수 없다. 무료 Trial을 유지하고 유료 요금제 전환은 실행하지 않았다.
+- 사용자가 Railway 테스트 주소에서 정상 동작을 확인했다. 기기 수와 네트워크 조건은 확인하지 않았으므로 실기기 두 대 검증 완료로 기록하지 않는다.
+- AI, 실제 결제, 실제 광고 SDK, Ultimate 구독, 성인 모드, 스토어 배포는 미연결.
 
-## One optional purchase: a memory book
+## 게임
 
-The home page and game remain free, without a membership catalog or AI tier grid. After a completed game, results offer a free memory-book preview. The proposed launch product is **US$0.99 for one game's memory book, one-time purchase, no subscription**. Actual store-localized prices are not connected. `memoryProduct.paymentEnabled` is false; the public preview never charges money and never grants a verified purchase entitlement. Export is explicitly labeled as a free test, and includes a test/sample watermark.
+초대 링크·8자리 코드, 2–8명 참가, 방장 승인, 사진별 직접 출제, 실시간 문제·답변·점수, 출제자 교대와 공동 우승을 제공한다. 출제자는 자신의 문제에 답하거나 점수를 얻지 않는다. 정답당 100점이며 속도 보너스가 없다. 정답과 이야기는 공개 전 서버가 숨긴다.
 
-The composer has a separate optional save/share permission for a photo and its question/story. A newly selected photo defaults to **not allowed** even when replacing an allowed sample. Only explicitly allowed, revealed memories enter the book. The three illustrations and fictional participants are authorized sample content. An end/report does not create a book. Home/new-game clears the in-memory book. Downloaded copies cannot be remotely revoked, and the preview explains this before export.
+기존 v0.1 서버의 방별 잠금·원자적 저장·세션·사진 검증·만료 정리를 재사용한다. `releases/0.3.1/logic.js`를 서버와 클라이언트가 공유한다. GitHub Pages 클라이언트는 정확한 HTTPS API origin에 Bearer 인증으로 연결하며, 사진은 인증된 fetch/blob, 실시간 상태는 인증된 fetch SSE로 받는다. 서드파티 쿠키에 의존하지 않는다.
 
-The actual export is one self-contained UTF-8 **HTML album** with embedded reduced JPEGs, question/answer/story cards, participant responses and scores. It opens offline. The user can use the browser print menu to save a PDF; there is no promise of a native PDF download or direct mobile sharing. Text is HTML-escaped; only bounded JPEG data URLs are embedded. Room codes, API URLs, tokens and original filenames are excluded. Exported HTML has a restrictive CSP and no scripts, executable SVGs, network requests or analytics.
+사진·질문은 localStorage·IndexedDB·서비스 워커에 저장하지 않는다. 접근 키만 해당 탭의 sessionStorage에 기록해 같은 탭 새로고침 시 승인과 진행을 복원한다. 종료 후 추억집은 복원하지 않는다.
 
-One noninteractive banner placeholder and one post-game interstitial placeholder demonstrate the proposed ad positions. They are clearly labeled: **no real advertisements, tracking, revenue or AdMob SDK**. The interstitial appears at most once for a completed demo, and the album dialog continues to block release application.
+## 추억집
 
-## Remaining release work
+사진별 선택적 저장·공유 동의가 기본 꺼짐이며 새 사진 선택 시 다시 꺼진다. 출제자만 본인 사진의 동의를 등록할 수 있고 서버가 boolean/사진 소유권을 검증한다. 동의하지 않아도 동일하게 게임에 참여한다.
 
-Actual mobile store billing/receipt verification, refunds/restoration, server-enforced per-game export entitlement, participant save permission and revocation checks, real ads and AI limits are **not implemented in this static release**. Native payment must be verified on a server before unlocking a production export; browser flags must never be accepted as proof of payment. Paid books do not extend the existing multiplayer server's photo lifetime.
+허용되고 정답까지 공개된 사진·문제·이야기·참가자 답변만 게임 중 기록한다. 정상 완료 시 서버는 해당 사진 소유자/저장 동의를 다시 확인해 한 번 사용할 추억집/JPEG 스냅샷을 구성한다. 저장된 이야기 기록을 비우고 서버 임시 사진을 삭제한 뒤, 완료를 요청한 참가자와 현재 연결된 승인 참가자에게만 전송한다. 미승인·차단·다른 방의 참가자에게 전달하지 않는다. 신고·중도 종료·만료 시에는 추억집을 만들지 않는다.
 
-The multiplayer code is separately held in PR #4 on `codex/geuttae-uri-multiplayer-v030`. This preview neither deploys that Node server nor migrates it to Cloudflare. A future multiplayer integration must obtain authoritative per-author permission, avoid retaining disallowed media, assemble authorized snapshots before temporary media deletion, and preserve end/report/24-hour expiry protection. Do not copy this local-only preview into production as a billing or authorization implementation. Cloudflare provisioning and AI subscription products remain separate work.
+완료 스냅샷은 서버 파일이나 별도 다운로드 URL로 보관하지 않으며, state/재접속에서 재전송하지 않는다. **참가자는 종료 시 연결된 탭을 유지하고 홈 이동·새로고침·탭 종료 전에 저장해야 한다.** 전송 실패/종료 후 재접속 시 추억집을 복구할 수 없는 초기 테스트 제한을 UI에 표시한다. 내려받은 파일은 기기에 남고 앱에서 회수할 수 없다.
 
-## Stable releases
+포토북·폴라로이드·깔끔한 앨범 템플릿과 크림·피치·그린 색상을 제공한다. 표지의 대표 허용 사진 → 사진별 퀴즈/정답/실제 이야기/답변 → 참가자와 공동 기억왕 기록으로 구성한다. 없는 개인 이야기/댓글을 만들어 넣지 않는다. 기기 시간대에 맞춘 날짜를 사용한다.
 
-`index.html` loads `boot-v1.js`. The loader fetches `version.json` with a cache-busting parameter, validates the version, and loads the immutable `releases/<version>/` JavaScript and CSS. Future releases must use a new directory. Publish all files and the updated `version.json` atomically. Keep old releases available for already open tabs.
+선택한 디자인 그대로 독립 UTF-8 HTML 앨범을 내려받는다. 축소 JPEG를 내장해 오프라인에서 열 수 있고 브라우저 인쇄로 PDF 저장이 가능하다. 직접 PDF 다운로드나 네이티브 공유 SDK가 구현됐다는 의미는 아니다. 공통 scoped CSS가 미리보기/내보내기를 렌더링하며, 잘못된 디자인 값은 기본값으로 처리한다. 사용자 글은 HTML escape, 이미지는 길이 제한된 JPEG data URL만 허용한다. CSP가 스크립트/외부 요청/SVG/폼을 차단하며 방 코드·세션 토큰·API 주소·원본 파일명은 내보내지 않는다.
 
-The page displays the loaded version and release notes. Checks run once a minute while visible and when returning to the page or reconnecting. A new release never forces a reload. Apply is disabled during a lobby/game and while a dialog is open. Home/results may apply an update. The manifest is scoped only to `/geuttae-uri/`; internet is required at launch. No service worker is registered, so this app cannot control other paths on this hostname.
+## 가격과 체험 경계
 
-## Verification
+한 게임 추억집 한 권은 출시 예정 US$0.99, 일회 구매다. 광고를 보면 저장하는 대체 옵션은 제공하지 않는다. 현재는 명시적으로 무료 파일 저장 체험이며 `memoryProduct.paymentEnabled:false`, 실제 결제 또는 검증된 구매 권한은 없다. 게임 도중 별도 요금제 카탈로그를 보여주지 않는다. 기존 하단/한 번의 체험 종료 전면 광고는 가상 친구 모드에서의 자리 표시이며 실제 광고/추적/수익이 없다.
 
-Run `npm ci`, `npm test`, `npx playwright install --with-deps chromium`, then `node tests/browser-qa.mjs` from this directory. The browser harness uses a real local HTTP origin, a simulated quiz, a real generated JPEG upload, save denial, export/download/render/print, update deferral and widths 320/390/768/1440. It asserts no APIs, external requests, browser storage or service workers. The memory workflow runs this harness on pull requests; the existing deployment workflow verifies the fixed public HTTPS files after publishing. These are browser tests, not physical-phone or actual-payment tests.
+상용 출시 전에 스토어 영수증 서버 검증, 구매 복원/환불, 구매별 저장 권한과 동의 재확인을 구현해야 한다. 테스트 플래그나 브라우저 값을 구매 증거로 쓰지 않는다. Ultimate/AI 팩 정책과 가격은 별도 작업이며 이번 패치로 변경하지 않는다.
 
-The live multiplayer backend, private cloud storage, AI photo analysis, adult mode, native Android/iOS builds, and actual-device two-player QA are separate work and are not provided by this static deployment.
+## 사진 수명과 운영
 
-## Memory templates (v0.2.2)
+원본은 휴대폰에 그대로 있고 축소/메타데이터 제거한 JPG 사본만 비공개 서버에 업로드한다. 본인 사진과 현재 문제 사진에만 인증된 접근을 허용한다. 종료/신고 시 서버 임시 사진을 삭제하고, 버려진 방은 생성 후 24시간에 접근을 차단하고 정리한다. 저장소 장애나 서버 정지 중 물리 삭제는 늦어질 수 있지만 API 접근은 먼저 차단한다.
 
-The existing saved-memory flow now offers Photobook, Polaroid and Clean Album templates with cream, peach or sage palettes. One shared, scoped stylesheet renders the app preview and self-contained export. A consented representative photo appears on the cover; revealed quizzes, correct answers, author stories and actual answers follow; the final page includes participants, scores and all tied winners. No fabricated comments are added. Invalid template or palette identifiers fall back to Photobook/Cream. Template selection adds no product or purchase step; current exports are free tests, not paid entitlements or cloud storage. Membership pricing and real payment integration remain outside this preview change.
+서버는 단일 인스턴스와 전용 비공개 볼륨을 사용한다. 볼륨의 백업/스냅샷은 사용하지 않아야 하며 실제 제공자 설정을 확인해야 한다. 클라우드 비용·상시 실행·백업 제외는 코드만으로 보증하지 않는다.
+
+## 고정 주소 업데이트
+
+Draft의 `index.html` → `boot-v2.js` → `version.json` → 불변 `releases/<version>/`을 로드한다. 이미 공개한 v0.2.0/0.2.1/0.2.2와 boot-v1.js를 보존한다. 로비/게임/열린 대화창 동안 업데이트 적용을 보류하고, 새 버전이 강제 재시작하지 않는다. 실제 API 검증 후 runtime-config.json에 정확한 HTTPS origin만 설정해 게시한다. 비밀 키는 넣지 않는다.
+
+## 실행과 검증
+
+- 가상 친구/추억집: 이 폴더에서 `npm ci`, `npm test`, `node tests/browser-qa.mjs`.
+- 실제 서버: `server/`에서 `npm ci`, `npm test`, `node tests/browser-qa.mjs`.
+- 브라우저 설치: `npx playwright install --with-deps chromium`.
+- 서버 실행: `node server/src/server.mjs` (로컬 HTTP), 공개 배포는 아래 문서를 따른다.
+- [수행한 검증 기록](server/TEST-REPORT.md)
+- [공개 배포·실기기 검사](server/DEPLOYMENT.md)
+- [Railway 연결 준비](server/RAILWAY.md)
+
+52개 서버 검사와 7개 저장/템플릿 검사, 별도 HTTPS 프런트/API origin에서 두 독립 모바일 브라우저의 실제 게임·저장, 320/390/768/1440 폭, 체험 회귀 검사가 통과했다. 실제 공개 서버와 물리 휴대폰 두 대 테스트는 남아 있다.

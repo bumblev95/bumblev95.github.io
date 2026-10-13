@@ -1,0 +1,32 @@
+name: Then Us multiplayer checks
+on:
+  pull_request:
+    paths: ['geuttae-uri/**', '.github/workflows/geuttae-multiplayer-checks.yml']
+  push:
+    branches: [main]
+    paths: ['geuttae-uri/**', '.github/workflows/geuttae-multiplayer-checks.yml']
+permissions:
+  contents: read
+jobs:
+  multiplayer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned browser test dependencies
+        working-directory: geuttae-uri/server
+        run: npm ci
+      - name: Verify server, privacy and concurrent sessions
+        working-directory: geuttae-uri/server
+        run: npm test
+      - name: Install Chromium on CI runner
+        working-directory: geuttae-uri/server
+        run: npx playwright install --with-deps chromium
+      - name: Test two mobile browser sessions against real server
+        working-directory: geuttae-uri/server
+        run: node tests/browser-qa.mjs
