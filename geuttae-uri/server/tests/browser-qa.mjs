@@ -75,7 +75,7 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.3.5';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.3.6';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
@@ -89,9 +89,10 @@ try{
   await p.locator('[data-action="memory-preview"]').click();await p.locator('[data-action="memory-save"]').waitFor();
   assert.equal(await p.locator('.book-preview .memory-page').count(),1);
   assert.equal(await p.locator('.book-preview .memory-image').count(),2);
+  await p.getByRole('button',{name:'다음 페이지',exact:true}).click();
   assert.match(await p.locator('.book-preview').innerText(),/Jack의 진짜 이야기/);
-  assert.ok(!(await p.locator('.book-preview').innerText()).includes('Kay의 사진'));
-  assert.ok(!(await p.locator('.book-preview').innerText()).includes('DENIED-STORY'));
+  assert.ok(!(await p.locator('.book-preview').textContent()).includes('Kay의 사진'));
+  assert.ok(!(await p.locator('.book-preview').textContent()).includes('DENIED-STORY'));
   assert.ok(!(await p.locator('.book-preview .sample').innerText()).includes('가상 참가자'));
   for(const template of ['photobook','polaroid','album']){
    await p.locator('#memory-template').selectOption(template);await p.locator('#memory-palette').selectOption('peach');
