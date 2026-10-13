@@ -1,4 +1,4 @@
-# 그때 우리 v0.3.0 서버 연결
+# 그때 우리 v0.3.1 서버 연결
 
 이 코드는 서버를 자동 생성하지 않는다. GitHub Pages는 프런트엔드를 계속 제공하며 API와 비공개 사진은 별도 Node 22+ 서버에서 처리한다. AI 문제 생성은 포함하지 않는다.
 
@@ -9,8 +9,8 @@
 | 방 코드·초대 링크, 2–8명, 방장 승인, 실시간 진행·출제자 교대·점수 | 코드 구현 및 로컬 실제 HTTP/SSE 검증 |
 | 사진 소유자 검증, 승인 전 차단, 타 방 접근 차단, 공개 전 정답 숨김 | 자동 검증 |
 | 24시간 방 만료, 종료 시 사진 삭제, 30초 정리, 재시작 복원 | 자동 검증; 서버가 실행돼야 물리 삭제 가능 |
-| HTTPS API 호스팅·도메인·지속 실행·비공개 볼륨 | 외부 설정 필요 |
-| GitHub Pages에 API 주소 연결 | 서버 확인 후 runtime-config.json 설정 필요 |
+| HTTPS API 호스팅·도메인·지속 실행·비공개 볼륨 | Railway 실제 배포 SUCCESS 및 운영 점검 완료; RAILWAY.md 참고 |
+| GitHub Pages에 API 주소 연결 | 검증된 origin 설정; 실제 게시 여부는 해당 커밋의 Pages 검사를 기준으로 확인 |
 | 독립된 두 모바일 브라우저의 별도 HTTPS 프런트/API 테스트 | GitHub CI 통과; 실제 휴대폰은 별도 확인 |
 | 실제 휴대폰 두 대의 인터넷 접속 | 미검증 |
 
@@ -23,7 +23,7 @@
 - `FRONTEND_ORIGINS=https://bumblev95.github.io`를 설정한다. 임의 origin, 와일드카드 CORS, 공개 사진 URL을 허용하지 않는다.
 - HTTP 프록시는 SSE 스트림을 버퍼링하지 않아야 한다. 15초 heartbeat를 허용하고 idle timeout을 60초 이상으로 둔다.
 - 서버는 항상 실행한다. 정리 작업은 30초마다 실행되고 시작 시에도 실행된다. 방 생성 후 24시간부터 API·사진 접근은 즉시 거부된다. 서버 정지·파일 삭제 장애 중에는 물리 삭제가 늦어질 수 있으므로 운영 모니터링이 필요하다. 모든 저장 매체의 보관기간까지 이 코드만으로 보증하지 않는다.
-- 이 테스트 서버는 최대 100개의 임시 방과 방당 최대 8명을 허용한다. 상용 규모·상시 신고 검토·AI 분석은 별도 범위다.
+- Railway 런처는 최대 20개의 임시 방과 방당 최대 8명을 허용한다. 일반 서버의 기본 100개 제한과 구분한다. 상용 규모·상시 신고 검토·AI 분석은 별도 범위다.
 
 ## 실행
 
@@ -47,10 +47,10 @@ QUIZ_DOMAIN=실제-API-도메인 docker compose -f geuttae-uri/server/compose.ya
 
 ## 고정 GitHub Pages 주소 연결
 
-1. 실제 서버의 `/api/health`에서 버전 `0.3.0`과 `ok: true`를 확인한다.
+1. 실제 서버의 `/api/health`에서 버전 `0.3.1`과 `ok: true`를 확인한다.
 2. 별도 프런트 origin의 OPTIONS, 승인 전 접근 차단, 실제 업로드, 실시간 진행, 만료 정리를 확인한다.
 3. `geuttae-uri/runtime-config.json`의 `apiBase`를 실제 HTTPS origin으로 변경한다. **접근 키나 관리자 비밀값을 넣지 않는다.**
-4. 버전의 channel을 `친구와 멀티플레이 테스트`로 바꾸고 검증된 PR을 병합한다. 고정 주소는 계속 `https://bumblev95.github.io/geuttae-uri/`다. 현재 PR의 설정은 `apiBase: null`이므로 아직 공개 친구 방을 만들 수 없다.
+4. 검증된 PR을 병합하고 고정 주소 `https://bumblev95.github.io/geuttae-uri/`의 파일 일치와 렌더링 검사를 확인한다. 현재 릴리스의 channel은 `친구와 추억집 연결 체험판`이며 `runtime-config.json`은 검증된 Railway API origin을 사용한다. 게시 전에는 고정 주소의 업데이트 완료를 주장하지 않는다.
 5. 서로 다른 휴대폰 두 대와 가능하면 Wi-Fi/셀룰러의 서로 다른 네트워크로 아래 실기기 검증을 수행한다.
 
 ## 실기기 검증 기록 — 아직 미실행
@@ -76,4 +76,4 @@ QUIZ_DOMAIN=실제-API-도메인 docker compose -f geuttae-uri/server/compose.ya
 
 ## Integrated v0.3.1 memory-book acceptance
 
-The existing runtime-config remains unconfigured. Deploy PR #4 at its latest integrated commit, not the old v0.3.0 commit. Both consented and denied test photos must be used. Verify that only consented, revealed memories reach both connected approved players at completed finish; media files and saved transcripts are gone; fresh state/reconnect never replay the book. Report/end must not export. After finish, explicitly save before home/reload/tab close. No real purchase, membership or reward-ad entitlement is enabled.
+Deploy PR #4 at its latest integrated commit, not the old v0.3.0 commit. The runtime-config names the verified Railway API origin. Both consented and denied test photos must be used. Verify that only consented, revealed memories reach both connected approved players at completed finish; media files and saved transcripts are gone; fresh state/reconnect never replay the book. Report/end must not export. After finish, explicitly save before home/reload/tab close. No real purchase, membership or reward-ad entitlement is enabled.
