@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.7',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.8',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -29,6 +29,15 @@ try{
  await page.waitForFunction(()=>document.querySelector('#photo-pick img')?.src.startsWith('blob:'));
  assert.equal(await page.locator('[name="allowKeepsake"]').isChecked(),false);
  await page.locator('[name="prompt"]').fill('PRIVATE-NOT-FOR-EXPORT');await page.locator('[name="story"]').fill('PRIVATE-STORY');await page.locator('[name="confirmed"]').check();
+ await page.locator('[name="prompt"]').fill('   ');await page.locator('[name="confirmed"]').check();await page.locator('#question-form [type="submit"]').click();
+ assert.equal(await page.evaluate(()=>document.activeElement.name),'prompt');assert.match(await page.locator('#composer-error').innerText(),/질문을 적어/);
+ await page.locator('[name="prompt"]').fill('PRIVATE-NOT-FOR-EXPORT');
+ await page.locator('[name="option1"]').fill(await page.locator('[name="option0"]').inputValue());
+ await page.locator('[name="confirmed"]').check();await page.locator('#question-form [type="submit"]').click();
+ await page.getByText('같은 보기가 있어요. 서로 다르게 적어 주세요.',{exact:true}).first().waitFor();
+ assert.equal(await page.locator('[name="option1"]').getAttribute('aria-invalid'),'true');
+ await page.locator('[name="option1"]').fill('친구들과 산책하기');await page.locator('[name="confirmed"]').check();
+ assert.match(await page.locator('#composer-progress').innerText(),/✓ 사진 · ✓ 질문 · ✓ 보기 · ✓ 정답/);
  await page.locator('#question-form [type="submit"]').click();await page.locator('#modal').waitFor({state:'hidden'});
  await page.locator('[data-action="start"]').click();
  for(let round=0;round<3;round++){
@@ -67,7 +76,7 @@ try{
  assert.ok((await readFile(path.join(out,'downloaded-book.pdf'))).subarray(0,8).toString().startsWith('%PDF-1.4'));
  const longPDFEvent=page.waitForEvent('download',{timeout:120000});
  await page.evaluate(async()=>{
-  const {renderMemoryHTML}=await import('./releases/0.3.7/memory.js'),{downloadBookPDF}=await import('./releases/0.3.7/book-viewer.js');
+  const {renderMemoryHTML}=await import('./releases/0.3.8/memory.js'),{downloadBookPDF}=await import('./releases/0.3.8/book-viewer.js');
   const text='긴 이야기를 페이지 끝까지 안전하게 담는지 확인합니다. '.repeat(20);
   const players=Array.from({length:8},(_,i)=>({name:('참가자'+i+'가나다라마바사아자차카타파하').slice(0,16),score:100}));
   const entries=players.map((p,i)=>({round:i,photoId:'long'+i,author:p.name,story:text.slice(0,240),prompt:text.slice(0,160),options:Array(4).fill(text.slice(0,60)),correctIndex:0,responses:players.map(p=>({name:p.name,answer:text.slice(0,60),correct:false}))}));
@@ -81,7 +90,7 @@ try{
  assert.equal(await page.locator('.book-cover h1').innerText(),'우리 가족의 가을 <추억>');
  const chosenCover=await page.locator('.book-cover img').getAttribute('src');assert.equal(chosenCover,await page.locator('.memory-page img').nth(1).getAttribute('src'));
  // Version application remains blocked with a private album dialog open.
- await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.8';await route.fulfill({response:r,json:v});});
+ await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.9';await route.fulfill({response:r,json:v});});
  await page.evaluate(()=>document.getElementById('check-update').click());await page.locator('#apply-update').waitFor();assert.equal(await page.locator('#apply-update').isDisabled(),true);
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();const download=await downloadEvent;
  assert.equal(download.suggestedFilename(),'Then-Us-Memory-Book-TEST.html');await download.saveAs(path.join(out,'memory.html'));
