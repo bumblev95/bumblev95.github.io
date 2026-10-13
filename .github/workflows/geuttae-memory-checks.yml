@@ -24,7 +24,7 @@ jobs:
       - name: Check syntax and consent/export rules
         working-directory: geuttae-uri
         run: |
-          for file in releases/0.3.3/*.js; do node --check "$file"; done
+          for file in releases/0.3.4/*.js; do node --check "$file"; done
           npm test
       - name: Install Chromium
         working-directory: geuttae-uri
@@ -32,6 +32,9 @@ jobs:
       - name: Verify quiz, save permission, export, print and mobile layouts
         working-directory: geuttae-uri
         run: node tests/browser-qa.mjs
+      - name: Verify long photo journals and offline print layouts
+        working-directory: geuttae-uri
+        run: node tests/photobook-qa.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
