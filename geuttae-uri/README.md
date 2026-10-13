@@ -7,7 +7,9 @@
 - 공개 고정 주소: https://bumblev95.github.io/geuttae-uri/
 - 현재 공개 버전: v0.2.2, 가상 친구와 하는 사진 퀴즈/추억집 체험판.
 - PR #4의 통합 Draft: v0.3.1, 실제 멀티플레이 서버와 최신 추억집 템플릿 연결.
-- `runtime-config.json`은 `apiBase:null`. 공개 HTTPS 서버 계정/도메인이 연결되지 않았으므로 실제 친구 플레이를 배포 완료했다고 표시하지 않는다.
+- Railway 멀티플레이 테스트 서버는 2026-10-13 배포 SUCCESS: https://geuttae-api-test-production.up.railway.app/geuttae-uri/
+- 저장소의 `runtime-config.json`은 `apiBase:null`로 유지한다. Railway가 제공하는 테스트 페이지는 실제 API origin을 주입한다. 기존 고정 Pages 주소는 아직 v0.2.2이며 두 주소의 배포 상태를 구분한다.
+- 실제 서버에서 두 독립 API 참가자의 사진 업로드·SSE·재접속·출제 교대·점수·동의된 추억집 전달·종료 후 사진 접근 차단을 통과했다. 실제 휴대폰과 볼륨 파일 원격 검사, 백업 제외 및 계정 비용 한도 확인은 미실행이므로 고정 Pages 전환은 보류한다.
 - AI, 실제 결제, 실제 광고 SDK, Ultimate 구독, 성인 모드, 스토어 배포는 미연결.
 
 ## 게임
