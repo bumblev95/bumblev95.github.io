@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.3',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.4',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -47,12 +47,14 @@ try{
  await page.locator('[data-action="memory-preview"]').click();await page.locator('[data-action="memory-save"]').waitFor();
  assert.equal(await page.locator('.book-preview .memory-page').count(),2);
  assert.equal(await page.locator('.book-preview .memory-image').count(),3);
+ const sampleSize=await page.locator('.book-preview .memory-image').first().evaluate(el=>[el.naturalWidth,el.naturalHeight]);
+ assert.equal(sampleSize[0],1200);assert.ok(Math.abs(sampleSize[0]/sampleSize[1]-700/520)<.002);
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-NOT-FOR-EXPORT'));
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-STORY'));
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`preview width ${width}`);assert.equal(await page.locator('#modal').evaluate(el=>el.scrollWidth>el.clientWidth),false);}
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'memory-preview.png'),fullPage:true});
  // Version application remains blocked with a private album dialog open.
- await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.4';await route.fulfill({response:r,json:v});});
+ await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.5';await route.fulfill({response:r,json:v});});
  await page.evaluate(()=>document.getElementById('check-update').click());await page.locator('#apply-update').waitFor();assert.equal(await page.locator('#apply-update').isDisabled(),true);
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();const download=await downloadEvent;
  assert.equal(download.suggestedFilename(),'Then-Us-Memory-Book-TEST.html');await download.saveAs(path.join(out,'memory.html'));
@@ -91,6 +93,7 @@ try{
  await page.locator('#modal .modal-close').click();assert.equal(await page.evaluate(()=>document.activeElement?.dataset.action),'memory-preview');assert.equal(await page.locator('#apply-update').isDisabled(),false);
  await page.locator('[data-action="home"]').last().click();await page.locator('#modal [data-action="confirm"]').click();assert.equal(await page.evaluate(()=>document.body.dataset.screen),'home');
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
+ await page.getByRole('button',{name:'사진은 어떻게 보관되나요?',exact:true}).click();assert.equal(await page.locator('#modal').evaluate(el=>el.classList.contains('memory-modal')),false);await page.getByRole('button',{name:'닫기',exact:true}).click();
  assert.equal(await page.evaluate(()=>localStorage.length),0);assert.equal(await page.evaluate(()=>sessionStorage.length),0);assert.equal(await page.evaluate(()=>navigator.serviceWorker.getRegistrations().then(r=>r.length)),0);
  assert.ok(!requests.some(url=>url.includes('/api/')));assert.ok(!requests.some(url=>!url.startsWith(base)&&!url.startsWith('data:')&&!url.startsWith('blob:')&&!url.startsWith('file:')));
  assert.deepEqual(errors,[]);

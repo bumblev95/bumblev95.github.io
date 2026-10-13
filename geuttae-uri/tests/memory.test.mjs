@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.3.3/memory.js';
-import {setup,applyAction,viewFor} from '../releases/0.3.3/logic.js';
+import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.3.4/memory.js';
+import {setup,applyAction,viewFor} from '../releases/0.3.4/logic.js';
 const players=[{id:'a',name:'가영'},{id:'b',name:'잭'}];
 function revealed(){let s=setup(players);for(const p of players)s=applyAction(s,p.id,{type:'submitQuestion',photoId:p.id,prompt:'누가 기억할까?',options:['가','나','다','라'],correctIndex:0,story:'즐거운 날',confirmed:true});s=applyAction(s,'a',{type:'start'});return applyAction(s,'b',{type:'answer',choice:0,round:0});}
 test('only revealed, explicitly allowed memories can be captured',()=>{const v=viewFor(revealed(),'b');assert.equal(captureMemory(v,false),null);assert.equal(captureMemory(v,undefined),null);assert.equal(captureMemory({...v,phase:'question'},true),null);const entry=captureMemory(v,true);assert.equal(entry.author,'가영');assert.deepEqual(entry.responses,[{name:'잭',answer:'가',correct:true}]);assert.equal(entry.correctIndex,0);});
@@ -25,4 +25,21 @@ test('design values are allowlisted and cannot inject styles or executable marku
  const html=renderMemoryHTML(book,{}, {template:'"><script>evil()</script>',palette:'sage; background:url(https://tracker.test)'});
  assert.ok(html.includes('class="memory-book template-photobook palette-cream"'));
  assert.ok(!html.includes('evil()'));assert.ok(!html.includes('tracker.test'));
+});
+test('photo journal puts the supplied story before the complete quiz record without dropping answers',()=>{
+ const v=viewFor(revealed(),'b'),entry=captureMemory(v,true);
+ const book=buildMemoryBook({title:'우리 모임',date:'오늘',view:{...v,phase:'finished',endReason:'completed'},entries:[entry]});
+ const html=renderMemoryHTML(book,{a:'data:image/jpeg;base64,YQ=='}),start=html.indexOf('<article class="memory-page photo-page '),end=html.indexOf('<section class="book-appendix">');
+ assert.ok(start>=0&&end>start);const photoPage=html.slice(start,end),quiz=html.slice(end);
+ assert.ok(photoPage.includes(entry.story));assert.ok(!photoPage.includes(entry.prompt));assert.ok(!photoPage.includes('<ol'));
+ for(const text of [entry.prompt,...entry.options,entry.responses[0].name,entry.responses[0].answer])assert.ok(quiz.includes(text),text);
+ assert.ok(quiz.includes('✓ 정답'));assert.ok(quiz.includes('100점'));assert.ok(html.includes("script-src 'none'"));
+});
+test('a photo without a supplied story gets no invented journal text and missing images stay excluded',()=>{
+ const v=viewFor(revealed(),'b'),entry={...captureMemory(v,true),story:''};
+ const book=buildMemoryBook({title:'추억',date:'오늘',view:{...v,phase:'finished',endReason:'completed'},entries:[entry],sample:false});
+ const html=renderMemoryHTML(book,{}),photoPage=html.slice(html.indexOf('<article class="memory-page photo-page '),html.indexOf('<section class="book-appendix">'));
+ assert.ok(photoPage.includes('no-story'));assert.ok(!photoPage.includes('<blockquote>'));assert.ok(!photoPage.includes('journal-note'));
+ assert.ok(photoPage.includes('이 사진은 포함하지 않았어요.'));assert.ok(html.includes(entry.prompt));assert.ok(html.includes('무료 저장 체험 · 실제 결제 없음'));
+ assert.equal((html.match(/<img /g)||[]).length,0);
 });
