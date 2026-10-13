@@ -17,7 +17,7 @@
 | 초기 검증 브랜치 | codex/geuttae-uri-multiplayer-v030 (PR #4) |
 | Build context / root directory | 저장소 루트 (geuttae-uri/server로 좁히지 않음) |
 | Builder | Dockerfile |
-| Dockerfile path | geuttae-uri/server/Dockerfile |
+| Dockerfile path | geuttae-uri/server/Dockerfile.railway |
 | Start command | node geuttae-uri/server/src/railway.mjs |
 | 전용 비공개 volume mount | /data |
 | DATA_DIR | /data/geuttae-uri (Docker 이미지의 /app/data 기본값을 반드시 덮어씀) |
@@ -32,6 +32,8 @@
 | Volume backups | 예약 없음 + 수동 백업 없음 확인 |
 
 `railway.mjs`는 볼륨이나 HTTPS 도메인이 없으면 시작을 중단한다. 사진 저장 위치를 임시 파일시스템으로 자동 대체하지 않는다. 전용 볼륨과 그 안의 앱 디렉터리만 비재귀적으로 소유권/권한을 초기화하고, 네트워크 요청을 받기 전에 root 권한을 내려놓는다. 다른 서비스의 기존 볼륨에 이 launcher를 사용하지 않는다.
+
+Railway 전용 `Dockerfile.railway`는 런처를 기본 명령으로 실행한다. 사진 볼륨은 Railway 서비스의 `/data` 마운트로만 연결하며 Docker 이미지에 별도 `VOLUME`이나 `/app/data` 저장소를 선언하지 않는다. 기존 `Dockerfile`과 `compose.yaml`은 일반 Docker 호스트용으로 유지한다.
 
 초기 테스트 서버의 제한은 최대 20개 방, 방당 2–8명이다. 작은 볼륨에서 운영하는 파일럿을 위한 제한이며 상용 용량 검증은 별도다. 사진은 비공개 API 인증 후 전달한다.
 
