@@ -1,6 +1,8 @@
-# Railway 연결 — 그때 우리 v0.3.1
+# Railway 연결 — 그때 우리 v0.3.2
 
-상태: 2026-10-13 Railway 테스트 서버의 실제 배포가 SUCCESS로 완료됐다. 테스트 주소는 https://geuttae-api-test-production.up.railway.app/geuttae-uri/ 이다. API의 HTTPS/CORS/인증, 두 독립 참가자의 실제 JPG 업로드·SSE·재접속·출제 교대·동점 결과·저장 동의에 따른 추억집 전달·종료 후 사진 접근 차단을 확인했다.
+최신 배포: 2026-10-13 v0.3.2 배포 `1fc332b0-4f41-40c1-9626-924fc1bbbe35`가 SUCCESS다. `codex/geuttae-uri-ai-drafts-v032`의 `5b195d1db552cf2a8a26fa8ae884b2923ba5dc5e`에 고정했다. AI 관련 환경변수는 추가하지 않았고 health의 `aiEnabled:false`, 인증된 초안 요청의 503 거절을 확인했다. 두 독립 API 참가자의 전체 게임·동의된 추억집 전달·종료 후 사진 접근 차단을 이 배포에서도 재검증했다. 아래 초기 v0.3.1 운영 점검은 당시 기록이다.
+
+초기 상태: 2026-10-13 Railway 테스트 서버의 실제 배포가 SUCCESS로 완료됐다. 테스트 주소는 https://geuttae-api-test-production.up.railway.app/geuttae-uri/ 이다. API의 HTTPS/CORS/인증, 두 독립 참가자의 실제 JPG 업로드·SSE·재접속·출제 교대·동점 결과·저장 동의에 따른 추억집 전달·종료 후 사진 접근 차단을 확인했다.
 
 2026-10-13 Railway 대시보드와 실행 중인 컨테이너를 점검했다. 계정은 Trial이며 무료 크레딧 정책 범위로 유지한다. 사진 볼륨은 `No Backups`이고 현재 요금제에서는 새 백업·자동 일정·PITR를 만들 수 없다. 컨테이너에서 `/data`와 `/data/geuttae-uri` 권한 0700, 서비스 Node UID 1000, 종료된 네 방의 JPG 파일 0개와 삭제 대기 0개를 확인했다. 점검은 집계 결과만 출력하며 방 코드·접근 키·이야기·사진을 로그에 남기지 않았다. 유료 요금제 전환은 실행하지 않았다.
 
@@ -53,7 +55,7 @@ Railway의 상태 확인 호스트는 GET /api/health에만 허용한다. 같은
 node geuttae-uri/server/tools/check-public-server.mjs https://ACTUAL-API-DOMAIN
 ```
 
-이 검사는 GET/OPTIONS만 전송하며 방·사진·접근 키를 만들지 않는다. HTTPS 상태, v0.3.1 서버 응답, 캐시 금지, 정확한 Pages CORS, 업로드/인증 헤더와 외부 origin 차단을 확인한다. 통과해도 실제 멀티플레이 준비 완료로 표시하지 않으며 `runtime-config.json`을 자동 수정하지 않는다.
+이 검사는 GET/OPTIONS만 전송하며 방·사진·접근 키를 만들지 않는다. HTTPS 상태, 지원하는 v0.3.1/v0.3.2 서버 응답, 캐시 금지, 정확한 Pages CORS, 업로드/인증 헤더와 외부 origin 차단을 확인한다. 통과해도 실제 멀티플레이 준비 완료로 표시하지 않으며 `runtime-config.json`을 자동 수정하지 않는다.
 
 추가로 실제 배포에서 아래를 확인해야 한다.
 
