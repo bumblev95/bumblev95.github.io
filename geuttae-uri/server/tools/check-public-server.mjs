@@ -18,7 +18,7 @@ export async function checkPublicServer(apiBase, {fetchImpl = fetch} = {}) {
   require(response.headers.get('cache-control')?.includes('no-store'), 'The API response must not be cached.');
   require(response.headers.get('strict-transport-security')?.includes('max-age='), 'HTTPS/HSTS configuration is missing.');
   const health = await response.json();
-  require(health.ok === true && health.version === '0.3.0' && health.deployment === 'single-instance' && health.storage === 'private-server-files', 'The server is not the expected multiplayer backend.');
+  require(health.ok === true && health.version === '0.3.1' && health.deployment === 'single-instance' && health.storage === 'private-server-files', 'The server is not the expected multiplayer backend.');
   result.push('HTTPS API health, version, no-store and explicit Pages origin');
   response = await request('/api/rooms', {method: 'OPTIONS', headers: {
     Origin: frontend, 'Access-Control-Request-Method': 'POST',

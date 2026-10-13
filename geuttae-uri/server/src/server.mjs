@@ -4,7 +4,8 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.3.0/logic.js';
+import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.3.1/logic.js';
+import {captureMemory,buildMemoryBook} from '../../releases/0.3.1/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -93,26 +94,39 @@ export async function createApp(options={}){
  }
  function activeSession(room,req){const s=sessionFor(room,req);check(s&&s.status==='active',403,'참가 승인을 받은 뒤 이용할 수 있어요.');return s;}
  function safeState(room,s){
-  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.0',revision:room.revision};
+  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.1',revision:room.revision};
   if(s.status!=='active')return {...base,nickname:s.name};
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
  }
- function publish(room){
+ function publish(room,memorySnapshot=null){
   for(const [res,id] of streams.get(room.code)||[]){
    const s=room.sessions.find(x=>x.id===id);if(!s)continue;
-   try{res.write('data: '+JSON.stringify(safeState(room,s))+'\n\n');if(!['active','pending'].includes(s.status)){res.end();streams.get(room.code)?.delete(res);}}catch{res.destroy();}
+   try{res.write('data: '+JSON.stringify({...safeState(room,s),...(s.status==='active'&&memorySnapshot?{memorySnapshot}:{})})+'\n\n');if(!['active','pending'].includes(s.status)){res.end();streams.get(room.code)?.delete(res);}}catch{res.destroy();}
   }
  }
  function closeStreams(code){for(const [res] of streams.get(code)||[]){try{res.write('event: expired\ndata: {}\n\n');res.end();}catch{res.destroy();}}streams.delete(code);}
+ async function memorySnapshotFor(room){
+  const entries=(room.memories||[]).filter(e=>{
+   const photo=room.photos[e.photoId];
+   return photo?.allowKeepsake===true&&!photo.deleting&&room.sessions.some(s=>s.id===photo.ownerId&&s.status==='active');
+  });
+  if(!entries.length)return null;
+  const images={},missing=[];
+  for(const entry of entries){
+   try{const bytes=await fs.readFile(mediaOf(room.code,entry.photoId));images[entry.photoId]='data:image/jpeg;base64,'+bytes.toString('base64');}
+   catch{missing.push(entry.photoId);}
+  }
+  return {createdAt:room.createdAt,book:buildMemoryBook({title:room.title,date:new Date(room.createdAt).toLocaleDateString('ko-KR',{timeZone:'UTC'}),view:viewFor(room.game,room.game.hostId),entries,sample:false}),images,missing};
+ }
  async function deletePhotos(room){
   // Phase is saved before this function; a failed delete never restores access.
   await fs.rm(path.join(roomsDir,room.code,'media'),{recursive:true,force:true});
-  room.photos={};room.deletion='done';room.game.questions={};await save(room);
+  room.photos={};room.memories=[];room.deletion='done';room.game.questions={};await save(room);
  }
  async function expire(room){
   closeStreams(room.code);
-  room.game={...room.game,phase:'finished',questions:{},answers:{},endReason:'expired'};room.deletion='pending';
+  room.game={...room.game,phase:'finished',questions:{},answers:{},endReason:'expired'};room.memories=[];room.deletion='pending';
   await save(room);
   try{await fs.rm(path.join(roomsDir,room.code),{recursive:true,force:true});}catch{/* Cleanup loop retries; reads remain denied by expiresAt. */}
  }
@@ -161,7 +175,7 @@ export async function createApp(options={}){
     return respond(res,204,Buffer.alloc(0),{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Photo-Consent','Access-Control-Max-Age':'600'});
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
-   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.0',aiEnabled:false,storage:'private-server-files',deployment:'single-instance'});
+   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.1',aiEnabled:false,storage:'private-server-files',deployment:'single-instance'});
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
     check(nameValid(b.nickname),400,'닉네임을 1~16자로 적어 주세요.');
@@ -169,7 +183,7 @@ export async function createApp(options={}){
     check(b.title===undefined||(typeof b.title==='string'&&b.title.length<=40),400,'모임 이름은 40자 이내로 적어 주세요.');
     check((await fs.readdir(roomsDir)).length<(options.maxRooms||100),503,'현재 모임이 가득 찼어요. 잠시 뒤 다시 시도해 주세요.');
     const code=roomCode(),secret=token(),id=randomUUID();
-    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active'}],photos:{},deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}])};
+    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active'}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}])};
     await fs.mkdir(path.join(roomsDir,code),{recursive:false,mode:0o700});await save(room);
     return respond(res,201,{...safeState(room,room.sessions[0]),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
    }
@@ -238,16 +252,22 @@ export async function createApp(options={}){
      }
      check(route==='action',404,'지원하지 않는 요청이에요.');
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
-     if(b.type==='submitQuestion')check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');
+     if(b.type==='submitQuestion'){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
      if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.order[room.game.round],reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
      const oldPhoto=room.game.questions[s.id]?.photoId;
      room.game=applyAction(room.game,s.id,b);
-     if(room.game.phase==='finished')room.deletion='pending';
+     if(room.game.phase==='reveal'&&room.game.questions[room.game.order[room.game.round]]?.allowKeepsake===true){
+      const entry=captureMemory(viewFor(room.game,s.id),true);
+      if(entry)room.memories=[...(room.memories||[]).filter(e=>e.round!==entry.round),entry];
+     }
+     // The final allowed snapshot is transient: never written to disk or replayed.
+     const memorySnapshot=room.game.phase==='finished'&&room.game.endReason==='completed'?await memorySnapshotFor(room):null;
+     if(room.game.phase==='finished'){room.deletion='pending';room.memories=[];}
      await save(room);
      if(['submitQuestion','removeQuestion'].includes(b.type)&&oldPhoto&&oldPhoto!==room.game.questions[s.id]?.photoId){await dropPhoto(room,oldPhoto);}
      if(room.game.phase==='finished'){try{await deletePhotos(room);}catch{room.deletion='pending';await save(room);}}
-     publish(room);return respond(res,200,safeState(room,s));
+     publish(room,memorySnapshot);return respond(res,200,{...safeState(room,s),...(memorySnapshot?{memorySnapshot}:{})});
     });
    }
    if(u.pathname.startsWith('/api/'))throw new ApiError(404,'방 주소를 확인해 주세요.');
@@ -255,7 +275,7 @@ export async function createApp(options={}){
    if(u.pathname==='/')return respond(res,302,Buffer.alloc(0),{Location:'/geuttae-uri/'});
    check(u.pathname.startsWith('/geuttae-uri/'),404,'찾을 수 없는 파일이에요.');
    let filename=u.pathname==='/geuttae-uri/'?'index.html':decodeURIComponent(u.pathname.slice('/geuttae-uri/'.length));
-   check(filename==='index.html'||['boot-v1.js','boot-v2.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
+   check(filename==='index.html'||['boot-v1.js','boot-v2.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
    let file=path.resolve(publicDir,filename);
    check(file.startsWith(publicDir+path.sep),404,'찾을 수 없는 파일이에요.');
    const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json'};
@@ -279,7 +299,7 @@ export async function createApp(options={}){
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const app=await createApp();const port=Number(process.env.PORT||3000),host=process.env.HOST||'127.0.0.1';
  app.server.listen(port,host,()=>{
-  console.log(`\n그때 우리 v0.3.0 — http://localhost:${port}/geuttae-uri/`);
+  console.log(`\n그때 우리 v0.3.1 — http://localhost:${port}/geuttae-uri/`);
   if(host==='0.0.0.0')for(const addresses of Object.values(safeInterfaces()))for(const a of addresses||[])if(a.family==='IPv4'&&!a.internal)console.log(`같은 Wi-Fi 휴대폰: http://${a.address}:${port}/geuttae-uri/`);
   if(!process.env.PUBLIC_ORIGIN)console.log('로컬 테스트용 HTTP입니다. 민감한 사진은 사용하지 마세요.');
   console.log('종료: Ctrl+C\n');

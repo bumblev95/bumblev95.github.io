@@ -73,3 +73,7 @@ QUIZ_DOMAIN=실제-API-도메인 docker compose -f geuttae-uri/server/compose.ya
 초대 URL에는 방 코드만 들어간다. 서버는 참가자마다 256비트 접근 키를 생성하고 디스크에는 SHA-256 해시만 저장한다. 클라이언트는 해당 탭의 sessionStorage에 방 접근 키만 저장하고 API/SSE/사진 요청에 Authorization 헤더를 사용한다. 다른 탭·브라우저·휴대폰은 새 참가자로 승인받아야 한다. 사진은 인증된 fetch 후 메모리의 blob URL로 표시하고 종료·퇴장·권한 변경 시 해제한다. 브라우저의 원본 파일은 변경하지 않는다.
 
 축소 JPG는 클라이언트 canvas에서 다시 생성하고 서버에서도 JPEG 크기·형식과 메타데이터 제거를 검증한다. 사진·질문·접근 키를 요청 로그에 기록하지 않는다. 앱은 캐시를 금지하지만 승인된 참가자의 캡처나 별도 다운로드까지 막을 수는 없다.
+
+## Integrated v0.3.1 memory-book acceptance
+
+The existing runtime-config remains unconfigured. Deploy PR #4 at its latest integrated commit, not the old v0.3.0 commit. Both consented and denied test photos must be used. Verify that only consented, revealed memories reach both connected approved players at completed finish; media files and saved transcripts are gone; fresh state/reconnect never replay the book. Report/end must not export. After finish, explicitly save before home/reload/tab close. No real purchase, membership or reward-ad entitlement is enabled.

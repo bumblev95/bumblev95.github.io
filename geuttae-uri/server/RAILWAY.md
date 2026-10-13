@@ -1,4 +1,4 @@
-# Railway 연결 — 그때 우리 v0.3.0
+# Railway 연결 — 그때 우리 v0.3.1
 
 상태: 서버 배포용 코드와 검사는 준비했지만 Railway 계정/서비스 연결과 실제 공개 배포는 아직 하지 않았다. 이 문서만으로 서버가 생성되거나 요금제가 변경되지 않는다. 고정 Pages 주소와 다른 홈페이지 콘텐츠는 유지한다.
 
@@ -47,7 +47,7 @@ Railway의 상태 확인 호스트는 GET /api/health에만 허용한다. 같은
 node geuttae-uri/server/tools/check-public-server.mjs https://ACTUAL-API-DOMAIN
 ```
 
-이 검사는 GET/OPTIONS만 전송하며 방·사진·접근 키를 만들지 않는다. HTTPS 상태, v0.3.0 서버 응답, 캐시 금지, 정확한 Pages CORS, 업로드/인증 헤더와 외부 origin 차단을 확인한다. 통과해도 실제 멀티플레이 준비 완료로 표시하지 않으며 `runtime-config.json`을 자동 수정하지 않는다.
+이 검사는 GET/OPTIONS만 전송하며 방·사진·접근 키를 만들지 않는다. HTTPS 상태, v0.3.1 서버 응답, 캐시 금지, 정확한 Pages CORS, 업로드/인증 헤더와 외부 origin 차단을 확인한다. 통과해도 실제 멀티플레이 준비 완료로 표시하지 않으며 `runtime-config.json`을 자동 수정하지 않는다.
 
 추가로 실제 배포에서 아래를 확인해야 한다.
 
@@ -76,3 +76,7 @@ node geuttae-uri/server/tools/check-public-server.mjs https://ACTUAL-API-DOMAIN
 - 볼륨 마운트·런타임 변수·권한: https://docs.railway.com/volumes
 - 백업 보관: https://docs.railway.com/volumes/backups
 - 설정 파일 전환: https://docs.railway.com/config-as-code/reference
+
+## v0.3.1 추억집 통합 검증
+
+PR #4는 최신 main(v0.2.2)을 병합한 v0.3.1을 포함한다. 초기 검증 브랜치는 기존 codex/geuttae-uri-multiplayer-v030 그대로 유지한다. 실제 사진별 저장 동의, 종료 시 연결된 두 참가자에게 허용된 추억집 전달, 서버 사진·추억집 내용 삭제, 신고/중도 종료 시 저장 제외를 추가 검증한다. 새로고침 후 게임 진행은 복원되지만, 완료된 추억집은 서버 삭제 후 다시 받을 수 없으므로 먼저 파일로 저장해야 한다. 실제 결제와 광고는 아직 연결하지 않는다.

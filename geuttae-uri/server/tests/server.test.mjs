@@ -69,3 +69,60 @@ test('SSE score changes reach both players with role-specific views',async t=>{
   for(const events of [x,y]){const r=await events.next(v=>v.view?.phase==='reveal');assert.equal(r.view.players.find(p=>p.id===b.id).score,100);assert.equal(r.view.players.find(p=>p.id===a.id).score,0);}
  }finally{await x.close();await y.close();}
 });
+
+test('save permission defaults off, rejects non-booleans and can only be changed by the photo owner',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);
+ const id=await h.question(a);
+ const action={type:'submitQuestion',photoId:id,prompt:'우리 추억은?',options:['바다','산','카페','집'],correctIndex:0,story:'SECRET-STORY',confirmed:true};
+ assert.equal((await h.call(a,'state')).data.view.myQuestion.allowKeepsake,false);
+ assert.equal((await h.call(a,'action',{...action,allowKeepsake:'true'})).status,409);
+ assert.equal((await h.call(b,'action',{...action,allowKeepsake:true})).status,403);
+ assert.equal((await h.call(a,'action',{...action,allowKeepsake:true})).data.view.myQuestion.allowKeepsake,true);
+ assert.equal((await h.call(a,'action',{...action,allowKeepsake:false})).data.view.myQuestion.allowKeepsake,false);
+ await h.question(b);await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});await h.call(a,'action',{type:'answer',round:1,choice:0});
+ assert.equal((await h.call(a,'action',{type:'next',round:1})).data.memorySnapshot,undefined);
+});
+
+async function allowedQuestion(h,p){
+ const id=await h.question(p);
+ assert.equal((await h.call(p,'action',{type:'submitQuestion',photoId:id,prompt:'ALLOWED-QUESTION',options:['바다','산','카페','집'],correctIndex:0,story:'ALLOWED-STORY',confirmed:true,allowKeepsake:true})).status,200);
+ return id;
+}
+test('completed finish delivers only consented revealed content to approved callers and SSE, then purges media and transcript',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a,'친구B');await h.approve(a,b);
+ const allowed=await allowedQuestion(h,a),denied=await h.question(b),pending=await h.join(a,'미승인');
+ // Deny before start; a blocked session cannot receive the completed snapshot.
+ await h.call(a,'deny',{playerId:pending.id});
+ await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});
+ await h.restart();assert.equal((await h.call(b,'state')).data.view.phase,'reveal');
+ const events=await eventReader(h,b);
+ try{
+  await h.call(a,'action',{type:'next',round:0});await h.call(a,'action',{type:'answer',round:1,choice:0});
+  const finish=await h.call(a,'action',{type:'next',round:1});
+  const received=await events.next(v=>v.view?.phase==='finished');
+  assert.deepEqual(received.memorySnapshot,finish.data.memorySnapshot);
+  const snap=finish.data.memorySnapshot;assert.equal(snap.book.sample,false);assert.equal(snap.book.entries.length,1);assert.equal(snap.book.entries[0].photoId,allowed);
+  assert.equal(snap.book.entries[0].responses[0].correct,true);assert.equal(snap.book.entries[0].responses[0].name,'친구B');
+  assert.deepEqual(Object.keys(snap.images),[allowed]);assert.ok(snap.images[allowed].startsWith('data:image/jpeg;base64,'));
+  const serialized=JSON.stringify(snap);assert.ok(!serialized.includes(denied));assert.ok(!serialized.includes('SECRET-STORY'));assert.ok(!serialized.includes('tokenHash'));
+  assert.equal(finish.data.mediaStatus,'done');await assert.rejects(access(path.join(h.dir,'rooms',a.code,'media')));
+  const disk=await readFile(path.join(h.dir,'rooms',a.code,'room.json'),'utf8');
+  assert.ok(!disk.includes('ALLOWED-STORY'));assert.ok(!disk.includes('ALLOWED-QUESTION'));assert.ok(!disk.includes('SECRET-STORY'));assert.ok(!disk.includes('data:image/'));
+  assert.deepEqual(JSON.parse(disk).memories,[]);
+  for(const p of [a,b,pending])assert.equal((await h.call(p,'state')).data.memorySnapshot,undefined);
+  const other=await h.create('별도방');assert.equal((await h.request(`/api/rooms/${a.code}/state`,{cookie:other.cookie})).status,401);
+  await h.restart();assert.equal((await h.call(a,'state')).data.memorySnapshot,undefined);
+ }finally{await events.close();}
+});
+for(const type of ['report','end'])test(`${type} after an allowed reveal never exports a book and purges its transcript`,async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await allowedQuestion(h,a);await h.question(b);
+ await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});
+ const finish=await h.call(a,'action',{type,reason:'privacy'});assert.equal(finish.data.memorySnapshot,undefined);assert.equal(finish.data.mediaStatus,'done');
+ assert.equal((await h.call(b,'photo/'+id)).status,410);const disk=await readFile(path.join(h.dir,'rooms',a.code,'room.json'),'utf8');assert.ok(!disk.includes('ALLOWED-STORY'));assert.deepEqual(JSON.parse(disk).memories,[]);
+});
+test('a missing authorized JPEG does not prevent finish/delete and is explicitly omitted from the export images',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await allowedQuestion(h,a);await h.question(b);
+ await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});await h.call(a,'action',{type:'answer',round:1,choice:0});
+ await rm(path.join(h.dir,'rooms',a.code,'media',id+'.jpg'));const finish=await h.call(a,'action',{type:'next',round:1});
+ assert.equal(finish.status,200);assert.equal(finish.data.mediaStatus,'done');assert.deepEqual(finish.data.memorySnapshot.missing,[id]);assert.deepEqual(finish.data.memorySnapshot.images,{});
+});
