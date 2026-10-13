@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.5',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.3.6',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -67,7 +67,7 @@ try{
  assert.ok((await readFile(path.join(out,'downloaded-book.pdf'))).subarray(0,8).toString().startsWith('%PDF-1.4'));
  const longPDFEvent=page.waitForEvent('download',{timeout:120000});
  await page.evaluate(async()=>{
-  const {renderMemoryHTML}=await import('./releases/0.3.5/memory.js'),{downloadBookPDF}=await import('./releases/0.3.5/book-viewer.js');
+  const {renderMemoryHTML}=await import('./releases/0.3.6/memory.js'),{downloadBookPDF}=await import('./releases/0.3.6/book-viewer.js');
   const text='긴 이야기를 페이지 끝까지 안전하게 담는지 확인합니다. '.repeat(20);
   const players=Array.from({length:8},(_,i)=>({name:('참가자'+i+'가나다라마바사아자차카타파하').slice(0,16),score:100}));
   const entries=players.map((p,i)=>({round:i,photoId:'long'+i,author:p.name,story:text.slice(0,240),prompt:text.slice(0,160),options:Array(4).fill(text.slice(0,60)),correctIndex:0,responses:players.map(p=>({name:p.name,answer:text.slice(0,60),correct:false}))}));
@@ -77,15 +77,18 @@ try{
  });
  const longPDF=await longPDFEvent;await longPDF.saveAs(path.join(out,'downloaded-long-book.pdf'));
  // Version application remains blocked with a private album dialog open.
- await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.6';await route.fulfill({response:r,json:v});});
+ await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.3.7';await route.fulfill({response:r,json:v});});
  await page.evaluate(()=>document.getElementById('check-update').click());await page.locator('#apply-update').waitFor();assert.equal(await page.locator('#apply-update').isDisabled(),true);
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();const download=await downloadEvent;
  assert.equal(download.suggestedFilename(),'Then-Us-Memory-Book-TEST.html');await download.saveAs(path.join(out,'memory.html'));
  const album=await readFile(path.join(out,'memory.html'),'utf8');assert.ok(!album.includes('PRIVATE-STORY'));assert.ok(!album.includes('PRIVATE-NOT-FOR-EXPORT'));assert.ok(album.includes('실제 결제 없음'));assert.ok(album.includes('data:image/jpeg;base64,'));
+ assert.ok(!album.includes('<ol class="options">'));assert.ok(!album.includes('<div class="responses">'));assert.ok(album.includes('class="answer-only"'));
  assert.ok(!album.includes('blob:'));assert.ok(!album.includes('DEMO2026'));assert.ok(!album.includes('<script'));
+ await page.locator('#memory-choices').check();
  // All styles and palettes use the same preview/export markup; check mobile and print.
  for(const template of ['photobook','polaroid','album']){
    await page.locator('#memory-template').selectOption(template);
+   assert.equal(await page.locator('#memory-choices').isChecked(),true);
    for(const palette of ['cream','peach','sage']){
      await page.locator('#memory-palette').selectOption(palette);
      assert.equal(await page.locator(`.book-preview .template-${template}.palette-${palette}`).count(),1);
@@ -100,7 +103,7 @@ try{
    const pending=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();
    const chosen=await pending;const file=path.join(out,`${template}.html`);await chosen.saveAs(file);
    const content=await readFile(file,'utf8');assert.ok(content.includes(`class="memory-book template-${template} palette-sage"`));
-   assert.ok(!content.includes('PRIVATE-STORY'));assert.ok(!content.includes('PRIVATE-NOT-FOR-EXPORT'));
+   assert.ok(content.includes('<ol class="options">'));assert.ok(content.includes('<div class="responses">'));assert.ok(!content.includes('PRIVATE-STORY'));assert.ok(!content.includes('PRIVATE-NOT-FOR-EXPORT'));
    const saved=await context.newPage();await saved.goto('file://'+file);await saved.locator('.memory-image').first().waitFor();
    assert.equal(await saved.locator('.book-cover').count(),1);assert.equal(await saved.locator('.book-ending').count(),1);
    assert.equal(await saved.locator('.memory-page').count(),2);
