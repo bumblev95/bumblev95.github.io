@@ -47,6 +47,8 @@ try{
  await page.locator('[data-action="memory-preview"]').click();await page.locator('[data-action="memory-save"]').waitFor();
  assert.equal(await page.locator('.book-preview .memory-page').count(),2);
  assert.equal(await page.locator('.book-preview .memory-image').count(),3);
+ const sampleSize=await page.locator('.book-preview .memory-image').first().evaluate(el=>[el.naturalWidth,el.naturalHeight]);
+ assert.equal(sampleSize[0],1200);assert.ok(Math.abs(sampleSize[0]/sampleSize[1]-700/520)<.002);
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-NOT-FOR-EXPORT'));
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-STORY'));
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`preview width ${width}`);assert.equal(await page.locator('#modal').evaluate(el=>el.scrollWidth>el.clientWidth),false);}

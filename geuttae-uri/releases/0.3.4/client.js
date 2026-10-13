@@ -163,8 +163,12 @@ async function photoForMemory(id){
  const src=photoSrc(id);
  const image=new Image();image.src=src;
  await image.decode();
- const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(image.naturalWidth,image.naturalHeight));
- canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+ // These bundled vector samples have a 700 × 520 viewBox. Rasterize them at
+ // book resolution instead of the browser's small default SVG image size.
+ const vectorSample=['seaside.svg','picnic.svg','cafe.svg'].some(name=>src===asset(name));
+ const width=vectorSample?700:image.naturalWidth,height=vectorSample?520:image.naturalHeight;
+ const canvas=document.createElement('canvas'),scale=vectorSample?1200/Math.max(width,height):Math.min(1,1200/Math.max(width,height));
+ canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));
  const ctx=canvas.getContext('2d');ctx.fillStyle='#fffdf5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);
  return canvas.toDataURL('image/jpeg',.8);
 }
