@@ -57,7 +57,7 @@ try{
  assert.match(await page.locator('.memory-offer').innerText(),/US\$0.99/);
  assert.match(await page.locator('.memory-offer').innerText(),/추억 2개/);
  await page.screenshot({path:path.join(out,'results.png'),fullPage:true,animations:'disabled'});
- await page.locator('[data-action="memory-preview"]').click();await page.locator('[data-action="memory-save"]').waitFor();
+ await page.locator('[data-action="memory-preview"]').click();await page.locator('[data-action="memory-save"]').waitFor();await page.locator('#memory-customize').evaluate(el=>el.open=true);
  assert.equal(await page.locator('.book-preview .memory-page').count(),2);
  assert.equal(await page.locator('.book-preview .memory-image').count(),3);
  assert.equal(await page.locator('.book-appendix').count(),0);assert.equal(await page.locator('#memory-palette option').count(),6);

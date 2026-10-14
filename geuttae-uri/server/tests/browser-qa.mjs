@@ -95,7 +95,7 @@ try{
  for(const p of [a,b]){await p.waitForFunction(()=>document.body.dataset.screen==='finished');assert.match(await p.locator('#app').innerText(),/공동 기억왕/);assert.match(await p.locator('#app').innerText(),/서버의 임시 사진을 삭제/);assert.equal(await p.locator('.ranking .score').count(),2);}
  // The finishing caller and the other SSE client both receive the same authorized book.
  for(const p of [a,b]){
-  await p.locator('[data-action="memory-preview"]').click();await p.locator('[data-action="memory-save"]').waitFor();
+  await p.locator('[data-action="memory-preview"]').click();await p.locator('[data-action="memory-save"]').waitFor();await p.locator('#memory-customize').evaluate(el=>el.open=true);
   assert.equal(await p.locator('.book-preview .memory-page').count(),1);
   assert.equal(await p.locator('.book-preview .memory-image').count(),2);
   await p.getByRole('button',{name:'다음 페이지',exact:true}).click();
