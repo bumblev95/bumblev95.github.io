@@ -1,0 +1,81 @@
+name: Build genuine BumbleV AI promotional media
+
+on:
+  # First publish after the reviewed script is merged. Later use Run workflow.
+  push:
+    branches: [main]
+    paths:
+      - "scripts/record_bumblev_marketing_media.py"
+      - ".github/workflows/builtwithbumblevai-media.yml"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/record_bumblev_marketing_media.py"
+      - ".github/workflows/builtwithbumblevai-media.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: builtwithbumblevai-public-media
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Python source
+        run: python -m py_compile scripts/record_bumblev_marketing_media.py
+
+  capture-and-publish:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Chromium, video encoder and Korean fonts
+        run: |
+          python -m pip install "playwright>=1.57,<2" "Pillow>=11,<13"
+          python -m playwright install --with-deps chromium
+          sudo apt-get install -y ffmpeg fonts-noto-cjk
+          ffmpeg -version | head -2
+      - name: Record live projects and render real bilingual demos
+        run: python scripts/record_bumblev_marketing_media.py
+      - name: Confirm genuine file output
+        run: |
+          test -s builtwithbumblevai-media/aion2-guide-en.mp4
+          test -s builtwithbumblevai-media/aion2-guide-ko.mp4
+          test -s builtwithbumblevai-media/sp500-dashboard-en.mp4
+          test -s builtwithbumblevai-media/sp500-dashboard-ko.mp4
+          test -s builtwithbumblevai-media/aion2-classes.webp
+          test -s builtwithbumblevai-media/sp500-home.webp
+          test -s builtwithbumblevai-media/manifest.json
+          du -ah builtwithbumblevai-media/ | tail -20
+      - name: Publish only the dedicated media directory on public GitHub Pages
+        run: |
+          git add builtwithbumblevai-media/
+          if git diff --staged --quiet; then
+            echo "No changed real media"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "media: publish real AION2 and S&P500 bilingual demos"
+          git push origin HEAD:main
+      - name: Archive exact captured media
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bumblevai-public-blog-demos
+          path: builtwithbumblevai-media/
+          retention-days: 14
+          if-no-files-found: warn
+          compression-level: 1
