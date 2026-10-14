@@ -4,7 +4,7 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.0/logic.js';
+import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.1/logic.js';
 import {captureMemory,buildMemoryBook} from '../../releases/0.3.3/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
@@ -365,7 +365,8 @@ export async function createApp(options={}){
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
      if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.order[room.game.round],reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
      const oldPhoto=room.game.questions[s.id]?.photoId;
-     room.game=applyAction(room.game,s.id,b);
+     const serverPoints=room.roundDeadlineAt&&room.timeLimitSeconds?Math.round(100*Math.max(0,Math.min(1,(room.roundDeadlineAt-gameNow())/(room.timeLimitSeconds*1000)))):100;
+     room.game=applyAction(room.game,s.id,{...b,serverPoints});
      if(['start','next'].includes(b.type))room.roundDeadlineAt=room.game.phase==='question'&&room.timeLimitSeconds?gameNow()+room.timeLimitSeconds*1000:null;
      if(room.game.phase!=='question')room.roundDeadlineAt=null;
      if(room.game.phase!=='lobby')cancelAi(room.code);
