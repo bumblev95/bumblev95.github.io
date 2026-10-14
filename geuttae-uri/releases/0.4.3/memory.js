@@ -1,0 +1,135 @@
+// Local, explicit export only. This module never stores photos or calls a payment API.
+export const memoryProduct = Object.freeze({id:'memory-pack-one-game',price:'US$0.99',billing:'one-time',paymentEnabled:false});
+export const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short = (value, limit) => String(value ?? '').slice(0, limit);
+
+export function captureMemory(view, consent) {
+  const q = view?.current;
+  if (view?.phase !== 'reveal' || !q || consent !== true) return null;
+  if (!Number.isInteger(q.correctIndex) || q.correctIndex < 0 || q.correctIndex > 3) return null;
+  const options = q.options.map(x => short(x,60));
+  return {round:view.round,photoId:q.photoId,author:short(view.players.find(p=>p.id===q.authorId)?.name,16),
+    prompt:short(q.prompt,160),options,correctIndex:q.correctIndex,story:short(q.story,240),
+    responses:view.players.filter(p=>p.id!==q.authorId).map(p=>({name:short(p.name,16),answer:Number.isInteger(view.answers[p.id])?options[view.answers[p.id]]:'미응답',correct:view.answers[p.id]===q.correctIndex}))};
+}
+
+export function buildMemoryBook({title,date,view,entries,sample=true}) {
+  if (view?.phase !== 'finished' || view.endReason !== 'completed') throw new Error('게임을 끝까지 마친 뒤 추억집을 만들 수 있어요.');
+  return {title:short(title,40),date:short(date,40),sample:sample===true,scoring:view.scoring!==false,
+    players:view.players.map(p=>({name:short(p.name,16),score:p.score})).sort((a,b)=>b.score-a.score),
+    entries:[...entries].sort((a,b)=>a.round-b.round).slice(0,8)};
+}
+
+
+export const memoryTemplates = Object.freeze([
+  {id:'photobook',name:'포토북'}, {id:'polaroid',name:'폴라로이드'}, {id:'album',name:'깔끔한 앨범'}
+]);
+export const memoryPalettes = Object.freeze([
+  {id:'cream',name:'크림'}, {id:'peach',name:'피치'}, {id:'sage',name:'그린'}
+]);
+const safeImage = image => typeof image==='string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image) && image.length<1_500_000;
+const photo = image => safeImage(image)?`<img class="memory-image" src="${image}" alt="저장이 허용된 추억 사진">`:'<div class="photo-empty">이 사진은 포함하지 않았어요.</div>';
+
+// Shared, scoped styles make the preview and offline export use the same templates.
+export const memoryStyleCSS = `
+.memory-book{--paper:#fbf8f1;--tint:#eee8da;--accent:#69745a;--ink:#343b33;--line:#dedbce;color:var(--ink);background:var(--paper);font:14px/1.7 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;max-width:760px;margin:auto;padding:24px;overflow-wrap:anywhere;letter-spacing:normal;font-synthesis:none}
+.memory-book.palette-peach{--paper:#fff5ee;--tint:#f4dfd1;--accent:#8c5849;--line:#e8d4c8}
+.memory-book.palette-sage{--paper:#f4f7ef;--tint:#e0e8d5;--accent:#54644b;--line:#d4ddcb}
+.memory-book *{box-sizing:border-box}.memory-book h1,.memory-book h2,.memory-book p{margin:0}.memory-book p{font:inherit;color:inherit;line-height:inherit}.memory-book h1,.memory-book h2{font-weight:700}.memory-book h1{font-size:36px;line-height:1.4;color:var(--accent)}.memory-book h2{font-size:23px;line-height:1.5;margin:20px 0 12px}.memory-book .kicker{font-size:11px;letter-spacing:.1em;color:var(--accent);margin:12px 0}.memory-book .sample,.memory-book .print-note{font-size:11px;padding:10px 12px;margin:12px 0;background:var(--tint);border-radius:8px}
+.memory-book .book-cover,.memory-book .memory-page,.memory-book .book-ending{border:1px solid var(--line);background:#fffefa;border-radius:16px;padding:24px;margin:20px 0}.memory-book .book-cover{text-align:center;padding:32px 24px}.memory-book .cover-meta{margin:12px 0;color:var(--accent)}.memory-book .photo-frame{margin:16px 0}.memory-book .memory-image{display:block;width:100%;height:290px;object-fit:contain;background:var(--tint);border-radius:8px;margin:0}.memory-book .photo-empty{background:var(--tint);padding:30px;text-align:center}.memory-book .cover-count{font-size:12px;margin-top:16px}.memory-book .options{padding-left:25px;margin:12px 0}.memory-book .options li{padding:5px 8px}.memory-book .correct{background:var(--tint);color:var(--accent);border-radius:6px}.memory-book blockquote{padding:14px 16px;background:var(--tint);border-radius:8px;margin:16px 0;white-space:pre-wrap;font-size:13px}.memory-book .responses{border-top:1px solid var(--line);padding-top:12px;font-size:12px}.memory-book .responses p{margin:5px 0}.memory-book .responses span{color:var(--accent)}.memory-book .people{display:block;list-style:none;margin:20px 0;padding:0}.memory-book .people li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.memory-book .winner-names{font-size:24px;font-weight:700;color:var(--accent);margin:12px 0}.memory-book footer{font-size:10px;color:#626b5e;padding-top:20px;line-height:1.8}.memory-book .book-signature{font-size:12px;color:var(--accent);margin-top:25px;letter-spacing:.05em}
+.memory-book.template-photobook .book-cover{border-top:7px solid var(--accent)}.memory-book.template-photobook .memory-page h2{border-left:3px solid var(--accent);padding-left:12px}
+.memory-book.template-polaroid .book-cover,.memory-book.template-polaroid .memory-page,.memory-book.template-polaroid .book-ending{background:transparent;border:0}.memory-book.template-polaroid .photo-frame{position:relative;padding:14px 14px 30px;background:white;box-shadow:0 3px 12px #3331;transform:rotate(-1deg);margin:25px 2px}.memory-book.template-polaroid .photo-frame:before{content:'';position:absolute;width:64px;height:20px;background:var(--tint);opacity:.9;top:-10px;left:calc(50% - 32px);transform:rotate(5deg)}.memory-book.template-polaroid .memory-image{border-radius:0}.memory-book.template-polaroid .memory-page:nth-of-type(even) .photo-frame{transform:rotate(1deg)}
+.memory-book.template-album .book-cover,.memory-book.template-album .memory-page,.memory-book.template-album .book-ending{background:white;border:0;border-radius:0;border-top:1px solid var(--line)}.memory-book.template-album .book-cover{text-align:left}.memory-book.template-album h1{font-size:32px}.memory-book.template-album .memory-image{border-radius:0;background:#f7f7f5}.memory-book.template-album blockquote{background:transparent;border-left:2px solid var(--accent);border-radius:0}.memory-book.template-album .kicker{letter-spacing:.15em}
+@media(max-width:500px){.memory-book{padding:12px;font-size:12px}.memory-book .book-cover,.memory-book .memory-page,.memory-book .book-ending{padding:18px 14px}.memory-book h1{font-size:27px}.memory-book h2{font-size:19px}.memory-book .memory-image{height:210px}.memory-book .winner-names{font-size:21px}.memory-book.template-album h1{font-size:27px}}
+@media print{@page{size:A4;margin:16mm}body{margin:0;background:white}.memory-book{padding:0;max-width:none;font-size:12px;background:white}.memory-book .print-note{display:none}.memory-book .book-cover,.memory-book .memory-page,.memory-book .book-ending{margin:0;padding:10mm 0;border:0;border-radius:0;box-shadow:none;background:white}.memory-book .memory-page,.memory-book .book-ending{break-before:page}.memory-book .memory-image{height:68mm}.memory-book h1{font-size:30px}.memory-book h2{font-size:20px}.memory-book .photo-frame{break-inside:avoid}.memory-book.template-polaroid .photo-frame{transform:none;box-shadow:none;border:1px solid var(--line)}.memory-book.template-polaroid .memory-page:nth-of-type(even) .photo-frame{transform:none}.memory-book blockquote,.memory-book .responses p,.memory-book .people li{break-inside:avoid}.memory-book .book-cover{padding:15mm 0}.memory-book .book-cover .memory-image{height:95mm}.memory-book .sample{margin:0 0 12px}.memory-book footer{break-inside:avoid}}
+
+/* The photo journal has its own paper pages; other two templates keep their layout. */
+.memory-book.template-photobook{--page:#fffdf7;background:#ece8df;padding:28px;font-size:14px;line-height:1.8;max-width:820px}
+.memory-book.template-photobook.palette-peach{--page:#fffaf5}.memory-book.template-photobook.palette-sage{--page:#fcfdf7}
+.memory-book.template-photobook .book-cover,.memory-book.template-photobook .memory-page,.memory-book.template-photobook .book-ending,.memory-book.template-photobook .book-appendix{position:relative;border:1px solid var(--line);border-radius:2px;background:var(--page);padding:36px;margin:20px 0;box-shadow:0 9px 22px #342d2010;overflow:visible}
+.memory-book.template-photobook .book-cover{padding:40px 38px 30px;text-align:left;box-shadow:inset 8px 0 9px #342d2008,0 14px 28px #342d2015}
+.memory-book.template-photobook .cover-edition{display:flex;justify-content:space-between;gap:18px;font-size:10px;letter-spacing:.14em;color:var(--accent);margin-bottom:28px}
+.memory-book.template-photobook h1{font:500 38px/1.4 'AppleMyungjo','Batang','Noto Serif CJK KR',serif;color:var(--ink);letter-spacing:-.035em;margin:0 0 14px;word-break:keep-all;overflow-wrap:anywhere}
+.memory-book.template-photobook .cover-meta{font-size:12px;margin:0 0 24px;color:var(--accent)}
+.memory-book.template-photobook .cover-picture{margin:0;position:relative;background:var(--tint)}
+.memory-book.template-photobook .cover-picture .memory-image{height:380px;border-radius:0;background:var(--tint);object-fit:contain}
+.memory-book.template-photobook .cover-caption{font-size:11px;margin-top:12px;color:var(--accent)}
+.memory-book.template-photobook .cover-count{margin-top:28px;font-size:11px;letter-spacing:.04em}
+.memory-book.template-photobook .cover-motto{font-size:17px;letter-spacing:-.03em;margin:8px 0 0}
+.memory-book.template-photobook .sample{background:transparent;border-radius:0;border-bottom:1px solid var(--line);padding:0 0 12px;margin:0;font-size:10px}
+.memory-book.template-photobook .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+.memory-book.template-photobook .page-heading .kicker{margin:0 0 8px;font-size:10px;letter-spacing:.13em}
+.memory-book.template-photobook .memory-page h2{border:0;padding:0;margin:0;font-size:22px;line-height:1.45;letter-spacing:-.035em;color:var(--ink);font-weight:550}
+.memory-book.template-photobook .page-mark{font:italic 34px/1 'Georgia',serif;color:var(--accent);opacity:.48;flex-shrink:0}
+.memory-book.template-photobook .journal-content{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center;gap:28px}
+.memory-book.template-photobook .photo-mount{position:relative;margin:8px 0 0;padding:12px 12px 24px;background:#fff;box-shadow:0 3px 12px #342d2014;transform:rotate(-1deg);min-width:0}
+.memory-book.template-photobook .photo-mount:before{content:'';position:absolute;z-index:1;top:-9px;left:calc(50% - 30px);width:60px;height:19px;background:var(--tint);opacity:.9;transform:rotate(4deg)}
+.memory-book.template-photobook .photo-mount .memory-image{height:330px;object-fit:contain;border-radius:0;background:#f3f1eb}
+.memory-book.template-photobook .photo-caption{font-size:10px;color:var(--accent);margin-top:12px;text-align:center;letter-spacing:.02em}
+.memory-book.template-photobook .journal-note{min-width:0;padding:18px 0 8px;align-self:center}
+.memory-book.template-photobook .note-heading{font-size:11px;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.memory-book.template-photobook .note-heading:before{content:'';width:17px;height:17px;border:1px solid var(--accent);border-radius:50%;opacity:.6}
+.memory-book.template-photobook .journal-note blockquote{font-family:'Segoe Print','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:14px;line-height:2.15;white-space:pre-wrap;border:0;border-radius:0;padding:0 0 12px;margin:0;background:repeating-linear-gradient(transparent 0,transparent 29px,var(--line) 29px,var(--line) 30px);color:var(--ink)}
+.memory-book.template-photobook .note-signature{font-size:11px;color:var(--accent);margin:14px 0 0;text-align:right}
+.memory-book.template-photobook .photo-page.is-wide .journal-content{display:block}
+.memory-book.template-photobook .photo-page.is-wide .photo-mount{transform:rotate(.7deg);margin:8px 0 24px}
+.memory-book.template-photobook .photo-page.is-wide .photo-mount .memory-image{height:380px}
+.memory-book.template-photobook .photo-page.is-wide .journal-note{max-width:500px;margin:0 auto}
+.memory-book.template-photobook .photo-page.no-story .journal-content{display:block}
+.memory-book.template-photobook .photo-page.no-story .photo-mount{max-width:600px;margin:8px auto 16px}
+.memory-book.template-photobook .page-folio{display:flex;justify-content:space-between;gap:14px;padding-top:26px;margin-top:22px;border-top:1px solid var(--line);font-size:9px;color:var(--accent);letter-spacing:.08em}
+.memory-book.template-photobook .appendix-heading{margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.memory-book.template-photobook .appendix-heading h2{font-weight:550;font-size:25px;margin:6px 0 10px;letter-spacing:-.04em}
+.memory-book.template-photobook .appendix-heading p{font-size:12px;color:var(--accent)}
+.memory-book.template-photobook .quiz-record{padding:24px 0;border-bottom:1px solid var(--line);break-inside:avoid}
+.memory-book.template-photobook .quiz-record:last-child{border:0}
+.memory-book.template-photobook .quiz-record .kicker{margin:0 0 8px;letter-spacing:.03em}
+.memory-book.template-photobook .quiz-record h3{font-size:16px;line-height:1.7;font-weight:600;margin:0 0 14px}
+.memory-book.template-photobook .quiz-record .options{font-size:12px;margin:12px 0 18px}
+.memory-book.template-photobook .quiz-record .correct{background:var(--tint);border-radius:2px}
+.memory-book.template-photobook .quiz-record .responses{font-size:11px;line-height:1.8;border:0;padding-top:0}
+.memory-book.template-photobook .book-ending{text-align:center;padding:46px 38px 32px}
+.memory-book.template-photobook .book-ending h2{font-size:19px;font-weight:500;margin:20px 0 8px}
+.memory-book.template-photobook .ending-title{font:500 33px/1.55 'AppleMyungjo','Batang','Noto Serif CJK KR',serif;letter-spacing:-.04em;margin:12px 0 32px}
+.memory-book.template-photobook .people{text-align:left;max-width:440px;margin:28px auto}
+.memory-book.template-photobook .winner-names{font-size:21px;font-weight:550}
+.memory-book.template-photobook .book-ending footer{text-align:left;font-size:9px}
+@media(max-width:600px){.memory-book.template-photobook{padding:12px;font-size:12px}.memory-book.template-photobook .book-cover,.memory-book.template-photobook .memory-page,.memory-book.template-photobook .book-ending,.memory-book.template-photobook .book-appendix{padding:24px 18px;margin:14px 0}.memory-book.template-photobook .cover-edition{font-size:8px;margin-bottom:20px;letter-spacing:.06em}.memory-book.template-photobook h1{font-size:28px}.memory-book.template-photobook .cover-meta{font-size:10px;margin-bottom:18px}.memory-book.template-photobook .cover-picture .memory-image{height:240px}.memory-book.template-photobook .cover-motto{font-size:15px}.memory-book.template-photobook .journal-content{display:block}.memory-book.template-photobook .photo-mount{padding:9px 9px 20px;margin:8px 0 22px;transform:none}.memory-book.template-photobook .photo-mount .memory-image,.memory-book.template-photobook .photo-page.is-wide .photo-mount .memory-image{height:260px}.memory-book.template-photobook .memory-page h2{font-size:19px}.memory-book.template-photobook .page-mark{font-size:29px}.memory-book.template-photobook .journal-note blockquote{font-size:13px;line-height:30px}.memory-book.template-photobook .ending-title{font-size:26px}.memory-book.template-photobook .appendix-heading h2{font-size:22px}.memory-book.template-photobook .book-ending footer{font-size:9px}}
+@media print{.memory-book.template-photobook{padding:0;background:white;font-size:12px;max-width:none;--page:#fffdf7}.memory-book.template-photobook>.sample{font-size:8px;margin:0 0 3mm;padding:0 0 2mm}.memory-book.template-photobook .book-cover,.memory-book.template-photobook .memory-page,.memory-book.template-photobook .book-ending,.memory-book.template-photobook .book-appendix{box-shadow:none;border:0;margin:0;padding:10mm 8mm;border-radius:0}.memory-book.template-photobook .book-cover{min-height:235mm;padding:10mm 8mm}.memory-book.template-photobook h1{font-size:30px}.memory-book.template-photobook .cover-edition{margin-bottom:8mm}.memory-book.template-photobook .cover-meta{margin-bottom:7mm}.memory-book.template-photobook .cover-picture .memory-image{height:110mm}.memory-book.template-photobook .cover-count{margin-top:8mm}.memory-book.template-photobook .memory-page,.memory-book.template-photobook .book-appendix,.memory-book.template-photobook .book-ending{break-before:page}.memory-book.template-photobook .page-heading{margin-bottom:7mm}.memory-book.template-photobook .journal-content{display:block}.memory-book.template-photobook .photo-mount,.memory-book.template-photobook .photo-page.is-wide .photo-mount{transform:none;box-shadow:none;border:1px solid var(--line);padding:3mm 3mm 6mm;margin:3mm 0 6mm}.memory-book.template-photobook .photo-mount .memory-image,.memory-book.template-photobook .photo-page.is-wide .photo-mount .memory-image{height:95mm}.memory-book.template-photobook .journal-note{padding:0;margin:0;max-width:none}.memory-book.template-photobook .journal-note blockquote{font-size:12px;line-height:22px;background:none}.memory-book.template-photobook .note-signature{margin-top:3mm}.memory-book.template-photobook .page-folio{padding-top:4mm;margin-top:6mm}.memory-book.template-photobook .appendix-heading{break-after:avoid;margin-bottom:3mm}.memory-book.template-photobook .quiz-record{padding:6mm 0}.memory-book.template-photobook .quiz-record .responses p{break-inside:avoid}.memory-book.template-photobook .book-ending{min-height:220mm;padding:12mm 8mm}.memory-book.template-photobook .ending-title{font-size:30px}.memory-book.template-photobook .print-note{display:none}}
+`;
+
+function quizDetails(entry,includeChoices) {
+ if(!includeChoices)return `<p class="answer-only"><strong>정답</strong> · ${escapeHTML(entry.options[entry.correctIndex])}</p>`;
+ return `<ol class="options">${entry.options.map((x,i)=>`<li class="${i===entry.correctIndex?'correct':''}">${escapeHTML(x)}${i===entry.correctIndex?' <strong>✓ 정답</strong>':''}</li>`).join('')}</ol><div class="responses">${entry.responses.map(p=>`<p><strong>${escapeHTML(p.name)}</strong> · ${escapeHTML(p.answer)} <span>${p.correct?'기억이 맞았어요':'서로 다르게 기억했어요'}</span></p>`).join('')}</div>`;
+}
+
+function photoJournal(book,images,coverImage,winners,ranked,includeChoices) {
+  const allowed=book.entries.length;
+  const disclosure=book.sample?'무료 체험 추억집 · 예시 그림과 가상 참가자가 포함되어 있어요 · 실제 결제 없음':'무료 저장 체험 · 실제 결제 없음';
+  const pages=book.entries.map((entry,index)=>`<article class="memory-page photo-page ${index%2===0?'is-wide':'is-paired'}${entry.story?'':' no-story'}">
+    <header class="page-heading"><div><div class="kicker">그때의 한 장</div><h2>${escapeHTML(entry.author)}님의 추억</h2></div><span class="page-mark" aria-hidden="true">${String(index+1).padStart(2,'0')}</span></header>
+    <div class="journal-content"><figure class="photo-mount">${photo(images[entry.photoId])}<figcaption class="photo-caption">${escapeHTML(entry.author)}님이 꺼낸 사진</figcaption></figure>
+    ${entry.story?`<div class="journal-note"><p class="note-heading">사진에 담긴 이야기</p><blockquote>${escapeHTML(entry.story)}</blockquote><p class="note-signature">${escapeHTML(entry.author)}님의 기억</p></div>`:''}</div>
+    <div class="page-folio"><span>그때 우리 · ${escapeHTML(book.date)}</span><span>추억 ${String(index+1).padStart(2,'0')} / ${String(allowed).padStart(2,'0')}</span></div></article>`).join('');
+  const appendix=allowed?`<section class="book-appendix"><header class="appendix-heading"><div class="kicker">우리의 기억을 맞혀 본 시간</div><h2>그날의 기억 대결</h2><p>사진 속 이야기를 우리는 어떻게 기억했을까요?</p></header>${book.entries.map((entry,index)=>`<article class="quiz-record"><div class="kicker">기억 ${String(index+1).padStart(2,'0')} · ${escapeHTML(entry.author)}님의 문제</div><h3>${escapeHTML(entry.prompt)}</h3>${quizDetails(entry,includeChoices)}</article>`).join('')}</section>`:'';
+  return `<div class="sample">${disclosure}</div><header class="book-cover"><div class="cover-edition"><span>THEN, US · PHOTO JOURNAL</span><span>OUR LITTLE MEMORY</span></div><h1>${escapeHTML(book.title)}</h1><p class="cover-meta">모임 날짜 ${escapeHTML(book.date)} · 함께한 우리 ${book.players.length}명</p>${coverImage?`<figure class="cover-picture">${photo(coverImage)}</figure><p class="cover-caption">우리가 함께 꺼낸 사진과 이야기</p>`:''}<p class="cover-count">저장을 허용한 추억 ${allowed}개</p><p class="cover-motto">그때의 우리를, 오래.</p></header>${pages}${appendix}<section class="book-ending"><div class="kicker">함께한 우리</div><p class="ending-title">사진 한 장,<br>다시 만나는 우리.</p><h2>${book.scoring===false?'함께 기억한 우리':winners.length>1?'오늘의 공동 기억왕':'오늘의 기억왕'}</h2><p class="winner-names">${winners.map(p=>escapeHTML(p.name)).join(' · ')}</p><ul class="people">${ranked.map(p=>`<li><span>${book.scoring===false?'':(ranked.findIndex(x=>x.score===p.score)+1)+'. '}${escapeHTML(p.name)}</span>${book.scoring===false?'':`<strong>${p.score}점</strong>`}</li>`).join('')}</ul><p class="book-signature">${escapeHTML(book.title)} · ${escapeHTML(book.date)}</p><div class="print-note">이 파일은 인터넷 없이 열 수 있어요. 브라우저 인쇄 메뉴에서 ‘PDF로 저장’을 선택하면 PDF로 간직할 수 있어요.</div><footer>사진과 내용은 저장을 허용한 범위 안에서만 공유해 주세요. 내려받은 파일은 기기에 남으며, 이후 앱에서 삭제해도 이 파일은 자동 삭제되지 않아요.<br>그때 우리 · ${escapeHTML(book.date)}</footer></section>`;
+}
+
+function memoryCard(entry,index,image,includeChoices) {
+  return `<article class="memory-page"><div class="kicker">기억 ${String(index+1).padStart(2,'0')} · ${escapeHTML(entry.author)}님의 이야기</div>
+    <figure class="photo-frame">${photo(image)}</figure><h2>${escapeHTML(entry.prompt)}</h2>${quizDetails(entry,includeChoices)}${entry.story?`<blockquote>${escapeHTML(entry.story)}</blockquote>`:''}</article>`;
+}
+
+export function renderMemoryHTML(book,images={},selection={}) {
+  const template=memoryTemplates.find(x=>x.id===selection.template)||memoryTemplates[0];
+  const palette=memoryPalettes.find(x=>x.id===selection.palette)||memoryPalettes[0];
+  const title=short(selection.title,40).trim();if(title)book={...book,title};
+  const selected=book.entries.find(e=>e.photoId===selection.coverPhotoId);
+  const coverImage=(selected&&safeImage(images[selected.photoId])?images[selected.photoId]:null)||book.entries.map(e=>images[e.photoId]).find(safeImage);
+  const topScore=Math.max(...book.players.map(p=>p.score));
+  const winners=book.players.filter(p=>p.score===topScore);
+  const ranked=[...book.players].sort((a,b)=>b.score-a.score);
+  if(template.id==='photobook')return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>${escapeHTML(book.title)} · 그때 우리 추억집</title><style>body{margin:0;background:#ede9e1}${memoryStyleCSS}</style></head><body><main><div class="memory-book template-${template.id} palette-${palette.id}">${photoJournal(book,images,coverImage,winners,ranked,selection.includeChoices===true)}</div></main></body></html>`;
+  // Only allowlisted design identifiers, authorized content and bounded JPEG data.
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>${escapeHTML(book.title)} · 그때 우리 추억집</title><style>body{margin:0;background:#f3f2ec}${memoryStyleCSS}</style></head><body><main><div class="memory-book template-${template.id} palette-${palette.id}"><header class="book-cover"><div class="sample">${book.sample?'무료 체험 추억집 · 예시 그림과 가상 참가자가 포함되어 있어요 · 실제 결제 없음':'무료 저장 체험 · 실제 결제 없음'}</div><div class="kicker">그때 우리 · OUR LITTLE MEMORY</div><h1>${escapeHTML(book.title)}</h1><p class="cover-meta">${escapeHTML(book.date)} · ${book.players.length}명이 함께한 시간</p>${coverImage?`<figure class="photo-frame">${photo(coverImage)}</figure>`:''}<p class="cover-count">저장이 허용된 추억 ${book.entries.length}개 · ${template.name} · ${palette.name}</p><div class="print-note">이 파일은 인터넷 없이 열 수 있어요. 브라우저 인쇄 메뉴에서 ‘PDF로 저장’을 선택하면 PDF로 간직할 수 있어요.</div></header>${book.entries.map((e,i)=>memoryCard(e,i,images[e.photoId],selection.includeChoices===true)).join('')}<section class="book-ending"><div class="kicker">함께한 우리</div><h2>${book.scoring===false?'함께 기억한 우리':winners.length>1?'오늘의 공동 기억왕':'오늘의 기억왕'}</h2><p class="winner-names">${winners.map(p=>escapeHTML(p.name)).join(' · ')}</p><ul class="people">${ranked.map(p=>`<li><span>${book.scoring===false?'':(ranked.findIndex(x=>x.score===p.score)+1)+'. '}${escapeHTML(p.name)}</span>${book.scoring===false?'':`<strong>${p.score}점</strong>`}</li>`).join('')}</ul><p class="book-signature">사진 한 장, 다시 만나는 우리</p><footer>사진과 내용은 저장을 허용한 범위 안에서만 공유해 주세요. 내려받은 파일은 기기에 남으며, 이후 앱에서 삭제해도 이 파일은 자동 삭제되지 않아요.<br>그때 우리 · ${escapeHTML(book.date)}</footer></section></div></main></body></html>`;
+}
