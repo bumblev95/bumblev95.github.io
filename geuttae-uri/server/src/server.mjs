@@ -114,7 +114,7 @@ export async function createApp(options={}){
  }
  function activeSession(room,req){const s=sessionFor(room,req);check(s&&s.status==='active',403,'참가 승인을 받은 뒤 이용할 수 있어요.');return s;}
  function safeState(room,s){
-  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision};
+  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true};
   if(s.status!=='active')return {...base,nickname:s.name};
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
@@ -343,6 +343,13 @@ export async function createApp(options={}){
       await removeMember(room,s.id,'left');await save(room);publish(room);return respond(res,200,{left:true});
      }
      check(route==='action',404,'지원하지 않는 요청이에요.');
+     check((b.gameNumber??0)===(room.gameNumber||0),409,'새 게임이 시작됐어요. 현재 화면에서 다시 시도해 주세요.');
+     if(b.type==='rematch'){
+      check(s.id===room.game.hostId&&room.game.phase==='finished'&&room.game.endReason==='completed'&&b.confirmed===true,409,'방장만 완료한 게임에서 다시 시작할 수 있어요.');
+      check(room.deletion==='done',409,'사진 삭제가 끝나면 다시 시작할 수 있어요.');
+      check(room.game.players.length>=2,409,'참가자 두 명 이상이 필요해요.');
+      room.game=setup(room.game.players);room.gameNumber=(room.gameNumber||0)+1;room.deletion='not-needed';room.memories=[];room.photos={};await save(room);publish(room);return respond(res,200,safeState(room,s));
+     }
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
      if(b.type==='submitQuestion'){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
