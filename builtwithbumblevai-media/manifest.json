@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-10-14T09:39:37+00:00",
+  "capture_method": "Playwright Chromium recordings of real published owner websites",
+  "sources": {
+    "aion2": "https://bumblev95.github.io/Aion2-Daeva-Atlas/",
+    "sp500": "https://bumblev95.github.io/S-P-500-/"
+  },
+  "note": "AION2 boss figures are explanatory animations, not live game combat. Market analysis is educational, not advice.",
+  "assets": [
+    {
+      "name": "aion2-boss.webp",
+      "size": 56672
+    },
+    {
+      "name": "aion2-classes.webp",
+      "size": 58660
+    },
+    {
+      "name": "aion2-guide-en-poster.webp",
+      "size": 13900
+    },
+    {
+      "name": "aion2-guide-en.mp4",
+      "size": 1747121
+    },
+    {
+      "name": "aion2-guide-ko-poster.webp",
+      "size": 13590
+    },
+    {
+      "name": "aion2-guide-ko.mp4",
+      "size": 1734297
+    },
+    {
+      "name": "sp500-dashboard-en-poster.webp",
+      "size": 18092
+    },
+    {
+      "name": "sp500-dashboard-en.mp4",
+      "size": 2190810
+    },
+    {
+      "name": "sp500-dashboard-ko-poster.webp",
+      "size": 17056
+    },
+    {
+      "name": "sp500-dashboard-ko.mp4",
+      "size": 2144059
+    },
+    {
+      "name": "sp500-home.webp",
+      "size": 87276
+    },
+    {
+      "name": "sp500-research.webp",
+      "size": 60682
+    }
+  ]
+}
