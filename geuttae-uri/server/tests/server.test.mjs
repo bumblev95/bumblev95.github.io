@@ -3,7 +3,7 @@ import {mkdtemp,rm,readFile,writeFile,access} from 'node:fs/promises';import {tm
 import {createApp} from '../src/server.mjs';
 const jpeg=await readFile(new URL('./fixtures/sample.jpg',import.meta.url));
 async function harness(t,options={}){
- const dir=await mkdtemp(path.join(tmpdir(),'geuttae-test-'));let app=await createApp({dataDir:dir,...options});
+ const dir=await mkdtemp(path.join(tmpdir(),'geuttae-test-'));let app=await createApp({dataDir:dir,gameClock:()=>100000,...options});
  async function listen(){await new Promise(r=>app.server.listen(0,'127.0.0.1',r));return `http://127.0.0.1:${app.server.address().port}`;}
  let base=await listen();t.after(async()=>{await app.close();await rm(dir,{recursive:true,force:true});});
  async function request(url,{cookie,body,raw,headers={}}={}){const res=await fetch(base+url,{method:body!==undefined||raw!==undefined?'POST':'GET',headers:{...(body!==undefined||raw!==undefined?{'Origin':base,'Content-Type':raw?'image/jpeg':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...headers},body:raw|| (body===undefined?undefined:JSON.stringify(body)),signal:AbortSignal.timeout(5000)});const type=res.headers.get('content-type')||'';const data=type.includes('application/json')?await res.json():Buffer.from(await res.arrayBuffer());return {status:res.status,data,cookie:res.headers.get('set-cookie')?.split(';')[0],headers:res.headers};}
@@ -13,7 +13,7 @@ async function harness(t,options={}){
  async function approve(host,p){assert.equal((await call(host,'approve',{playerId:p.id})).status,200);}
  async function photo(p){const r=await call(p,'upload',undefined,{raw:jpeg,headers:{'X-Photo-Consent':'yes'}});assert.equal(r.status,201);return r.data.photoId;}
  async function question(p,id){const photoId=id||await photo(p);const r=await call(p,'action',{type:'submitQuestion',photoId,prompt:'우리 추억은?',options:['바다','산','카페','집'],correctIndex:0,story:'SECRET-STORY',confirmed:true});assert.equal(r.status,200);return photoId;}
- return {dir,get base(){return base;},request,create,call,join,approve,photo,question,get app(){return app;},async restart(){await app.close();app=await createApp({dataDir:dir,...options});base=await listen();}};
+ return {dir,get base(){return base;},request,create,call,join,approve,photo,question,get app(){return app;},async restart(){await app.close();app=await createApp({dataDir:dir,gameClock:()=>100000,...options});base=await listen();}};
 }
 test('nickname, consent and same-origin checks',async t=>{const h=await harness(t);assert.equal((await h.request('/api/rooms',{body:{nickname:'A',consent:false}})).status,400);assert.equal((await h.request('/api/rooms',{body:{nickname:'A',consent:true},headers:{Origin:'https://other.example'}})).status,403);assert.equal((await h.request('/api/rooms',{body:{nickname:'x'.repeat(17),consent:true}})).status,400);});
 test('pending participant cannot see photos, participants, or answers until approved',async t=>{const h=await harness(t),host=await h.create(),id=await h.question(host),guest=await h.join(host);const p=await h.call(guest,'state');assert.equal(p.data.access,'pending');assert.equal(p.data.view,undefined);assert.equal((await h.call(guest,'photo/'+id)).status,403);assert.equal((await h.call(guest,'approve',{playerId:guest.id})).status,403);await h.approve(host,guest);assert.equal((await h.call(guest,'photo/'+id)).status,403);assert.equal((await h.call(guest,'state')).data.view.myQuestion,null);});
@@ -162,4 +162,15 @@ test('family mode has no deadline and optional scoring',async t=>{
 test('deadline automatically reveals over SSE without a state poll or host action',async t=>{
  let now=100000;const h=await harness(t,{gameClock:()=>now}),a=await h.create(),b=await h.join(a);await h.approve(a,b);await h.question(a);await h.question(b);
  const events=await eventReader(h,b);try{await h.call(a,'action',{type:'start'});await events.next(v=>v.view?.phase==='question');now+=20000;const revealed=await events.next(v=>v.view?.phase==='reveal');assert.equal(revealed.view.awards[b.id],0);assert.equal(revealed.roundDeadlineAt,null);}finally{await events.close();}
+});
+test('server scores correct answers by remaining time and ignores forged points across restart',async t=>{
+ let now=100000;const h=await harness(t,{gameClock:()=>now});
+ for(const seconds of [10,20,30]){
+ const a=await h.create('방장',{timeLimitSeconds:seconds}),b=await h.join(a),c=await h.join(a,'세번째');await h.approve(a,b);await h.approve(a,c);for(const p of [a,b,c])await h.question(p);
+ await h.call(a,'action',{type:'start'});now+=seconds*250;const first=await h.call(b,'action',{type:'answer',round:0,choice:0,serverPoints:100});assert.deepEqual(first.data.view.awards,{});assert.equal(first.data.view.players.find(p=>p.id===b.id).score,0);
+ await h.restart();now+=seconds*500;const reveal=await h.call(c,'action',{type:'answer',round:0,choice:0,serverPoints:100});assert.equal(reveal.data.view.awards[b.id],75);assert.equal(reveal.data.view.awards[c.id],25);assert.equal(reveal.data.view.awards[a.id],0);
+ assert.equal((await h.call(c,'action',{type:'answer',round:0,choice:0})).status,409);await h.call(a,'action',{type:'next',round:0});
+ await h.call(a,'action',{type:'answer',round:1,choice:1});now+=seconds*1000;const timeout=await h.call(c,'state');assert.equal(timeout.data.view.awards[a.id],0);assert.equal(timeout.data.view.awards[c.id],0);assert.deepEqual(timeout.data.view.players.map(p=>p.score),[0,75,25]);
+ }
+ const a=await h.create('가족',{mode:'family',familyScoring:true}),b=await h.join(a);await h.approve(a,b);await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});now+=1000000;const family=await h.call(b,'action',{type:'answer',round:0,choice:0,serverPoints:0});assert.equal(family.data.view.awards[b.id],100);
 });

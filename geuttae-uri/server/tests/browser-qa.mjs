@@ -26,7 +26,7 @@ await new Promise(r=>api.listen(0,'127.0.0.1',r));
 await new Promise(r=>pages.listen(0,'127.0.0.1',r));
 apiBase=`https://127.0.0.1:${api.address().port}`;
 const base=`https://127.0.0.1:${pages.address().port}`;
-app=await createApp({dataDir:dir,publicOrigin:apiBase,frontendOrigins:base});
+app=await createApp({gameClock:()=>100000,dataDir:dir,publicOrigin:apiBase,frontendOrigins:base});
 await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
 httpBase=`http://127.0.0.1:${app.server.address().port}`;
 const browser=await chromium.launch({args:['--no-sandbox']});
@@ -75,7 +75,7 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.1';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.2';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);

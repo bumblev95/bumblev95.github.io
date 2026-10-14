@@ -8,7 +8,7 @@ const pageOrigin='https://bumblev95.github.io';
 const jpeg=await readFile(new URL('./fixtures/sample.jpg',import.meta.url));
 async function harness(t){
  const dir=await mkdtemp(path.join(tmpdir(),'gu-pages-'));
- let app=await createApp({dataDir:dir,frontendOrigins:pageOrigin});
+ let app=await createApp({gameClock:()=>100000,dataDir:dir,frontendOrigins:pageOrigin});
  async function listen(){await new Promise(r=>app.server.listen(0,'127.0.0.1',r));return `http://127.0.0.1:${app.server.address().port}`;}
  let base=await listen();
  t.after(async()=>{await app.close();await rm(dir,{recursive:true,force:true});});
@@ -18,7 +18,7 @@ async function harness(t){
  }
  async function create(){const r=await request('/api/rooms',null,{nickname:'Jack',consent:true});assert.equal(r.status,201);return {code:r.data.code,id:r.data.you,secret:r.data.sessionToken};}
  const call=(p,route,body,extra)=>request(`/api/rooms/${p.code}/${route}`,p.secret,body,extra);
- return {dir,request,create,call,get base(){return base;},get app(){return app;},async restart(){await app.close();app=await createApp({dataDir:dir,frontendOrigins:pageOrigin});base=await listen();}};
+ return {dir,request,create,call,get base(){return base;},get app(){return app;},async restart(){await app.close();app=await createApp({gameClock:()=>100000,dataDir:dir,frontendOrigins:pageOrigin});base=await listen();}};
 }
 test('Pages origin preflight accepts exact origin and bearer headers, rejects other origins',async t=>{
  const h=await harness(t);
