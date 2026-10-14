@@ -156,7 +156,7 @@ async def navigate(page, url: str, css: str, pause_ms=1300):
     await page.locator(css).first.wait_for(state="visible",timeout=25000)
     await page.wait_for_timeout(pause_ms)
     # Analytics opt-in is not requested; dismiss if a visible decline control is present.
-    for text in ("Decline", "거절"):
+    for text in ("Decline", "Reject", "거절", "거부"):
         target=page.get_by_role("button",name=text,exact=True)
         if await target.count() and await target.first.is_visible():
             await target.first.click(timeout=3000)
