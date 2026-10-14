@@ -40,7 +40,7 @@ try{
  await a.locator('[data-action="new"]').first().click();
  assert.equal(await a.locator('#entry-details').isVisible(),true);assert.equal(await a.locator('#entry-modes').isVisible(),false);
  await a.locator('[name="nickname"]').fill('Jack');await a.locator('[name="title"]').fill('우리 친구들');
- await a.locator('#entry-form [type="submit"]').click();assert.equal(new URL(a.url()).searchParams.has('room'),false);assert.equal(await a.locator('.room-mode-card').count(),4);
+ await a.locator('#entry-form [type="submit"]').click();assert.equal(new URL(a.url()).searchParams.has('room'),false);assert.equal(await a.locator('.room-mode-card').count(),4);await a.waitForFunction(()=>[...document.querySelectorAll('.room-mode-card img')].every(i=>i.complete&&i.naturalWidth>0));
  for(const width of [320,390,768]){await a.setViewportSize({width,height:900});assert.equal(await a.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.equal(await a.locator('.room-mode-card img').evaluateAll(images=>images.every(i=>i.complete&&i.naturalWidth>0)),true);}
  await a.setViewportSize({width:390,height:844});await a.locator('[name="mode"][value="family"]').check();assert.equal(await a.locator('#room-time').isVisible(),false);assert.equal(await a.locator('#family-scoring').isVisible(),true);
  await a.locator('[name="mode"][value="party"]').check();assert.equal(await a.locator('[name="partyMissions"]').isChecked(),false);await a.locator('[name="partyMissions"]').check();
@@ -84,7 +84,7 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.4';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.5';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
