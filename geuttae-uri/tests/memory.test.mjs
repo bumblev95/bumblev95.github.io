@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.3.9/memory.js';
-import {setup,applyAction,viewFor} from '../releases/0.3.9/logic.js';
+import {captureMemory,buildMemoryBook,renderMemoryHTML,memoryProduct} from '../releases/0.4.0/memory.js';
+import {setup,applyAction,viewFor} from '../releases/0.4.0/logic.js';
 const players=[{id:'a',name:'가영'},{id:'b',name:'잭'}];
 function revealed(){let s=setup(players);for(const p of players)s=applyAction(s,p.id,{type:'submitQuestion',photoId:p.id,prompt:'누가 기억할까?',options:['가','나','다','라'],correctIndex:0,story:'즐거운 날',confirmed:true});s=applyAction(s,'a',{type:'start'});return applyAction(s,'b',{type:'answer',choice:0,round:0});}
 test('only revealed, explicitly allowed memories can be captured',()=>{const v=viewFor(revealed(),'b');assert.equal(captureMemory(v,false),null);assert.equal(captureMemory(v,undefined),null);assert.equal(captureMemory({...v,phase:'question'},true),null);const entry=captureMemory(v,true);assert.equal(entry.author,'가영');assert.deepEqual(entry.responses,[{name:'잭',answer:'가',correct:true}]);assert.equal(entry.correctIndex,0);});
@@ -48,4 +48,8 @@ test('custom cover only uses consented entries and escapes its title without mut
  const book=buildMemoryBook({title:'원래 제목',date:'오늘',view:{...v,phase:'finished',endReason:'completed'},entries:[entry]});
  const html=renderMemoryHTML(book,{[entry.photoId]:'data:image/jpeg;base64,YQ==',denied:'data:image/jpeg;base64,Yg=='},{title:'<script>추억</script>',coverPhotoId:'denied'});
  assert.ok(html.includes('&lt;script&gt;추억&lt;/script&gt;'));assert.ok(!html.includes('data:image/jpeg;base64,Yg=='));assert.equal(book.title,'원래 제목');
+});
+test('unscored family book preserves stories without rankings or points',()=>{
+ const view={phase:'finished',endReason:'completed',scoring:false,players};const book=buildMemoryBook({title:'가족',date:'오늘',view,entries:[]});
+ for(const template of ['photobook','polaroid','album']){const html=renderMemoryHTML(book,{}, {template});assert.ok(!html.includes('기억왕'));assert.ok(!html.includes('undefined점'));assert.ok(html.includes('함께 기억한 우리'));}
 });

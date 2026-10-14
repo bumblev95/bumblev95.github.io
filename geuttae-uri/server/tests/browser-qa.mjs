@@ -75,14 +75,14 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.3.10';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.1';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
  // Network loss does not erase membership. Visibility/reconnect restores snapshot.
  await ca.setOffline(true);await ca.setOffline(false);await a.waitForFunction(()=>!document.querySelector('.connection'));
  await a.locator('[data-action="choose"][data-choice="0"]').click();await a.locator('[data-action="answer"]').click();
- await b.locator('[data-action="next"]').click();
+ await a.locator('[data-action="next"]').click();
  for(const p of [a,b]){await p.waitForFunction(()=>document.body.dataset.screen==='finished');assert.match(await p.locator('#app').innerText(),/공동 기억왕/);assert.match(await p.locator('#app').innerText(),/서버의 임시 사진을 삭제/);assert.equal(await p.locator('.ranking .score').count(),2);}
  // The finishing caller and the other SSE client both receive the same authorized book.
  for(const p of [a,b]){
