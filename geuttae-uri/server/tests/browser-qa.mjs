@@ -75,7 +75,7 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.3.9';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.3.10';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
@@ -112,7 +112,8 @@ try{
  assert.equal(await a.locator('#apply-update').isDisabled(),false);
  // Tab-only export state never survives a reload after server deletion.
  await b.reload();await b.waitForFunction(()=>document.body.dataset.screen==='finished');assert.equal(await b.locator('[data-action="memory-preview"]').isDisabled(),true);
- await a.locator('[data-action="home"]').last().click();await a.locator('#modal [data-action="confirm"]').click();assert.equal(await a.evaluate(()=>document.body.dataset.screen),'home');
+ await a.locator('[data-action="rematch"]').click();await a.locator('#modal [data-action="confirm"]').click();
+ for(const p of [a,b]){await p.waitForFunction(()=>document.body.dataset.screen==='lobby');assert.equal(await p.locator('.person').count(),2);assert.match(await p.locator('#app').innerText(),/사진 준비 중/);assert.equal(await p.locator('[data-action="memory-preview"]').count(),0);}
 
  for(const p of [a,b]){
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);

@@ -126,3 +126,16 @@ test('a missing authorized JPEG does not prevent finish/delete and is explicitly
  await rm(path.join(h.dir,'rooms',a.code,'media',id+'.jpg'));const finish=await h.call(a,'action',{type:'next',round:1});
  assert.equal(finish.status,200);assert.equal(finish.data.mediaStatus,'done');assert.deepEqual(finish.data.memorySnapshot.missing,[id]);assert.deepEqual(finish.data.memorySnapshot.images,{});
 });
+test('five concurrent rooms finish independently and rematch preserves membership but rejects stale actions',async t=>{
+ const h=await harness(t),started=performance.now();
+ await Promise.all(Array.from({length:5},async(_,i)=>{
+ const a=await h.create('방장'+i),b=await h.join(a,'친구'+i);await h.approve(a,b);const photo=await h.question(a);await h.question(b);
+ assert.equal((await h.call(a,'action',{type:'start'})).status,200);
+ await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});
+ await h.call(a,'action',{type:'answer',round:1,choice:0});await h.call(a,'action',{type:'next',round:1});
+ assert.equal((await h.call(b,'action',{type:'rematch',confirmed:true})).status,409);
+ const result=await h.call(a,'action',{type:'rematch',confirmed:true});assert.equal(result.status,200);assert.equal(result.data.gameNumber,1);assert.equal(result.data.view.phase,'lobby');assert.ok(result.data.view.players.every(p=>p.score===0));assert.deepEqual(result.data.view.players.map(p=>p.id),[a.id,b.id]);
+ assert.equal((await h.call(a,'action',{type:'start',gameNumber:0})).status,409);assert.equal((await h.call(a,'action',{type:'rematch',gameNumber:0,confirmed:true})).status,409);assert.equal((await h.call(a,'photo/'+photo)).status,403);
+ assert.equal((await h.call(b,'state')).data.gameNumber,1);
+ }));console.log('Concurrent room smoke test: 5 rooms / 10 participants, '+Math.round(performance.now()-started)+'ms. Local test, not a production capacity guarantee.');
+});
