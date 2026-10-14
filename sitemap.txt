@@ -14,6 +14,7 @@ https://bumblev95.github.io/S-P-500-/selector-experiment.html
 https://bumblev95.github.io/S-P-500-/learn.html
 https://bumblev95.github.io/S-P-500-/guide-top3.html
 https://bumblev95.github.io/S-P-500-/guide-indicators.html
+https://bumblev95.github.io/S-P-500-/guide-sell.html
 https://bumblev95.github.io/S-P-500-/guide-backtesting.html
 https://bumblev95.github.io/S-P-500-/guide-news.html
 https://bumblev95.github.io/S-P-500-/methodology.html
