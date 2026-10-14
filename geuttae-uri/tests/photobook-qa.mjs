@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {renderMemoryHTML} from '../releases/0.4.5/memory.js';
+import {renderMemoryHTML} from '../releases/0.4.6/memory.js';
 
 const out=fileURLToPath(new URL('./qa-output/',import.meta.url));await mkdir(out,{recursive:true});
 const browser=await chromium.launch({args:['--no-sandbox']});
@@ -24,7 +24,7 @@ try{
  for(const scenario of scenarios){
   const images=Object.fromEntries(scenario.entries.map((e,i)=>[e.photoId,scenario.missing?undefined:pictures[i%3]]));
   const book={title:'함께한 우리의 기억이 한 권의 책으로 오래 남기를 바라요'.repeat(2).slice(0,40),date:'2026년 10월 13일',sample:true,players,entries:scenario.entries};
-  const html=renderMemoryHTML(book,images,{template:'photobook',palette:scenario.palette,includeChoices:true}),file=path.join(out,scenario.name+'.html');await writeFile(file,html);
+  const html=renderMemoryHTML(book,images,{template:'photobook',palette:scenario.palette,includeQuiz:true,includeChoices:true}),file=path.join(out,scenario.name+'.html');await writeFile(file,html);
   await page.goto('file://'+file);await page.evaluate(()=>document.fonts.ready);await page.locator('.book-cover').waitFor();
   assert.equal(await page.locator('.memory-page').count(),scenario.entries.length);assert.equal(await page.locator('.quiz-record').count(),scenario.entries.length);
   assert.equal(await page.locator('.memory-page .options,.memory-page .responses').count(),0);
