@@ -4,7 +4,7 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.1/logic.js';
+import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.2/logic.js';
 import {captureMemory,buildMemoryBook} from '../../releases/0.3.3/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
@@ -115,7 +115,7 @@ export async function createApp(options={}){
  }
  function activeSession(room,req){const s=sessionFor(room,req);check(s&&s.status==='active',403,'참가 승인을 받은 뒤 이용할 수 있어요.');return s;}
  function safeState(room,s){
-  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
+  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
   if(s.status!=='active')return {...base,nickname:s.name};
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
@@ -265,7 +265,7 @@ export async function createApp(options={}){
     return respond(res,204,Buffer.alloc(0),{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Photo-Consent','Access-Control-Max-Age':'600'});
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
-   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
+   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
    if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,commerce.catalog);
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
@@ -276,8 +276,9 @@ export async function createApp(options={}){
     const mode=b.mode||'memory';check(['memory','battle','party','family'].includes(mode),400,'모드를 확인해 주세요.');
     const seconds=mode==='family'?0:(b.timeLimitSeconds??20);check(mode==='family'||[10,20,30].includes(seconds),400,'10초·20초·30초 중 골라 주세요.');
     if(b.familyScoring!==undefined)check(typeof b.familyScoring==='boolean',400,'점수 설정을 확인해 주세요.');
+    if(b.partyMissions!==undefined)check(typeof b.partyMissions==='boolean',400,'파티 미션 설정을 확인해 주세요.');
     const code=roomCode(),secret=token(),id=randomUUID();
-    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',timeLimitSeconds:seconds,createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active'}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}],{mode,scoring:mode!=='family'||b.familyScoring===true})};
+    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',timeLimitSeconds:seconds,createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active'}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}],{mode,partyMissions:b.partyMissions===true,scoring:mode!=='family'||b.familyScoring===true})};
     await fs.mkdir(path.join(roomsDir,code),{recursive:false,mode:0o700});await save(room);
     return respond(res,201,{...safeState(room,room.sessions[0]),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
    }
@@ -357,7 +358,7 @@ export async function createApp(options={}){
       check(s.id===room.game.hostId&&room.game.phase==='finished'&&room.game.endReason==='completed'&&b.confirmed===true,409,'방장만 완료한 게임에서 다시 시작할 수 있어요.');
       check(room.deletion==='done',409,'사진 삭제가 끝나면 다시 시작할 수 있어요.');
       check(room.game.players.length>=2,409,'참가자 두 명 이상이 필요해요.');
-      room.game=setup(room.game.players,{mode:room.game.mode,scoring:room.game.scoring});room.roundDeadlineAt=null;room.gameNumber=(room.gameNumber||0)+1;room.deletion='not-needed';room.memories=[];room.photos={};await save(room);publish(room);return respond(res,200,safeState(room,s));
+      room.game=setup(room.game.players,{mode:room.game.mode,partyMissions:room.game.partyMissions,scoring:room.game.scoring});room.roundDeadlineAt=null;room.gameNumber=(room.gameNumber||0)+1;room.deletion='not-needed';room.memories=[];room.photos={};await save(room);publish(room);return respond(res,200,safeState(room,s));
      }
      check(!(b.type==='reveal'&&room.roundDeadlineAt),409,'모두 답하거나 제한 시간이 끝나면 정답을 공개해요.');
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
