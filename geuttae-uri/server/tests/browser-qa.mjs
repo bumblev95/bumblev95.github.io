@@ -38,6 +38,7 @@ try{
  for(const p of [a,b]){p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());}
  await a.goto(base+'/geuttae-uri/');
  await a.locator('[data-action="new"]').first().click();
+ await a.locator('#room-mode').selectOption('party');assert.equal(await a.locator('[name="partyMissions"]').isChecked(),false);await a.locator('[name="partyMissions"]').check();
  await a.locator('[name="nickname"]').fill('Jack');await a.locator('[name="consent"]').check();
  await a.locator('#entry-form [type="submit"]').click();await a.waitForURL(/room=/);
  const code=new URL(a.url()).searchParams.get('room');assert.match(code,/^[A-HJ-NP-Z2-9]{8}$/);
@@ -70,18 +71,19 @@ try{
  assert.equal(await a.locator('[data-action="choose"]:not(:disabled)').count(),0);
  await b.locator('[data-action="choose"][data-choice="0"]').click();await b.locator('[data-action="answer"]').click();
  await a.locator('[data-action="next"]').waitFor();
+ await b.locator('[data-action="missionDone"]').waitFor();assert.equal(await a.locator('[data-action="missionDone"]').count(),0);assert.match(await a.locator('.party-mission').innerText(),/Kay/);await b.screenshot({path:'/tmp/party-mobile.png'});assert.equal(await b.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await b.locator('[data-action="missionDone"]').click();await a.getByText('함께 이야기했어요!',{exact:true}).waitFor();
  // Reload the same tab: retain identity, reveal phase and exactly one award.
- await b.reload();await b.getByText('Jack의 사진',{exact:true}).waitFor();
+ await b.reload();await b.getByText('Jack의 사진',{exact:true}).waitFor();await b.getByText('함께 이야기했어요!',{exact:true}).waitFor();
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.2';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.3';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
  // Network loss does not erase membership. Visibility/reconnect restores snapshot.
  await ca.setOffline(true);await ca.setOffline(false);await a.waitForFunction(()=>!document.querySelector('.connection'));
- await a.locator('[data-action="choose"][data-choice="0"]').click();await a.locator('[data-action="answer"]').click();
+ await a.locator('[data-action="choose"][data-choice="0"]').click();await a.locator('[data-action="answer"]').click();await a.locator('[data-action="missionSkip"]').waitFor();await a.locator('[data-action="missionSkip"]').click();await b.getByText('이번 미션은 쉬어 가요.',{exact:true}).waitFor();
  await a.locator('[data-action="next"]').click();
  for(const p of [a,b]){await p.waitForFunction(()=>document.body.dataset.screen==='finished');assert.match(await p.locator('#app').innerText(),/공동 기억왕/);assert.match(await p.locator('#app').innerText(),/서버의 임시 사진을 삭제/);assert.equal(await p.locator('.ranking .score').count(),2);}
  // The finishing caller and the other SSE client both receive the same authorized book.

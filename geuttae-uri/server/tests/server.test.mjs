@@ -174,3 +174,20 @@ test('server scores correct answers by remaining time and ignores forged points 
  }
  const a=await h.create('가족',{mode:'family',familyScoring:true}),b=await h.join(a);await h.approve(a,b);await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});now+=1000000;const family=await h.call(b,'action',{type:'answer',round:0,choice:0,serverPoints:0});assert.equal(family.data.view.awards[b.id],100);
 });
+test('optional party missions are shared, skippable, permission checked and never change scores or block next',async t=>{
+ const h=await harness(t),a=await h.create('방장',{mode:'party',partyMissions:true}),b=await h.join(a),c=await h.join(a,'다른친구');await h.approve(a,b);await h.approve(a,c);for(const p of [a,b,c])await h.question(p);
+ await h.call(a,'action',{type:'start'});assert.equal((await h.call(b,'state')).data.view.partyMission,null);await h.call(b,'action',{type:'answer',round:0,choice:1});await h.call(c,'action',{type:'answer',round:0,choice:0});
+ let v=(await h.call(a,'state')).data.view;assert.equal(v.partyMission.targetId,b.id);assert.equal(v.partyMission.status,'pending');assert.deepEqual((await h.call(b,'state')).data.view.partyMission,v.partyMission);
+ assert.equal((await h.call(c,'action',{type:'missionDone',round:0})).status,409);assert.equal((await h.call(c,'action',{type:'missionSkip',round:0})).status,409);
+ const scores=v.players.map(p=>p.score);await h.restart();assert.equal((await h.call(b,'state')).data.view.partyMission.status,'pending');
+ const done=await h.call(b,'action',{type:'missionDone',round:0});assert.equal(done.data.view.partyMission.status,'done');assert.deepEqual(done.data.view.players.map(p=>p.score),scores);assert.equal((await h.call(b,'action',{type:'missionSkip',round:0})).status,409);
+ await h.call(a,'action',{type:'next',round:0});assert.equal((await h.call(a,'state')).data.view.partyMission,null);assert.equal((await h.call(b,'action',{type:'missionDone',round:0})).status,409);
+ await h.call(a,'action',{type:'answer',round:1,choice:1});await h.call(c,'action',{type:'answer',round:1,choice:1});v=(await h.call(a,'state')).data.view;assert.notEqual(v.partyMission.targetId,b.id);
+ assert.equal((await h.call(a,'action',{type:'missionSkip',round:1})).data.view.partyMission.status,'skipped');await h.call(a,'action',{type:'next',round:1});await h.call(a,'action',{type:'answer',round:2,choice:0});await h.call(b,'action',{type:'answer',round:2,choice:0});
+ assert.equal((await h.call(a,'state')).data.view.partyMission.status,'pending');const end=await h.call(a,'action',{type:'next',round:2});assert.equal(end.data.view.phase,'finished');assert.equal(end.data.view.partyMission,null);
+ const again=await h.call(a,'action',{type:'rematch',confirmed:true});assert.equal(again.data.view.partyMissions,true);assert.equal(again.data.view.partyMission,null);
+});
+test('party missions default off and cannot be enabled in another mode',async t=>{
+ const h=await harness(t);for(const settings of [{mode:'party'},{mode:'family',partyMissions:true},{mode:'memory',partyMissions:true}]){const a=await h.create('테스트',settings);assert.equal((await h.call(a,'state')).data.view.partyMissions,false);}
+ assert.equal((await h.request('/api/rooms',{body:{nickname:'오류',consent:true,partyMissions:'yes'}})).status,400);
+});
