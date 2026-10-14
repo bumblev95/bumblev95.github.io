@@ -24,7 +24,7 @@ try{
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  const outbound=[];page.on('request',r=>outbound.push(r.url()));
  await page.goto(base+'/geuttae-uri/');await page.locator('[data-action="new"]').first().click();
- await page.locator('[name="nickname"]').fill('초안 테스트');await page.locator('[name="consent"]').check();
+ await page.locator('[name="nickname"]').fill('초안 테스트');await page.locator('#entry-form [type="submit"]').click();await page.locator('[name="consent"]').check();
  await page.locator('#entry-form [type="submit"]').click();await page.waitForURL(/room=/);
  await page.locator('[data-action="compose"]').click();
  await page.locator('[name="prompt"]').fill('직접 적은 질문');await page.locator('[name="story"]').fill('기존 이야기');
