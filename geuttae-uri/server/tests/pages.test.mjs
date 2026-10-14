@@ -57,7 +57,7 @@ test('Pages clients complete two-person game over authenticated HTTP and reconne
  await h.call(b,'action',{type:'next',round:0});assert.equal((await h.call(b,'state')).data.view.round,0); // guest is not this round's author/host
  await h.call(a,'action',{type:'next',round:0});
  assert.equal((await h.call(b,'action',{type:'answer',round:1,choice:0})).status,409);
- await h.call(a,'action',{type:'answer',round:1,choice:0});const end=await h.call(b,'action',{type:'next',round:1});
+ await h.call(a,'action',{type:'answer',round:1,choice:0});assert.equal((await h.call(b,'action',{type:'next',round:1})).status,409);const end=await h.call(a,'action',{type:'next',round:1});
  assert.equal(end.data.view.phase,'finished');assert.deepEqual(end.data.view.players.map(p=>p.score),[100,100]);assert.equal(end.data.mediaStatus,'done');assert.equal((await h.call(a,'photo/'+aPhoto)).status,410);
  await assert.rejects(access(path.join(h.dir,'rooms',a.code,'media')));
 });
