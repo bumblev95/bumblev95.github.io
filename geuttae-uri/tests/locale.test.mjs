@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {t,tr,setLanguage,getLanguage,sampleText,appError} from '../releases/0.5.1/locale.js';
-import {english} from '../releases/0.5.1/en.js';
-import {memoryTemplates,renderMemoryHTML} from '../releases/0.5.1/memory.js';
+import {t,tr,setLanguage,getLanguage,sampleText,appError} from '../releases/0.5.2/locale.js';
+import {english} from '../releases/0.5.2/en.js';
+import {memoryTemplates,renderMemoryHTML} from '../releases/0.5.2/memory.js';
 test('English translates developer literals, never interpolated player text',()=>{
  setLanguage('en');assert.equal(t('가족 모드'),'Family Time');assert.equal(tr`정답 +${75}점`,'Correct +75 points');
  const player='사진',question='추억';assert.equal(tr`<strong>${player}</strong>님의 문제: ${question}`,"<strong>사진</strong>'s question: 추억");

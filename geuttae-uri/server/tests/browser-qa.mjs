@@ -85,7 +85,7 @@ try{
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
  await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.12';await route.fulfill({response:r,json:m});});
- await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
+ await a.locator('#settings-toggle').click();await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
  // Network loss does not erase membership. Visibility/reconnect restores snapshot.

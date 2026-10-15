@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.5.1',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.5.2',{exact:true}).waitFor({state:'attached'});
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -94,7 +94,7 @@ try{
  assert.ok((await readFile(path.join(out,'downloaded-book.pdf'))).subarray(0,8).toString().startsWith('%PDF-1.4'));
  const longPDFEvent=page.waitForEvent('download',{timeout:120000});
  await page.evaluate(async()=>{
-  const {renderMemoryHTML}=await import('./releases/0.5.1/memory.js'),{downloadBookPDF}=await import('./releases/0.5.1/book-viewer.js');
+  const {renderMemoryHTML}=await import('./releases/0.5.2/memory.js'),{downloadBookPDF}=await import('./releases/0.5.2/book-viewer.js');
   const text='긴 이야기를 페이지 끝까지 안전하게 담는지 확인합니다. '.repeat(20);
   const players=Array.from({length:8},(_,i)=>({name:('참가자'+i+'가나다라마바사아자차카타파하').slice(0,16),score:100}));
   const entries=players.map((p,i)=>({round:i,photoId:'long'+i,author:p.name,story:text.slice(0,240),prompt:text.slice(0,160),options:Array(4).fill(text.slice(0,60)),correctIndex:0,responses:players.map(p=>({name:p.name,answer:text.slice(0,60),correct:false}))}));
@@ -151,7 +151,7 @@ try{
  await page.locator('#modal .modal-close').click();assert.equal(await page.evaluate(()=>document.activeElement?.dataset.action),'memory-preview');assert.equal(await page.locator('#apply-update').isDisabled(),false);
  await page.locator('[data-action="home"]').last().click();await page.locator('#modal [data-action="confirm"]').click();assert.equal(await page.evaluate(()=>document.body.dataset.screen),'home');
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
- await page.getByRole('button',{name:'사진은 어떻게 보관되나요?',exact:true}).click();assert.equal(await page.locator('#modal').evaluate(el=>el.classList.contains('memory-modal')),false);await page.getByRole('button',{name:'닫기',exact:true}).click();
+ await page.locator('#settings-toggle').click();await page.locator('#settings-dialog [data-action="privacy"]').click();assert.equal(await page.locator('#modal').evaluate(el=>el.classList.contains('memory-modal')),false);await page.getByRole('button',{name:'닫기',exact:true}).click();
  assert.equal(await page.evaluate(()=>localStorage.length),0);assert.equal(await page.evaluate(()=>sessionStorage.length),0);assert.equal(await page.evaluate(()=>navigator.serviceWorker.getRegistrations().then(r=>r.length)),0);
  assert.ok(!requests.some(url=>url.includes('/api/')));assert.ok(!requests.some(url=>!url.startsWith(base)&&!url.startsWith('data:')&&!url.startsWith('blob:')&&!url.startsWith('file:')));
  assert.deepEqual(errors,[]);
