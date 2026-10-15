@@ -37,6 +37,17 @@ class ReleaseAudit(unittest.TestCase):
         self.manifest.write_text(xml)
         with self.assertRaisesRegex(AssertionError, 'Unexpected foreground service'):
             self.run_audit()
+    def test_compiled_and_source_signature_levels_with_unsafe_rejection(self):
+        permission = module.PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+        for level in ('signature', '0x2', '0x00000002', '2', 'normal', '0x0', 'dangerous', '0x1'):
+            with self.subTest(level=level):
+                extra = f'<permission android:name="{permission}" android:protectionLevel="{level}"/><uses-permission android:name="{permission}"/>'
+                self.manifest.write_text(XML.format(extra=extra))
+                if level in ('signature', '0x2', '0x00000002', '2'):
+                    self.run_audit()
+                else:
+                    with self.assertRaisesRegex(AssertionError, 'signature protected'):
+                        self.run_audit()
     def test_native_dependency_requires_page_size_review(self):
         with zipfile.ZipFile(self.aab, 'a') as z:
             z.writestr('base/lib/arm64-v8a/new.so', b'library')

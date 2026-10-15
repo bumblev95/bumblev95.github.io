@@ -73,6 +73,16 @@ jobs:
           cp geuttae-uri/mobile/README.md android-delivery/README.md
           cp geuttae-uri/mobile/qa-output/ad-build-report.json android-delivery/ad-build-report.json
           sha256sum android-delivery/*.apk android-delivery/*.aab > android-delivery/SHA256SUMS.txt
+      - name: Preserve release audit diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-audit-diagnostics
+          path: |
+            android-delivery/merged-release-manifest.xml
+            geuttae-uri/mobile/qa-output/ad-build-report.json
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Us-Back-Then-v1.0.0-candidate

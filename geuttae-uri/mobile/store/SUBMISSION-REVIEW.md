@@ -17,7 +17,7 @@ Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This
 | Store/Console | KO/EN text describes only currently working free features. | Final graphic/screenshots, correct audience/IARC, ads/Data safety declarations and app-access instructions, actual account/testing status and any legal acceptance. No declarations were selected. |
 | Monetization | AdMob 25.5.0 and UMP 4.0.0 are now present; release serving defaults OFF. Debug uses Google test ads. No sign-in or Billing SDK; owner AdMob IDs retained. | Verify native ad/UMP behavior and consent setup; implement sign-in/account deletion, paid ad-removal, verified billing and durable paid-book delivery, or obtain an explicit owner change of launch scope. Do not silently submit this as the requested monetized release. |
 
-Local follow-up verification: 118 server tests, 20 core tests, 7 native/advertising tests, 5 release-audit negative/positive cases; bundled KO/EN moderation/consent, home at seven sizes, full demo and stub native save/cancel checks passed. These browser checks do not prove native device behavior.
+Local follow-up verification: 118 server tests, 20 core tests, 7 native/advertising tests, 6 release-audit negative/positive cases; bundled KO/EN moderation/consent, home at seven sizes, full demo and stub native save/cancel checks passed. These browser checks do not prove native device behavior.
 
 Use [DATA-SAFETY-WORKSHEET.md](DATA-SAFETY-WORKSHEET.md), [SIGNING-AND-CONSOLE.md](SIGNING-AND-CONSOLE.md) and [DEVICE-TEST-RECORD.md](DEVICE-TEST-RECORD.md) for the specific handoff. Every physical-device row is deliberately NOT RUN.
 

@@ -11,6 +11,16 @@ ANDROID = '{http://schemas.android.com/apk/res/android}'
 PACKAGE = 'com.bumblevai.thenus'
 
 
+def is_signature(value):
+    # Source XML uses enum names; apkanalyzer decodes compiled enums as hex integers.
+    if value == 'signature':
+        return True
+    try:
+        return int(value, 0) == 2
+    except (ValueError, TypeError):
+        return False
+
+
 def audit(manifest, apk, aab):
     root = ET.fromstring(Path(manifest).read_text())
     assert root.get('package') == PACKAGE, 'Wrong release package (TEST must not be uploaded)'
@@ -38,14 +48,14 @@ def audit(manifest, apk, aab):
     assert permissions <= allowed, 'Unreviewed merged permissions: ' + str(permissions - allowed)
     private = PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
     if private in permissions:
-        assert any(p.get(ANDROID + 'name') == private and p.get(ANDROID + 'protectionLevel') == 'signature'
+        assert any(p.get(ANDROID + 'name') == private and is_signature(p.get(ANDROID + 'protectionLevel'))
                    for p in root.findall('permission')), 'Receiver permission must be signature protected'
     files = []
     for filename in (apk, aab):
         filename = Path(filename)
         with zipfile.ZipFile(filename) as archive:
             names = archive.namelist()
-            assert not any(n.endswith('.so') for n in names), 'Native library added: review 16 KB page-size compatibility before release'
+            assert not any(n.endswith('.so') for n in names), 'Native library added: review 16 KB page-size compatibility before release: ' + str([n for n in names if n.endswith('.so')])
             assert not any(n.lower().endswith(('.jks', '.keystore', '.p12', '.pfx')) for n in names), 'Private key packaged'
         files.append({'name': filename.name, 'sha256': hashlib.sha256(filename.read_bytes()).hexdigest(), 'bytes': filename.stat().st_size})
     return {'package': PACKAGE, 'versionName': '1.0.0', 'versionCode': 10000,
