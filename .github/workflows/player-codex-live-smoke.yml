@@ -1,0 +1,19 @@
+name: PLAYER’S CODEX · deployed HTTP smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'player-codex/**'
+      - '.github/workflows/player-codex-live-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  live-http-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python player-codex/tests/live_smoke.py
