@@ -24,7 +24,7 @@ jobs:
       - name: Check syntax and consent/export rules
         working-directory: geuttae-uri
         run: |
-          for file in releases/0.4.10/*.js; do node --check "$file"; done
+          for file in releases/0.4.11/*.js; do node --check "$file"; done
           npm test
       - name: Install Chromium
         working-directory: geuttae-uri
@@ -35,6 +35,9 @@ jobs:
       - name: Verify long photo journals and offline print layouts
         working-directory: geuttae-uri
         run: node tests/photobook-qa.mjs
+      - name: Verify timed demo points, timeout and photo-only composer
+        working-directory: geuttae-uri
+        run: node tests/demo-score-qa.mjs
       - name: Verify thirty-memory book navigation, full PDF and cancellation
         working-directory: geuttae-uri
         run: node tests/collection-qa.mjs

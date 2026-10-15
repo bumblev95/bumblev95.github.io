@@ -4,8 +4,8 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,questionKey,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.9/logic.js';
-import {captureMemory,buildMemoryBook} from '../../releases/0.4.9/memory.js';
+import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.11/logic.js';
+import {captureMemory,buildMemoryBook} from '../../releases/0.4.11/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
 import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
@@ -115,7 +115,7 @@ export async function createApp(options={}){
  }
  function activeSession(room,req){const s=sessionFor(room,req);check(s&&s.status==='active',403,'참가 승인을 받은 뒤 이용할 수 있어요.');return s;}
  function safeState(room,s){
-  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,multiQuestionsSupported:true,textQuestionsSupported:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
+  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
   if(s.status!=='active')return {...base,nickname:s.name};
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
@@ -267,7 +267,7 @@ export async function createApp(options={}){
     return respond(res,204,Buffer.alloc(0),{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Photo-Consent','Access-Control-Max-Age':'600'});
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
-   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',multiQuestionsSupported:true,textQuestionsSupported:true,partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
+   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
    if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,commerce.catalog);
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
@@ -328,12 +328,13 @@ export async function createApp(options={}){
      check(method==='POST',405,'지원하지 않는 요청이에요.');limit(req,'write',80);
      if(route==='upload'){
       check(room.game.phase==='lobby',409,'대기방에서 사진을 준비해 주세요.');
+      check(questionLimitFor(room.game,s.id)!==0,403,'추억 배틀은 방장만 사진을 올릴 수 있어요.');
       check(req.headers['content-type']==='image/jpeg',415,'JPG 사진을 사용해 주세요.');
       check(req.headers['x-photo-consent']==='yes',400,'사진 속 사람들의 공유 동의를 확인해 주세요.');
       let photo;try{photo=sanitizeJpeg(await readBody(req,900_000));}catch(e){if(e instanceof ApiError)throw e;throw new ApiError(400,e.message);}
       const inUse=new Set(Object.values(room.game.questions).filter(q=>q.authorId===s.id).map(q=>q.photoId));
       for(const [old,p] of Object.entries(room.photos))if(p.ownerId===s.id&&!inUse.has(old)){await dropPhoto(room,old);}
-      check(Object.values(room.photos).filter(p=>p.ownerId===s.id).length<4,409,'한 사람당 최대 3문제예요. 먼저 기존 문제를 수정하거나 삭제해 주세요.');
+      const photoLimit=questionLimitFor(room.game,s.id);check(photoLimit===null||Object.values(room.photos).filter(p=>p.ownerId===s.id).length<photoLimit+1,409,'한 사람당 사진은 최대 5장이에요. 먼저 기존 문제를 수정하거나 삭제해 주세요.');
       const id=randomUUID();await fs.mkdir(path.join(roomsDir,code,'media'),{recursive:true,mode:0o700});await fs.writeFile(mediaOf(code,id),photo.bytes,{mode:0o600});
       room.photos[id]={ownerId:s.id,width:photo.width,height:photo.height};room.deletion='stored';await save(room);
       return respond(res,201,{photoId:id,width:photo.width,height:photo.height});
@@ -369,7 +370,7 @@ export async function createApp(options={}){
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
      if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.questions[room.game.order[room.game.round]]?.authorId,reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
      const editedKey=questionKey(s.id,b.slot||0),oldPhoto=room.game.questions[editedKey]?.photoId;
-     const serverPoints=room.roundDeadlineAt&&room.timeLimitSeconds?Math.round(100*Math.max(0,Math.min(1,(room.roundDeadlineAt-gameNow())/(room.timeLimitSeconds*1000)))):100;
+     const serverPoints=pointsForTime(room.roundDeadlineAt,room.timeLimitSeconds,gameNow());
      room.game=applyAction(room.game,s.id,{...b,serverPoints});
      if(['start','next'].includes(b.type))room.roundDeadlineAt=room.game.phase==='question'&&room.timeLimitSeconds?gameNow()+room.timeLimitSeconds*1000:null;
      if(room.game.phase!=='question')room.roundDeadlineAt=null;

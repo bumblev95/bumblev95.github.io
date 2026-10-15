@@ -84,7 +84,7 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.11';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.12';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
@@ -122,7 +122,7 @@ try{
  // Tab-only export state never survives a reload after server deletion.
  await b.reload();await b.waitForFunction(()=>document.body.dataset.screen==='finished');assert.equal(await b.locator('[data-action="memory-preview"]').isDisabled(),true);
  await a.locator('[data-action="rematch"]').click();await a.locator('#modal [data-action="confirm"]').click();
- for(const p of [a,b]){await p.waitForFunction(()=>document.body.dataset.screen==='lobby');assert.equal(await p.locator('.person').count(),2);assert.match(await p.locator('#app').innerText(),/참여 방식 선택 중/);assert.equal(await p.locator('[data-action="memory-preview"]').count(),0);}
+ for(const p of [a,b]){await p.waitForFunction(()=>document.body.dataset.screen==='lobby');assert.equal(await p.locator('.person').count(),2);assert.match(await p.locator('#app').innerText(),/맞히며 참여해요/);assert.equal(await p.locator('[data-action="memory-preview"]').count(),0);}
 
  for(const p of [a,b]){
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -131,23 +131,17 @@ try{
  }
  assert.deepEqual(errors,[]);
 
- // A fresh game: three text/illustration questions and a guest who only answers.
- for(let slot=0;slot<3;slot++){
-  await a.locator('.photo-add[data-action="compose"]').click();
-  await a.locator(`[data-action="question-media"][data-media="${slot===2?'illustration':'text'}"]`).click();
-  assert.equal(await a.locator('#photo-pick').isVisible(),false);
-  await a.locator('[name="prompt"]').fill('사진 없이 나누는 기억 '+slot);
-  for(let i=0;i<4;i++)await a.locator(`[name="option${i}"]`).fill(['첫째','둘째','셋째','넷째'][i]);
-  await a.locator('[name="correct"][value="0"]').check();await a.locator('[name="story"]').fill('글로도 남기는 우리의 이야기');await a.locator('[name="allowKeepsake"]').check();await a.locator('[name="confirmed"]').check();await a.locator('#question-form [type="submit"]').click();await a.locator('#modal').waitFor({state:'hidden'});
-  assert.equal(await a.locator('.question-item').count(),slot+1);
+ // Five photo questions, with the guest automatically free to only answer.
+ for(let slot=0;slot<5;slot++){
+  await a.locator('.photo-add[data-action="compose"]').click();assert.equal(await a.locator('[data-action="question-media"]').count(),0);
+  await a.locator('#photo-file').setInputFiles(fileURLToPath(new URL('./fixtures/sample.jpg',import.meta.url)));
+  await a.locator('[name="prompt"]').fill('사진으로 나누는 기억 '+slot);for(let i=0;i<4;i++)await a.locator(`[name="option${i}"]`).fill(['첫째','둘째','셋째','넷째'][i]);await a.locator('[name="correct"][value="0"]').check();await a.locator('[name="story"]').fill('사진과 함께 남기는 이야기');await a.locator('[name="allowKeepsake"]').check();await a.locator('[name="confirmed"]').check();await a.locator('#question-form [type="submit"]').click();await a.locator('#modal').waitFor({state:'hidden'});assert.equal(await a.locator('.question-item').count(),slot+1);
  }
- assert.equal(await a.locator('.photo-add[data-action="compose"]').count(),0);
- await b.locator('[data-action="answer-only"]').click();await a.locator('[data-action="start"]:enabled').waitFor();await a.locator('[data-action="start"]').click();
- for(let round=0;round<3;round++){
-  await b.waitForFunction(n=>document.querySelector('.round-line strong')?.textContent.trim().startsWith(String(n+1).padStart(2,'0')),round);
-  await b.locator('.no-photo-question').waitFor();assert.equal(await b.locator('.quiz-photo').isVisible(),false);
-  await b.locator('[data-action="choose"][data-choice="0"]').click();await b.locator('[data-action="answer"]').click();await a.locator('[data-action="next"]').waitFor();await a.locator('[data-action="next"]').click();
- }
- await a.waitForFunction(()=>document.body.dataset.screen==='finished');await a.locator('[data-action="memory-preview"]').click();await a.locator('[data-action="memory-save"]').waitFor();assert.equal(await a.locator('.text-memory').count(),3);await a.screenshot({path:out+'text-question-book.png'});
+ assert.equal(await a.locator('.photo-add[data-action="compose"]').count(),0);assert.equal(await b.locator('[data-action="answer-only"]').count(),0);await a.locator('[data-action="start"]:enabled').waitFor();await a.locator('[data-action="start"]').click();
+ for(let round=0;round<5;round++){await b.waitForFunction(n=>document.querySelector('.round-line strong')?.textContent.trim().startsWith(String(n+1).padStart(2,'0')),round);await b.locator('.quiz-photo').waitFor();await b.locator('[data-action="choose"][data-choice="0"]').click();await b.locator('[data-action="answer"]').click();await a.locator('[data-action="next"]').waitFor();await a.locator('[data-action="next"]').click();}
+ await a.waitForFunction(()=>document.body.dataset.screen==='finished');await a.locator('[data-action="memory-preview"]').click();await a.locator('[data-action="memory-save"]').waitFor();assert.equal(await a.locator('.photo-page').count(),5);
+
+ // Mode cards describe authorship; a battle guest has no composer.
+ await a.unroute('**/version.json?*');await a.goto(base+'/geuttae-uri/');await a.locator('[data-action="new"]').first().click();await a.locator('[name="nickname"]').fill('Host');await a.locator('[name="title"]').fill('사진 배틀');await a.locator('#entry-form [type="submit"]').click();assert.equal(await a.locator('.mode-authors').count(),4);assert.match(await a.locator('.room-mode-card').nth(1).innerText(),/방장만 문제를 출제/);await a.locator('[name="mode"][value="battle"]').check();await a.locator('[name="consent"]').check();await a.locator('#entry-form [type="submit"]').click();await a.waitForURL(/room=/);const battleCode=new URL(a.url()).searchParams.get('room');await b.goto(base+'/geuttae-uri/?room='+battleCode);await b.locator('[name="nickname"]').fill('Guest');await b.locator('[name="consent"]').check();await b.locator('#entry-form [type="submit"]').click();await a.locator('[data-action="approve"]').click();await b.waitForFunction(()=>document.body.dataset.screen==='lobby');assert.equal(await b.locator('[data-action="compose"]').count(),0);assert.match(await b.locator('#app').innerText(),/방장의 사진을 기다려요/);
  console.log('BROWSER PASS: two isolated mobile sessions across separate HTTPS static/API origins, real uploads/SSE, approval, author exclusion, rotation, reconnect, final scores, deletion, authorized book delivery to both clients, denied-content exclusion, all templates, offline export/PDF, tab-only lifetime, update deferral and layout. Physical-device QA remains pending.');
 }finally{await browser.close();await app.close();await new Promise(r=>api.close(r));await new Promise(r=>pages.close(r));await rm(dir,{recursive:true,force:true});}

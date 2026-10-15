@@ -193,24 +193,18 @@ test('party missions default off and cannot be enabled in another mode',async t=
 });
 
 
-test('three slots preserve owned photos, rotate authors, allow answer-only players and export text memories',async t=>{
- const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);
- const first=await h.question(a);await h.call(a,'action',{type:'submitQuestion',photoId:first,prompt:'첫 번째 기억',options:['A','B','C','D'],correctIndex:0,story:'첫 번째 이야기',confirmed:true,allowKeepsake:true});
- const second=await h.call(a,'upload',undefined,{raw:jpeg,headers:{'X-Photo-Consent':'yes'}});
- assert.equal(second.status,201);
- const q={type:'submitQuestion',slot:1,photoId:second.data.photoId,prompt:'두 번째 기억',options:['A','B','C','D'],correctIndex:0,story:'두 번째 이야기',confirmed:true,allowKeepsake:true};
- assert.equal((await h.call(a,'action',q)).status,200);
- assert.equal((await h.call(a,'photo/'+first)).status,200,'upload must preserve photos referenced by other slots');
- assert.equal((await h.call(a,'action',{...q,slot:2,media:'text',photoId:'',prompt:'글로 남긴 기억'})).status,200);
- assert.equal((await h.call(a,'action',{...q,slot:3})).status,409);
- const state=(await h.call(a,'state')).data.view;assert.equal(state.myQuestions.length,3);assert.equal(state.totalPrepared,3);assert.equal((await h.call(b,'state')).data.view.myQuestions.length,0);
- assert.equal((await h.call(b,'action',{type:'answerOnly',enabled:true})).status,200);
- assert.equal((await h.call(a,'action',{type:'start'})).data.view.total,3);
- let final;
- for(let round=0;round<3;round++){
-  assert.equal((await h.call(a,'action',{type:'answer',round,choice:0})).status,409);
-  assert.equal((await h.call(b,'action',{type:'answer',round,choice:0})).data.view.phase,'reveal');
-  final=await h.call(a,'action',{type:'next',round});
- }
- assert.equal(final.data.view.players.find(p=>p.id===b.id).score,300);assert.equal(final.data.memorySnapshot.book.entries.length,3);assert.equal(final.data.memorySnapshot.book.entries[2].media,'text');assert.equal(final.data.mediaStatus,'done');
+test('five photos are independent and non-authors can play without a readiness action',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const photos=[];
+ for(let slot=0;slot<5;slot++){const photoId=await h.photo(a);photos.push(photoId);assert.equal((await h.call(a,'action',{type:'submitQuestion',slot,photoId,prompt:'사진 기억 '+slot,options:['A','B','C','D'],correctIndex:0,story:'우리의 이야기',confirmed:true,allowKeepsake:true})).status,200);}
+ for(const id of photos)assert.equal((await h.call(a,'photo/'+id)).status,200);
+ const q={type:'submitQuestion',slot:5,photoId:photos[0],prompt:'여섯 번째',options:['A','B','C','D'],correctIndex:0,story:'',confirmed:true};assert.equal((await h.call(a,'action',q)).status,409);assert.equal((await h.call(a,'action',{...q,slot:0,media:'text',photoId:''})).status,409);
+ assert.equal((await h.call(a,'action',{type:'start'})).data.view.total,5);let end;
+ for(let round=0;round<5;round++){assert.equal((await h.call(a,'action',{type:'answer',round,choice:0})).status,409);await h.call(b,'action',{type:'answer',round,choice:0});end=await h.call(a,'action',{type:'next',round});}
+ assert.equal(end.data.view.players.find(p=>p.id===b.id).score,500);assert.equal(end.data.memorySnapshot.book.entries.length,5);assert.equal(end.data.mediaStatus,'done');
+});
+test('battle host can upload and author more than five; guest uploads and authoring are rejected',async t=>{
+ const h=await harness(t),a=await h.create('방장',{mode:'battle'}),b=await h.join(a);await h.approve(a,b);
+ assert.equal((await h.call(b,'upload',undefined,{raw:jpeg,headers:{'X-Photo-Consent':'yes'}})).status,403);
+ for(let slot=0;slot<7;slot++){const photoId=await h.photo(a);assert.equal((await h.call(a,'action',{type:'submitQuestion',slot,photoId,prompt:'방장의 기억 '+slot,options:['A','B','C','D'],correctIndex:0,story:'',confirmed:true})).status,200);}
+ const start=await h.call(a,'action',{type:'start'});assert.equal(start.data.view.total,7);assert.equal(start.data.view.hostOnlyQuestions,true);
 });
