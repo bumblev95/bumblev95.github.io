@@ -78,6 +78,7 @@ public class AdsPlugin extends Plugin {
         return BuildConfig.ADS_ENABLED && audienceSetThisLaunch && preferences.getBoolean("ageGate13PlusV1", false)
             && preferences.getInt("ageGroup", 0) == 1;
     }
+    boolean isAdultAudience() { return adultChoice(); }
     private boolean eligible() { return accountAllowsAds && adultChoice(); }
 
     private void updateConsent(Runnable done) {
