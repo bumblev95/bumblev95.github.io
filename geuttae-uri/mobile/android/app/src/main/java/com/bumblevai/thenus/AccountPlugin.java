@@ -160,7 +160,13 @@ public class AccountPlugin extends Plugin {
         else notifyListeners("billingChanged", value);
     }
     @PluginMethod public void billingStatus(PluginCall call) { if (begin(call)) billing.start(call, "status"); }
-    @PluginMethod public void billingBuy(PluginCall call) { if (begin(call)) { invalidateAdvertising(); billing.start(call, "buy"); } }
+    @PluginMethod public void billingBuy(PluginCall call) {
+        android.content.SharedPreferences age = getContext().getSharedPreferences("thenus_ad_privacy", Context.MODE_PRIVATE);
+        if (!age.getBoolean("ageGate13PlusV1", false) || age.getInt("ageGroup", 0) != 1) {
+            JSObject result = new JSObject(); result.put("status", "AGE_RESTRICTED"); call.resolve(result); return;
+        }
+        if (begin(call)) { invalidateAdvertising(); billing.start(call, "buy"); }
+    }
     @PluginMethod public void billingRestore(PluginCall call) { if (begin(call)) billing.start(call, "restore"); }
     private void fail(PluginCall call, Exception error) {
         String code = error instanceof AccountFailure ? ((AccountFailure) error).code : "UNAVAILABLE";
