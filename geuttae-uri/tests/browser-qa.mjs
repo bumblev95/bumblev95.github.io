@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(fileURLToPath(new URL('../../',import.meta.url)));
 const out=fileURLToPath(new URL('./qa-output/',import.meta.url));await mkdir(out,{recursive:true});
 const server=createServer(async(req,res)=>{
-  try{let pathname=new URL(req.url,'http://localhost').pathname;if(pathname.endsWith('/'))pathname+='index.html';const file=path.resolve(root,'.'+pathname);assert.ok(file.startsWith(root+path.sep));const data=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'})[path.extname(file)]||'application/octet-stream');res.end(data);}catch{res.statusCode=404;res.end('Not found');}
+  try{let pathname=new URL(req.url,'http://localhost').pathname;if(pathname.endsWith('/'))pathname+='index.html';const file=path.resolve(root,'.'+pathname);assert.ok(file.startsWith(root+path.sep));const data=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webmanifest':'application/manifest+json'})[path.extname(file)]||'application/octet-stream');res.end(data);}catch{res.statusCode=404;res.end('Not found');}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}`;
@@ -16,7 +16,7 @@ const errors=[],requests=[];
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('dialog',d=>d.accept());
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.4.7',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.4.8',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-action="memory-preview"]').count(),0);
  assert.equal(await page.locator('.banner-demo').count(),1);
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`home width ${width}`);}
@@ -62,8 +62,17 @@ try{
  assert.equal(await page.locator('.book-preview .memory-image').count(),3);
  assert.equal(await page.locator('#memory-customize select').count(),0);await page.locator('#memory-template').scrollIntoViewIfNeeded();await page.screenshot({path:out+'book-choice-cards.png'});
  assert.equal(await page.locator('.book-appendix').count(),0);assert.equal(await page.locator('#memory-palette input').count(),6);
+ // Keep the active choice and the scrollable dialog in place when selecting.
+ const layoutChoice=page.locator('#memory-layout input[value="gallery"]').locator('..');await layoutChoice.scrollIntoViewIfNeeded();
+ const beforeChoice=await page.locator('#modal').evaluate(el=>el.scrollTop);
+ await layoutChoice.click();await page.waitForTimeout(100);
+ assert.ok(Math.abs(await page.locator('#modal').evaluate(el=>el.scrollTop)-beforeChoice)<3,'design selection must preserve dialog scroll');
+ assert.ok(await page.locator('#memory-layout input[value="gallery"]').isChecked());
+ await page.screenshot({path:out+'book-stable-choice.png'});
  await page.locator('#memory-layout input[value=\"gallery\"]').locator('..').click();await page.locator('#memory-font input[value=\"serif\"]').locator('..').click();await page.locator('#memory-cover-style input[value=\"frame\"]').locator('..').click();await page.locator('#memory-message').fill('다시 만나도 우리답게');await page.locator('[data-action="memory-message-apply"]').click();assert.equal(await page.locator('.memory-book').getAttribute('data-layout'),'gallery');assert.equal(await page.locator('.memory-book').getAttribute('data-font'),'serif');assert.match(await page.locator('.cover-motto').innerText(),/다시 만나도/);
  const sampleSize=await page.locator('.book-preview .memory-image').first().evaluate(el=>[el.naturalWidth,el.naturalHeight]);
+ // Fully decode the recovered cafe source, including the lower half.
+ const cafeComplete=await page.evaluate(async()=>{const img=new Image();img.src='./assets/sample-cafe-v2.jpg';await img.decode();const c=document.createElement('canvas');c.width=c.height=2;c.getContext('2d').drawImage(img,0,0,2,2);return Array.from(c.getContext('2d').getImageData(0,1,2,1).data);});assert.ok(cafeComplete[3]===255&&cafeComplete[7]===255);
  assert.equal(sampleSize[0],1024);assert.equal(sampleSize[1],1024);
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-NOT-FOR-EXPORT'));
  assert.ok(!(await page.locator('.book-preview').innerText()).includes('PRIVATE-STORY'));
@@ -83,7 +92,7 @@ try{
  assert.ok((await readFile(path.join(out,'downloaded-book.pdf'))).subarray(0,8).toString().startsWith('%PDF-1.4'));
  const longPDFEvent=page.waitForEvent('download',{timeout:120000});
  await page.evaluate(async()=>{
-  const {renderMemoryHTML}=await import('./releases/0.4.7/memory.js'),{downloadBookPDF}=await import('./releases/0.4.7/book-viewer.js');
+  const {renderMemoryHTML}=await import('./releases/0.4.8/memory.js'),{downloadBookPDF}=await import('./releases/0.4.8/book-viewer.js');
   const text='긴 이야기를 페이지 끝까지 안전하게 담는지 확인합니다. '.repeat(20);
   const players=Array.from({length:8},(_,i)=>({name:('참가자'+i+'가나다라마바사아자차카타파하').slice(0,16),score:100}));
   const entries=players.map((p,i)=>({round:i,photoId:'long'+i,author:p.name,story:text.slice(0,240),prompt:text.slice(0,160),options:Array(4).fill(text.slice(0,60)),correctIndex:0,responses:players.map(p=>({name:p.name,answer:text.slice(0,60),correct:false}))}));
@@ -97,7 +106,7 @@ try{
  assert.equal(await page.locator('.book-cover h1').innerText(),'우리 가족의 가을 <추억>');
  const chosenCover=await page.locator('.book-cover img').getAttribute('src');assert.equal(chosenCover,await page.locator('.memory-page img').nth(1).getAttribute('src'));
  // Version application remains blocked with a private album dialog open.
- await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.4.8';await route.fulfill({response:r,json:v});});
+ await page.route('**/version.json?*',async route=>{const r=await route.fetch();const v=await r.json();v.version='0.4.9';await route.fulfill({response:r,json:v});});
  await page.evaluate(()=>document.getElementById('check-update').click());await page.locator('#apply-update').waitFor();assert.equal(await page.locator('#apply-update').isDisabled(),true);
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="memory-save"]').click();const download=await downloadEvent;
  assert.equal(download.suggestedFilename(),'Then-Us-Memory-Book-TEST.html');await download.saveAs(path.join(out,'memory.html'));
