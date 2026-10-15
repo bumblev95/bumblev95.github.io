@@ -122,7 +122,7 @@ function homeMarkup(){return `<section class="fade-in">${offline?'<div class="of
  <div class="memory-collage" aria-label="바다 여행, 피크닉, 카페를 담은 AI 생성 예시 사진 세 장"><figure class="polaroid first"><span class="tape"></span><img src="${asset('sample-seaside-v1-thumb.png')}" alt="친구들이 해변을 걷는 AI 생성 예시 사진"><figcaption>함께 갔던 바다</figcaption></figure><figure class="polaroid second"><span class="tape"></span><img src="${asset('sample-picnic-v1-thumb.png')}" alt="친구들이 소풍 도시락을 여는 AI 생성 예시 사진"><figcaption>유난히 웃던 날</figcaption></figure><figure class="polaroid third"><img src="${asset('sample-cafe-v1-thumb.png')}" alt="친구들이 딸기라테를 마시는 AI 생성 예시 사진"><figcaption>우리의 작은 순간</figcaption></figure><span class="tiny-star" aria-hidden="true">✧</span><span class="tiny-flower" aria-hidden="true">✳</span></div>
  <div class="collage-note">사진은 AI 생성 예시 사진이에요. 모임에서는 여러분의 사진을 써요.</div>
  <div class="home-actions">${offline?button('먼저 체험해 보기 <span aria-hidden="true">→</span>','demo'):button(icon('plus')+'새 모임 만들기','new')}${offline?button('친구 초대 · 준비 중','new','outline'):button(icon('join')+'방 코드로 참여하기','join','outline')}</div>
- <div class="home-facts">${offline?'<span>다운로드 없이</span><span>가상 친구와</span><span>사진 전송 없음</span>':'<span>친구끼리만</span><span>2–8명</span><span>회원가입 없이</span>'}</div>
+ <div class="home-facts">${offline?'<span>다운로드 없이</span><span>가상 친구와</span><span>사진 전송 없음</span>':'<span>친구끼리만</span><span>친구·가족과</span><span>회원가입 없이</span>'}</div>
  ${offline?'':button('먼저 체험해 보기 <span aria-hidden="true">→</span>','demo','secondary')}
  <div class="how-row"><strong>친구를 초대하고</strong><span class="arrow">→</span><strong>사진을 꺼내고</strong><span class="arrow">→</span><strong>기억을 맞혀요</strong></div>${button('무료·선택 상품 안내','plans','quiet')}</section>`;}
 function pendingMarkup(){
