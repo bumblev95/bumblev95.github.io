@@ -1,8 +1,11 @@
 import { t, tr, getLanguage } from "../../releases/1.0.0/locale.js";
+import {Capacitor} from '@capacitor/core';
+import {require13PlusAudience} from './age-gate.js';
 import { installNative } from './native.js';
 import version from '../release.json';
 import {installAccountSettings} from './account.js';
 await installNative();
+if (Capacitor.isNativePlatform()) await require13PlusAudience(window.__NATIVE__?.ads);
 window.__API_BASE__ = 'https://geuttae-api-test-production.up.railway.app';
 window.__OFFLINE__ = false;
 window.__ASSET_BASE__ = new URL('./assets/', location.href).href;
@@ -41,6 +44,7 @@ async function adSetting(method, button) {
       : window.__NATIVE__.ads[method]());
     const messages = {
       disabled: '정식 광고는 아직 활성화하지 않았어요.',
+      'use-app-age': '앱을 시작할 때 확인한 연령대가 적용되고 있어요.',
       updated: '광고 개인정보 설정을 확인했어요.',
       'not-required': '이 지역에서는 별도의 광고 개인정보 선택창이 필요하지 않아요.',
       'age-ineligible': '연령 선택을 저장했어요. 광고는 요청하지 않아요.',

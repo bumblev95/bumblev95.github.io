@@ -1,13 +1,13 @@
 {
-  "version": "1.0.1",
-  "channel": "Google Play release candidate",
+  "version": "1.0.2",
+  "channel": "13+ teen and family safety draft",
   "date": "2026-10-15",
   "changes": [
-    "홈에 개인 광고 제거 카드를 추가해 안내와 구매 복원을 쉽게 찾을 수 있어요.",
-    "선택 로그인 버튼을 홈 하단에 배치하고, 계정 화면을 설정 맨 아래에 정리했어요."
+    "13세 이상 이용자를 위한 생년월일 기반 연령 확인을 추가했어요. 생년월일은 저장하지 않아요.",
+    "청소년 광고와 광고 제거 구매를 제한하고, 참가자 신고·차단을 추가했어요."
   ],
   "changesEn": [
-    "Find personal ad removal and purchase restoration from the new home card.",
-    "Optional sign-in is now at the bottom of Home, with a refreshed account card at the end of Settings."
+    "Added a neutral age eligibility screen for players aged 13+. Birth dates are not stored.",
+    "Ads and ad-removal checkout are restricted for teen players; added in-room player reports and blocking."
   ]
 }

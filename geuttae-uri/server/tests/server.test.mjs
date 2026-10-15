@@ -252,3 +252,34 @@ test('hidden or reported photos never reach that player in a completed book over
  const delivered=await events.next(d=>d.view?.phase==='finished');assert.equal(delivered.memorySnapshot.book.entries.length,0);assert.deepEqual(delivered.memorySnapshot.images,{});
  }finally{await events.close();}
 });
+
+test('participant reports and blocking persist, hide the blocked photos and do not remove the player', async t=>{
+ const h=await harness(t),host=await h.create(),guest=await h.join(host,'친구');
+ await h.approve(host,guest);
+ const photoId=await h.question(host);
+ await h.question(guest);
+ assert.equal((await h.call(host,'action',{type:'start'})).status,200);
+ assert.equal((await h.call(guest,'photo/'+photoId)).status,200);
+ assert.equal((await h.call(guest,'action',{type:'blockPlayer',playerId:guest.id,confirmed:true})).status,400);
+ assert.equal((await h.call(guest,'action',{type:'reportPlayer',playerId:host.id,reason:'invalid',confirmed:true})).status,400);
+ let blocked=await h.call(guest,'action',{type:'blockPlayer',playerId:host.id,confirmed:true});
+ assert.equal(blocked.status,200);
+ assert.equal(blocked.data.playerBlockingSupported,true);
+ assert.deepEqual(blocked.data.blockedPlayerIds,[host.id]);
+ assert.ok(blocked.data.hiddenPhotoIds.includes(photoId));
+ assert.equal((await h.call(guest,'photo/'+photoId)).status,403);
+ assert.equal((await h.call(host,'photo/'+photoId)).status,200);
+ assert.equal((await h.call(host,'state')).data.access,'active');
+ const report=await h.call(guest,'action',{type:'reportPlayer',playerId:host.id,reason:'harassment',confirmed:true});
+ assert.equal(report.status,200);
+ assert.equal(report.data.reportReceived,true);
+ await h.call(guest,'action',{type:'reportPlayer',playerId:host.id,reason:'harassment',confirmed:true});
+ const disk=JSON.parse(await readFile(path.join(h.dir,'rooms',host.code,'room.json'),'utf8'));
+ assert.equal(disk.reports.filter(r=>r.kind==='player').length,1);
+ await h.restart();
+ assert.equal((await h.call(guest,'photo/'+photoId)).status,403);
+ const unblocked=await h.call(guest,'action',{type:'unblockPlayer',playerId:host.id,confirmed:true});
+ assert.equal(unblocked.status,200);
+ assert.deepEqual(unblocked.data.blockedPlayerIds,[]);
+ assert.equal((await h.call(guest,'photo/'+photoId)).status,200);
+});
