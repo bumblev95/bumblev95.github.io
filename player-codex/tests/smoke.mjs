@@ -70,6 +70,9 @@ try{
     assert(html.includes('id="official-videos"'),'Official videos section missing: '+locale);
     assert(html.includes('data-official-video="reveal"'),'Reveal trailer missing: '+locale);
     assert(html.includes('data-official-video="developer"'),'Developer briefing missing: '+locale);
+    const ids=[...html.matchAll(/data-official-video="([^"]+)"/g)].map(x=>x[1]);
+    assert.deepEqual(ids,['auroria','developer','reveal'],'Latest official gameplay must lead: '+locale);
+    assert(html.includes('https://www.youtube.com/watch?v=E12uscaQvSA'),'Newest gameplay showcase link missing: '+locale);
     for(const u of ['https://www.youtube.com/watch?v=UeRY7LU0x3M','https://www.youtube.com/watch?v=78ZGLdQMPGU','https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/','https://www.youtube.com/@ArcheAgeChronicles']){
       assert(html.includes(u),'Missing source video URL '+u+' : '+locale);
     }
@@ -82,7 +85,8 @@ try{
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/','ArcheAge card navigation');
   await page.locator('.lang').click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/ko/','Language toggle to Korean');
-  assert.equal(await page.locator('.official-video').count(),2,'Korean media cards visible');
+  assert.equal(await page.locator('.official-video').count(),3,'Korean media cards visible');
+  assert.equal(await page.locator('.official-video').first().getAttribute('data-official-video'),'auroria','Newest gameplay video should be the first card');
   await page.getByRole('link',{name:/준비 가이드 보기/}).click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/demo/ko/','Korean playtest guide link');
   await page.locator('.lang').click();

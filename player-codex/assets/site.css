@@ -111,3 +111,12 @@ a{color:inherit}a:focus-visible,button:focus-visible{outline:3px solid #e8c88f;o
 .official-media-note{margin:12px 0 0;color:var(--muted);font-size:12px;line-height:1.65}
 @media(max-width:800px){.official-media-grid{gap:14px}.official-video-copy{padding:16px}.official-video-copy strong{font-size:18px}.official-media .section-title{display:block}.official-media .section-title>p{max-width:100%;margin-top:8px}}
 @media(max-width:620px){.official-media{margin-top:52px}.official-media-grid{grid-template-columns:1fr}.official-video-poster{aspect-ratio:16 / 9}.official-video-copy{padding:17px 18px}.official-video-play{width:56px;height:56px;font-size:20px}}
+
+/* Latest official gameplay showcase leads the gallery; earlier videos follow it. */
+.official-video--featured{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.82fr)}
+.official-video--featured .official-video-poster{height:100%;min-height:300px;aspect-ratio:auto}
+.official-video--featured .official-video-copy{justify-content:center;gap:13px;padding:clamp(24px,3vw,38px)}
+.official-video--featured .official-video-copy strong{font-size:clamp(23px,2.8vw,32px)}
+.official-video--featured .official-video-description{font-size:14px}
+.official-video-latest{position:absolute;z-index:1;top:15px;left:16px;padding:7px 11px;border-radius:6px;color:#151f26;background:#f0d39e;letter-spacing:.09em;font-size:11px;font-weight:900}
+@media(max-width:950px){.official-video--featured{grid-template-columns:1fr}.official-video--featured .official-video-poster{height:auto;min-height:0;aspect-ratio:16/9}.official-video--featured .official-video-copy{padding:21px;gap:9px}}
