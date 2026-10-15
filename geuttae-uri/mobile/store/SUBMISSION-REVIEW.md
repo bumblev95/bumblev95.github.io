@@ -22,10 +22,10 @@ Status: RELEASE CANDIDATE. No application has been created and no review request
 - Consent from people shown; separate optional consent for book exports.
 - Private room admission; host removal in the lobby; immediate photo/report takedown; reported author's session blocked in that room. Self-report still removes content without blocking the reporter.
 - Blocking is scoped to a room session; no account-wide or device-wide blocking is claimed.
-- A persistent operational review/contact channel and published support email are not yet confirmed. Do NOT certify full policy compliance or request public production review until that channel and the deployed backend controls are verified.
+- The owner authorized keetojt@gmail.com as the public customer-support, reporting and privacy/deletion contact on 2026-10-15. The contact is included in the bilingual policy draft and store metadata; publication and operational report handling still need verification. Do NOT certify full policy compliance or request public production review until that channel and the deployed backend controls are verified.
 
 ## Remaining required inputs/actions
-1. Public customer-support/privacy email or a functioning private contact form chosen by the developer. Never reuse a sign-in email as public support without authorization.
+1. Contact selected by the owner: keetojt@gmail.com. Publish it with the final policy/store listing and verify operational handling; do not assume that in-app reports automatically send email.
 2. Final privacy-policy URL containing that contact, developer/app identity, actual data/processor/retention practices, and deletion instructions. Draft below is not a published final policy.
 3. Owner approval of Play App Signing Terms and the export-law declaration on the new-app form. No boxes were selected on the owner's behalf.
 4. IARC questionnaire and target audience based on the actual release; do not invent an Everyone rating. The app is intended for people who know one another, not public anonymous matching.
