@@ -74,3 +74,12 @@ a{color:inherit}a:focus-visible,button:focus-visible{outline:3px solid #e8c88f;o
 @media(max-width:800px){.games{grid-template-columns:1fr}.game-card{min-height:440px}.footnotes,.topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:70px 0 50px}.nav{gap:15px}.nav .optional{display:none}}
 @media(max-width:570px){.page{width:min(calc(100% - 32px),var(--max))}.topbar{height:74px}.mark{width:36px;height:36px}.identity{gap:9px}.identity strong{font-size:13px}.identity small{font-size:8px}.nav{gap:8px;font-size:12px}.nav .optional{display:none}.hero{padding:58px 0 41px}.game-card{padding:24px;min-height:395px}.card-top{left:24px;right:24px}.card-desc{font-size:13px}.section-title{display:block}.section-title p{margin-top:5px}.footnotes,.topic-grid{grid-template-columns:1fr;gap:13px}.footnotes{padding:42px 0}.game-hero{padding:40px 0}.event-banner{padding:20px;display:block}.event-banner .event-status{text-align:left;margin-top:14px}.footer{display:block}.footer p{margin-top:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+
+/* Keep the selection hub usable on narrow devices: the brand links home, cards link to games. */
+@media (max-width:570px){.topbar .nav a:not(.lang){display:none}.topbar .nav{flex-shrink:0}.identity{min-width:0}.identity span:last-child{min-width:0}}
+/* Research and playtest preparation, without suggesting unverified mechanics are playable. */
+.guide-route{display:grid;grid-template-columns:1.3fr auto;gap:20px;align-items:center;border:1px solid rgba(233,206,157,.24);background:linear-gradient(110deg,rgba(220,191,138,.12),rgba(49,81,91,.11));border-radius:15px;padding:25px 28px;margin:0 0 54px}
+.guide-route h3{margin:7px 0 5px;font-size:23px;line-height:1.3}.guide-route p{margin:0;color:var(--muted);font-size:13px}
+.guide-route .btn{white-space:nowrap}
+.checklist{padding:0;margin:12px 0 0 22px}.checklist li{padding:7px 0;color:#d7dfeb;font-size:14px}.guide-note{margin:20px 0;padding:16px 18px;border-left:3px solid #d5bc8c;background:rgba(214,195,154,.06);color:var(--muted);font-size:14px}
+@media(max-width:650px){.guide-route{grid-template-columns:1fr;padding:22px}.guide-route .btn{justify-self:start}}

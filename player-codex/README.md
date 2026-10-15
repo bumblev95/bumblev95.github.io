@@ -27,3 +27,9 @@ The page clearly labels all guide categories as plans, not verified gameplay fac
 GitHub Pages root source is `main`/`root`. Do **not** merge this draft until reviewed and ready for public release. No extra analytics tags, ads, user data collection, backend, build tooling or existing application changes are introduced. The new pages use static HTML, CSS and one progressive-enhancement status script. Direct hyperlinks, canonical URLs, bilingual hreflang and a standalone child sitemap are included.
 
 Once approved, update the root sitemap discovery to include `/player-codex/sitemap.xml`, and add a visible All Games link in the AION 2 site in a separate PR that rebuilds its generated `docs/` pages. Root index.html and the live S&P 500 application remain unchanged.
+
+## Field guide and mobile QA (October 15)
+
+Added bilingual `/archeage-chronicles/demo/` playtest notes with explicit sourcing to XLGAMES developer communications. These are stated as announced systems, not measured gameplay outcomes. Internal links and shared assets use root-relative production paths so the site also renders correctly in a local preview server. Small-screen top navigation hides non-essential links while retaining the brand home link and language switch.
+
+Browser smoke tests in `tests/smoke.mjs` verify six URLs in 360 px, 390 px and 1440 px layouts, language links, game card navigation, console errors and horizontal overflow. The GitHub Actions workflow runs the checks without changing the market homepage.
