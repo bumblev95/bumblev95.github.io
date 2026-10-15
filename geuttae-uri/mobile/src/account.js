@@ -43,8 +43,9 @@ export function installAccountSettings(){
   const image=document.createElement('img');image.alt='';image.width=40;image.height=40;image.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAABF1JREFUeAHtmX9sU1UUx7/3vf5km6vLNsYG22Rkwx8hNcMIrKsozBjBhf0BwRAjxh//ilGT+afKHxMRExWNJAYNwWiiBlimSIyZZGqMnVaJIq4DWhgbjLHSdrSlffd67tsqIYPwXsvSkuybnPdeXs5tP+/ce885fWUgdXZ21qeFtpsu3WQu5FkMbJ/KlBe6urpOsim439tWt7m8nlY4HA7kU4lEAr/2+3Cg+0DYwtR71eUty3e3r213P7TyQVgsFuRbkqGutlZeOgLHA25FAOuWLm1GoanV45EntyKPTocThaYpJpeCAtcsYK6aBcxVuSW+iRjEoW+BP/8ABgPA2REqAwyonAssagJWeMBWr0IuyhpQ9PYAH74PEY4DHDoYk3BSo2NgF/yA7xjweTewcR2waiWyUVaA4ss3gP1fAEkbLRIrmLh6pTBmpYOdHKkMnAkC27fRQ1wG2h6GWZkH/P5VsP69EMWUSDUC01QITpEjFiYkHd0TGgFNkKXpmqzhDpruFchG5gCDe4HQe0CFQ19qQqNptd1GkdkEdj+VpoZFk36Dg8C+r4BDB+leA7BtB1BUjGxkDnD4NdoAtObsHEIV4GV1UDfsBBY0Xu0noV58map8B1BVlTWcOcCxPeQd1LtFYRdIWB2wPfAORbPx+mMyEc1BxgGjtGsttL6o/+F01qofh1pxJ2ZaxgETf+s7VgJqzAZ7zfprunXsTOu7l0mT65QOGm0cIftkuqcIjme8KtYsMVYjjAOmTiFTeBh9oWqvuaZbMHLlI2VWFNM8VBw9B6yBMRkHlDkNk6awTE65wRDkLuO12FpN+S4FTqbxBHjyBExr6hmL7caHGI4gt9+FVHwASYpkjEyc/xg1Jd5pfr+9Mn3ss58K9Icmr2U5XDwXhmU4gqmiVoxzDSOc4yTV3p/PfYLTkcM3HHc6oqFveAJpNQmuaBRAgcaZALSWP4kRxYUTNEUBAhzgFnzw7/M4mxi67phQLIH2ngHEnKO4ZIsgaYnDXZ9GdSkMyzCgorpQVrsDIaq7QaHiFHfir/hFPPbLerx09F0ciQb/9w3GL2DrsZ9w33c9+Cc9hJh9HBO2i5TcI3jOw2BGpkpdbflmLIgdgX9oF86LYoyLUkRFCfYM/4iPzvTrXRfVQHBtDrRUOTRRBWGTyVDR98fTS0qxbL656mq6o36k/i0sm7cFYV6CKC/GJUEw9Jw840DphykpinicLEZpL4q0NYYNi4uwtaUSZpVVy//EwtexpfFN3O5YiMvCBk5RY8hMnawg1G4pSQKNk08a25ubsKulCdko64760aq1un02fBjdo35agyGEEmP6Lq1zluHuogZ4Su/BpvnNcFlNJL6bBZjRxnle3WZKsz87c9UsYK66JQDD8UQchaYMkwT09/X1odDk8/nkab/qbfX+MHA8sHmOw+moqKyA1WJFPiUj19vbi68PfiNfonfo9Um+6deE9rZ8X438K0xV02+B+pT8G+I/GQh/7Ve+elUAAAAASUVORK5CYII=';logo.append(image);
   const label=document.createElement('span');$('account-sign-in').replaceChildren(logo,label);
   let account=null,busy=false,note='anonymous',billingBusy=false,billing={status:'BILLING_NOT_CONFIGURED'};
+  const teen = window.__THENUS_AGE_BAND__ === 'teen';
   async function loadBilling(method='billingStatus'){
-    if(billingBusy||busy)return;
+    if(teen||billingBusy||busy)return;
     if(!account){billing={status:'billingLogin'};render();return;}
     billingBusy=true;render();
     try{const next=await native()?.[method]?.()||{status:'BILLING_NOT_CONFIGURED'};billing={...next,price:next.price||billing.price};}catch{billing={status:'BILLING_UNAVAILABLE'};}
@@ -53,7 +54,9 @@ export function installAccountSettings(){
   function render(){
     $('account-heading').textContent=text('title');
     $('account-status').textContent=account?account.email:text('anonymous');
-    $('account-note').textContent=text(note);$('account-purchases').textContent=text('purchases');
+    $('account-note').textContent=text(note);$('account-purchases').textContent=teen?(getLanguage()==='ko'?'13~17세는 광고와 유료 구매가 제공되지 않아요.':'Ads and purchases are unavailable for ages 13–17.'):text('purchases');
+    $('home-ad-removal').hidden = teen;
+    $('billing-settings').hidden = teen;
     label.textContent=text(account?'again':'signIn');
     $('billing-heading').textContent=text('billingTitle');
     $('billing-description').textContent=text('billingDescription');
@@ -68,7 +71,7 @@ export function installAccountSettings(){
     $('billing-buy').textContent=text('buy')+(billing.price?' · '+billing.price:'');
     $('billing-restore').textContent=text('restore');
     $('billing-buy').hidden=!account||!!billing.adFree;
-    $('billing-buy').disabled=busy||billingBusy||!account||!billing.enabled||!billing.price||!['available','PRICE_CHANGED','cancelled','nothing-to-restore'].includes(billing.status);
+    $('billing-buy').disabled=teen||busy||billingBusy||!account||!billing.enabled||!billing.price||!['available','PRICE_CHANGED','cancelled','nothing-to-restore'].includes(billing.status);
     $('billing-restore').disabled=busy||billingBusy||!account;
     $('billing-price').textContent=billing.adFree?'':text('available');
     $('account-sign-out').textContent=text('signOut');$('account-delete').textContent=text('remove');
@@ -89,7 +92,7 @@ export function installAccountSettings(){
     }catch{note='UNAVAILABLE';}
     finally{busy=false;render();if(account)loadBilling();else{billing={status:'billingLogin'};render();}}
   }
-  $('billing-buy').onclick=()=>loadBilling('billingBuy');
+  $('billing-buy').onclick=()=>{if(!teen)loadBilling('billingBuy');};
   $('billing-restore').onclick=()=>loadBilling('billingRestore');
   $('account-sign-in').onclick=()=>run('signIn');
   $('account-sign-out').onclick=()=>run('signOut');
