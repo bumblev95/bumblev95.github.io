@@ -4,8 +4,8 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.2/logic.js';
-import {captureMemory,buildMemoryBook} from '../../releases/0.3.3/memory.js';
+import {meta,questionKey,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.9/logic.js';
+import {captureMemory,buildMemoryBook} from '../../releases/0.4.9/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
 import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
@@ -115,7 +115,7 @@ export async function createApp(options={}){
  }
  function activeSession(room,req){const s=sessionFor(room,req);check(s&&s.status==='active',403,'참가 승인을 받은 뒤 이용할 수 있어요.');return s;}
  function safeState(room,s){
-  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
+  const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,multiQuestionsSupported:true,textQuestionsSupported:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
   if(s.status!=='active')return {...base,nickname:s.name};
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
@@ -129,12 +129,14 @@ export async function createApp(options={}){
  function closeStreams(code){for(const [res] of streams.get(code)||[]){try{res.write('event: expired\ndata: {}\n\n');res.end();}catch{res.destroy();}}streams.delete(code);}
  async function memorySnapshotFor(room){
   const entries=(room.memories||[]).filter(e=>{
+   if(e.media&&e.media!=='photo')return room.sessions.some(s=>s.id===e.authorId&&s.status==='active');
    const photo=room.photos[e.photoId];
    return photo?.allowKeepsake===true&&!photo.deleting&&room.sessions.some(s=>s.id===photo.ownerId&&s.status==='active');
   });
   if(!entries.length)return null;
   const images={},missing=[];
   for(const entry of entries){
+   if(entry.media&&entry.media!=='photo')continue;
    try{const bytes=await fs.readFile(mediaOf(room.code,entry.photoId));images[entry.photoId]='data:image/jpeg;base64,'+bytes.toString('base64');}
    catch{missing.push(entry.photoId);}
   }
@@ -180,7 +182,7 @@ export async function createApp(options={}){
  async function removeMember(room,id,status){
   cancelAi(room.code,id);
   room.sessions.find(s=>s.id===id).status=status;
-  room.game={...room.game,players:room.game.players.filter(p=>p.id!==id),questions:{...room.game.questions}};delete room.game.questions[id];
+  room.game={...room.game,players:room.game.players.filter(p=>p.id!==id),questions:{...room.game.questions}};for(const [key,q] of Object.entries(room.game.questions))if(q.authorId===id)delete room.game.questions[key];room.game.answerOnlyIds=(room.game.answerOnlyIds||[]).filter(x=>x!==id);
   for(const photo of Object.values(room.photos))if(photo.ownerId===id)photo.deleting=true;
   await save(room);
   for(const [photoId,photo] of Object.entries(room.photos))if(photo.ownerId===id)await dropPhoto(room,photoId);
@@ -265,7 +267,7 @@ export async function createApp(options={}){
     return respond(res,204,Buffer.alloc(0),{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Photo-Consent','Access-Control-Max-Age':'600'});
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
-   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
+   if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',multiQuestionsSupported:true,textQuestionsSupported:true,partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
    if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,commerce.catalog);
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
@@ -329,8 +331,9 @@ export async function createApp(options={}){
       check(req.headers['content-type']==='image/jpeg',415,'JPG 사진을 사용해 주세요.');
       check(req.headers['x-photo-consent']==='yes',400,'사진 속 사람들의 공유 동의를 확인해 주세요.');
       let photo;try{photo=sanitizeJpeg(await readBody(req,900_000));}catch(e){if(e instanceof ApiError)throw e;throw new ApiError(400,e.message);}
-      const current=room.game.questions[s.id]?.photoId;
-      for(const [old,p] of Object.entries(room.photos))if(p.ownerId===s.id&&old!==current){await dropPhoto(room,old);}
+      const inUse=new Set(Object.values(room.game.questions).filter(q=>q.authorId===s.id).map(q=>q.photoId));
+      for(const [old,p] of Object.entries(room.photos))if(p.ownerId===s.id&&!inUse.has(old)){await dropPhoto(room,old);}
+      check(Object.values(room.photos).filter(p=>p.ownerId===s.id).length<4,409,'한 사람당 최대 3문제예요. 먼저 기존 문제를 수정하거나 삭제해 주세요.');
       const id=randomUUID();await fs.mkdir(path.join(roomsDir,code,'media'),{recursive:true,mode:0o700});await fs.writeFile(mediaOf(code,id),photo.bytes,{mode:0o600});
       room.photos[id]={ownerId:s.id,width:photo.width,height:photo.height};room.deletion='stored';await save(room);
       return respond(res,201,{photoId:id,width:photo.width,height:photo.height});
@@ -341,7 +344,7 @@ export async function createApp(options={}){
       const person=room.sessions.find(x=>x.id===b.playerId);
       check(person&&person.id!==s.id,400,'참가자를 확인해 주세요.');
       if(route==='approve'){
-       check(person.status==='pending',409,'이미 처리한 요청이에요.');check(room.game.players.length<meta.maxPlayers,409,'최대 8명까지 참여할 수 있어요.');
+       check(person.status==='pending',409,'이미 처리한 요청이에요.');check(room.game.players.length<meta.maxPlayers,409,'최대 10명까지 참여할 수 있어요.');
        person.status='active';room.game={...room.game,players:[...room.game.players,{id:person.id,name:person.name,score:0}]};
       }else if(route==='deny'){check(person.status==='pending',409,'이미 처리한 요청이에요.');person.status='blocked';}
       else{check(person.status==='active',409,'참가자를 확인해 주세요.');await removeMember(room,person.id,'blocked');}
@@ -362,10 +365,10 @@ export async function createApp(options={}){
      }
      check(!(b.type==='reveal'&&room.roundDeadlineAt),409,'모두 답하거나 제한 시간이 끝나면 정답을 공개해요.');
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
-     if(b.type==='submitQuestion'){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
+     if(b.type==='submitQuestion'&&b.photoId){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
-     if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.order[room.game.round],reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
-     const oldPhoto=room.game.questions[s.id]?.photoId;
+     if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.questions[room.game.order[room.game.round]]?.authorId,reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
+     const editedKey=questionKey(s.id,b.slot||0),oldPhoto=room.game.questions[editedKey]?.photoId;
      const serverPoints=room.roundDeadlineAt&&room.timeLimitSeconds?Math.round(100*Math.max(0,Math.min(1,(room.roundDeadlineAt-gameNow())/(room.timeLimitSeconds*1000)))):100;
      room.game=applyAction(room.game,s.id,{...b,serverPoints});
      if(['start','next'].includes(b.type))room.roundDeadlineAt=room.game.phase==='question'&&room.timeLimitSeconds?gameNow()+room.timeLimitSeconds*1000:null;
@@ -379,7 +382,7 @@ export async function createApp(options={}){
      const memorySnapshot=room.game.phase==='finished'&&room.game.endReason==='completed'?await memorySnapshotFor(room):null;
      if(room.game.phase==='finished'){room.deletion='pending';room.memories=[];}
      await save(room);
-     if(['submitQuestion','removeQuestion'].includes(b.type)&&oldPhoto&&oldPhoto!==room.game.questions[s.id]?.photoId){await dropPhoto(room,oldPhoto);}
+     if(['submitQuestion','removeQuestion'].includes(b.type)&&oldPhoto&&oldPhoto!==room.game.questions[editedKey]?.photoId&&!Object.values(room.game.questions).some(q=>q.photoId===oldPhoto)){await dropPhoto(room,oldPhoto);}
      if(room.game.phase==='finished'){try{await deletePhotos(room);}catch{room.deletion='pending';await save(room);}}
      publish(room,memorySnapshot);return respond(res,200,{...safeState(room,s),...(memorySnapshot?{memorySnapshot}:{})});
     });
