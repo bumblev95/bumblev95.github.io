@@ -3,8 +3,11 @@ import {getLanguage} from '../../releases/1.0.0/locale.js';
 const copy={
   title:['계정','Account'], signIn:['Google로 로그인','Sign in with Google'], again:['Google 계정 다시 확인','Verify Google account again'],
   signOut:['로그아웃','Sign out'], remove:['계정 삭제','Delete account'], checking:['계정을 확인하고 있어요…','Checking your account…'],
-  anonymous:['로그인하지 않아도 게임을 즐길 수 있어요.','You can play without signing in.'],
-  purchases:['로그인만으로 광고가 제거되지는 않아요. 개인 광고 제거는 한 번 구매하는 옵션이며, 추억집 결제는 준비 중이에요.','Signing in alone does not remove ads. Personal ad removal is a one-time purchase. Paid memory books are still being prepared.'],
+  anonymous:['로그인은 선택이에요.','Sign-in is optional.'],
+  purchases:['게임은 로그인 없이 즐길 수 있어요. 광고 제거를 구매하거나 복원할 때만 Google 계정이 필요해요.','Play without signing in. A Google account is only needed to buy or restore ad removal.'],
+  homeAccount:['Google로 로그인 · 선택','Sign in with Google · Optional'], homeSignedIn:['내 계정','My account'],
+  homeBilling:['한 번 구매 · 내 계정에만 적용','One-time purchase · Your account only'], preparing:['구매 준비 중','Coming soon'], active:['적용 중','Active'],
+  billingDescription:['게임 사이 광고 없이 추억에 집중하세요. 로그인한 내 계정에만 적용되며, 다른 참가자의 광고는 그대로예요.','Enjoy your memories without between-game ads. Applies to your signed-in account only; other participants keep their own ads.'],
   signedIn:['로그인했어요.','Signed in.'], signedOut:['로그아웃했어요.','Signed out.'], deleted:['계정을 삭제했어요.','Account deleted.'],
   SIGN_IN_NOT_CONFIGURED:['Google 로그인 연결을 준비하고 있어요. 아직 계정은 생성되지 않아요.','Google sign-in is being configured. No account has been created.'],
   SIGN_IN_REQUIRED:['로그인 세션이 만료됐어요. 다시 로그인해 주세요.','Your session has expired. Please sign in again.'],
@@ -53,10 +56,18 @@ export function installAccountSettings(){
     $('account-note').textContent=text(note);$('account-purchases').textContent=text('purchases');
     label.textContent=text(account?'again':'signIn');
     $('billing-heading').textContent=text('billingTitle');
+    $('billing-description').textContent=text('billingDescription');
+    $('home-billing-title').textContent=text('billingTitle');
+    $('home-billing-detail').textContent=text(billing.adFree?'ad-free':'homeBilling');
+    $('home-billing-badge').textContent=billing.adFree?text('active'):billing.enabled&&billing.price?billing.price:account&&billing.status==='BILLING_NOT_CONFIGURED'?text('preparing'):'';
+    $('home-account-label').textContent=text(account?'homeSignedIn':'homeAccount');
+    $('home-account').disabled=busy||billingBusy;
+    $('billing-login').textContent=text('signIn');$('billing-login').hidden=!!account;
+    $('billing-login').disabled=busy||billingBusy;
     $('billing-status').textContent=text(!account?'billingLogin':billingBusy?'checking':billing.status);
     $('billing-buy').textContent=text('buy')+(billing.price?' · '+billing.price:'');
     $('billing-restore').textContent=text('restore');
-    $('billing-buy').hidden=!!billing.adFree;
+    $('billing-buy').hidden=!account||!!billing.adFree;
     $('billing-buy').disabled=busy||billingBusy||!account||!billing.enabled||!billing.price||!['available','PRICE_CHANGED','cancelled','nothing-to-restore'].includes(billing.status);
     $('billing-restore').disabled=busy||billingBusy||!account;
     $('billing-price').textContent=billing.adFree?'':text('available');
@@ -66,7 +77,7 @@ export function installAccountSettings(){
     for(const [id,key] of [['account-delete-title','deleteTitle'],['account-delete-body','deleteBody'],['account-delete-cancel','cancel'],['account-delete-confirm','confirm']])$(id).textContent=text(key);
   }
   async function run(method,options){
-    if(busy)return;busy=true;note='checking';render();
+    if(busy||billingBusy)return;busy=true;note='checking';render();
     try{
       const result=await native()?.[method]?.(options)||{status:'SIGN_IN_NOT_CONFIGURED'};
       if(result.status==='cancelled'||result.status==='busy'){note='anonymous';return;}
@@ -85,7 +96,15 @@ export function installAccountSettings(){
   $('account-delete').onclick=()=>{render();$('account-delete-dialog').showModal();};
   $('account-delete-cancel').onclick=()=>$('account-delete-dialog').close();
   $('account-delete-confirm').onclick=()=>{$('account-delete-dialog').close();run('deleteAccount',{confirmed:true});};
-  $('settings-toggle').addEventListener('click',()=>run('status'));
-  window.addEventListener('thenus-purchases',()=>{if(document.querySelector('#settings-dialog')?.open)loadBilling();});
-  window.addEventListener('thenus-language',render);render();
+  function openSettings(section){
+    const settings=$('settings-dialog');if(!settings.open)settings.showModal();
+    if(section==='billing-settings')settings.scrollTop=0;else $(section).scrollIntoView({block:'start'});
+    run('status');
+  }
+  $('home-ad-removal').onclick=()=>openSettings('billing-settings');
+  $('home-account').onclick=()=>openSettings('account-settings');
+  $('billing-login').onclick=()=>openSettings('account-settings');
+  $('settings-toggle').addEventListener('click',()=>{$('settings-dialog').scrollTop=0;run('status');});
+  window.addEventListener('thenus-purchases',()=>loadBilling());
+  window.addEventListener('thenus-language',render);render();run('status');
 }

@@ -20,7 +20,9 @@ try{
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.locator('.home-screen').waitFor();
   assert.equal(await page.locator('#account-sign-in').isVisible(),false);
-  await page.locator('#settings-toggle').click();await page.waitForFunction(()=>document.querySelector('#account-note').textContent.includes('Google'));
+  await page.locator('#home-account').click();await page.waitForFunction(()=>document.querySelector('#account-note').textContent.includes('Google'));
+  assert.equal(await page.locator('#settings-dialog>.settings-section').last().getAttribute('id'),'account-settings');
+  assert.ok(await page.locator('#account-sign-in').evaluate(node=>{const r=node.getBoundingClientRect(),d=document.querySelector('#settings-dialog').getBoundingClientRect();return r.top>=d.top&&r.bottom<=d.bottom;}));
   assert.equal(await page.locator('#account-sign-in').innerText(),locale==='ko-KR'?'Google로 로그인':'Sign in with Google');
   await page.locator('#account-sign-in').click();await page.waitForFunction(()=>calls.some(x=>x.method==='signIn'));
   assert.equal(await page.locator('#account-delete').isVisible(),false);
@@ -28,6 +30,7 @@ try{
   assert.equal(await page.locator('#account-sign-out').isVisible(),false);
   await page.evaluate(()=>{reply={status:'signed-in',account:{id:'safe-account',email:'<img src=x onerror=alert(1)>@example.com'}};});
   await page.locator('#account-sign-in').click();await page.locator('#account-sign-out').waitFor();
+  assert.equal(await page.locator('#home-account-label').textContent(),locale==='ko-KR'?'내 계정':'My account');
   assert.equal(await page.locator('#account-status img').count(),0);assert.match(await page.locator('#account-status').innerText(),/<img/);
   await page.locator('#account-delete').click();await page.locator('#account-delete-cancel').click();assert.equal(await page.evaluate(()=>calls.filter(x=>x.method==='deleteAccount').length),0);
   await page.evaluate(()=>{reply={status:'REAUTHENTICATE_TO_DELETE'};});await page.locator('#account-delete').click();await page.locator('#account-delete-confirm').click();

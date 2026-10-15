@@ -3,7 +3,7 @@
 Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This agent has not submitted an app review request.
 
 ## Verified facts
-- Package com.bumblevai.thenus, version 1.0.0 (10000), target Android API 36. The debug variant remains a separate .test package.
+- Package com.bumblevai.thenus, version 1.0.1 (10001), target Android API 36. The debug variant remains a separate .test package.
 - English brand: Us Back Then. Korean brand: 그때 우리. Store listings en-US and ko-KR are authored separately.
 - First launch follows the primary device locale; an explicit in-app selection takes priority on later launches; unsupported languages fall back to English. No personal story is automatically translated.
 - The app source requests INTERNET; the new Google Mobile Ads/UMP dependencies add network/advertising permissions in the merged manifest, including AD_ID. CI captures and verifies the merged permissions for both variants. No broad photo-library, camera, microphone or location permission is allowed. Photos are selected through the system file chooser.

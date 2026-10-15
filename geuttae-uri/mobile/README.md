@@ -1,10 +1,12 @@
 # Us Back Then / 그때 우리 — Google Play release candidate
 
-Release: com.bumblevai.thenus, version 1.0.0, versionCode 10000. Debug keeps a separate .test package and -TEST version suffix. Android API 24+, target API 36. Java 21 and Node 22+ required.
+Release: com.bumblevai.thenus, version 1.0.1, versionCode 10001. Debug keeps a separate .test package and -TEST version suffix. Android API 24+, target API 36. Java 21 and Node 22+ required.
 
 English app name: Us Back Then. Korean app name: 그때 우리. The initial interface follows the primary device locale, with English fallback. An in-app selection persists; player text stays as written.
 
-The candidate bundles immutable releases/1.0.0. The published web preview stays on its existing version. The approved yellow photo/quiz icon is packaged in all launcher densities and adaptive icons. No broad photo-library, camera, microphone or location permission is requested. AdMob 25.5.0 and UMP 4.0.0 are included; their merged manifest adds advertising/network permissions, including AD_ID. There is no Billing SDK yet.
+The candidate bundles immutable releases/1.0.0. The published web preview stays on its existing version. The approved yellow photo/quiz icon is packaged in all launcher densities and adaptive icons. No broad photo-library, camera, microphone or location permission is requested. AdMob 25.5.0 and UMP 4.0.0 are included; their merged manifest adds advertising/network permissions, including AD_ID. Play Billing 9.1.0 is included, with checkout still disabled.
+
+The home screen now links directly to personal ad removal, with optional sign-in at the bottom. Settings separate the ad-removal card from account management at the end. Verified Play prices and account entitlements drive the home card; no price is hard-coded. The Google sign-in button keeps its approved logo and styling.
 
 ## Build
 

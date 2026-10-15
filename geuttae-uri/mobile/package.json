@@ -1,6 +1,6 @@
 {
   "name": "then-us-android",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Us Back Then / 그때 우리 Android",
   "scripts": {
     "build": "node scripts/build.mjs",

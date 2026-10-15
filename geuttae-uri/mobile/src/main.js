@@ -15,7 +15,8 @@ notes.disabled = false;
 notes.onclick = () => {
   document.getElementById('release-heading').textContent = 'v' + version.version + t(" 업데이트");
   document.getElementById('release-date').textContent = version.date;
-  document.getElementById('release-items').replaceChildren(...version.changes.map(text => {
+  const changes=getLanguage()==='en'?(version.changesEn||version.changes):version.changes;
+  document.getElementById('release-items').replaceChildren(...changes.map(text => {
     const li = document.createElement('li');
     li.textContent = t(text);
     return li;

@@ -19,7 +19,9 @@ try{
   });
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.locator('.home-screen').waitFor();
-  await page.locator('#settings-toggle').click();assert.equal(await page.locator('#billing-buy').isDisabled(),true);assert.equal(await page.locator('#billing-restore').isDisabled(),true);
+  assert.equal(await page.locator('#home-ad-removal').isVisible(),true);
+  await page.locator('#home-ad-removal').click();assert.equal(await page.locator('#billing-buy').isDisabled(),true);assert.equal(await page.locator('#billing-restore').isDisabled(),true);
+  await page.locator('#billing-login').click();
   await page.locator('#account-sign-in').click();await page.waitForFunction(()=>calls.includes('status'));
   await page.waitForFunction(()=>!document.querySelector('#billing-restore').disabled);
   assert.equal(await page.locator('#billing-buy').isDisabled(),true);
@@ -33,8 +35,9 @@ try{
   await page.waitForFunction(()=>document.querySelector('#billing-status').textContent.includes(document.documentElement.lang==='ko'?'구매할 때':'used for'));
   await page.evaluate(()=>{billingReply={status:'ad-free',enabled:true,adFree:true};});await page.locator('#billing-restore').click();
   await page.locator('#billing-buy').waitFor({state:'hidden'});
+  assert.match(await page.locator('#home-billing-badge').textContent(),locale==='ko-KR'?/적용 중/:/Active/);
   assert.match(await page.locator('#billing-status').innerText(),locale==='ko-KR'?/적용됐어요/:/active/);
-  if(locale==='en-CA')assert.doesNotMatch(await page.locator('#account-settings').innerText(),/[가-힣]/);
+  if(locale==='en-CA'){assert.doesNotMatch(await page.locator('#account-settings').innerText(),/[가-힣]/);assert.doesNotMatch(await page.locator('#billing-settings').innerText(),/[가-힣]/);}
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:path.join(out,`billing-${locale}.png`)});
   await page.locator('#account-sign-out').click();await page.locator('#account-sign-out').waitFor({state:'hidden'});

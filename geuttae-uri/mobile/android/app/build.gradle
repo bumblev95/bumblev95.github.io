@@ -8,8 +8,8 @@ android {
         applicationId "com.bumblevai.thenus"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 10000
-        versionName "1.0.0"
+        versionCode 10001
+        versionName "1.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // These are public AdMob identifiers. Never use the live ad unit in debug builds.
         manifestPlaceholders = [admobAppId: "ca-app-pub-9723666081819297~5568418149"]
