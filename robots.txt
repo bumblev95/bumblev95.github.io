@@ -5,3 +5,4 @@ Sitemap: https://bumblev95.github.io/sitemap.xml
 Sitemap: https://bumblev95.github.io/sitemap.txt
 Sitemap: https://bumblev95.github.io/Aion2-Daeva-Atlas/sitemap.xml
 Sitemap: https://bumblev95.github.io/S-P-500-/sitemap.xml
+Sitemap: https://bumblev95.github.io/player-codex/sitemap.xml
