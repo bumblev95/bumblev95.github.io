@@ -26,7 +26,8 @@ export async function installNative() {
     ads: {
       showAtBreak: options => Ads.showAtBreak({...options, language: getLanguage()}),
       privacy: () => Ads.privacy({language: getLanguage()}),
-      ageChoice: () => Ads.ageChoice({language: getLanguage()})
+      ageChoice: () => Ads.ageChoice({language: getLanguage()}),
+      setAudience: options => Ads.setAudience(options)
     },
     async saveFile(blob, filename) {
       const data = await new Promise((resolve, reject) => {
