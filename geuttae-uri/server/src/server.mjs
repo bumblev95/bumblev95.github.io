@@ -4,8 +4,8 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor} from '../../releases/0.4.11/logic.js';
-import {captureMemory,buildMemoryBook} from '../../releases/0.4.11/memory.js';
+import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor} from '../../releases/0.5.0/logic.js';
+import {captureMemory,buildMemoryBook} from '../../releases/0.5.0/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
 import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
@@ -393,10 +393,10 @@ export async function createApp(options={}){
    if(u.pathname==='/')return respond(res,302,Buffer.alloc(0),{Location:'/geuttae-uri/'});
    check(u.pathname.startsWith('/geuttae-uri/'),404,'찾을 수 없는 파일이에요.');
    let filename=u.pathname==='/geuttae-uri/'?'index.html':decodeURIComponent(u.pathname.slice('/geuttae-uri/'.length));
-   check(filename==='index.html'||['boot-v1.js','boot-v2.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|draft.js|products.js|book-viewer.js|vendor\/html2canvas.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
+   check(filename==='index.html'||['boot-v1.js','boot-v2.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|draft.js|products.js|platform.js|book-viewer.js|vendor\/html2canvas.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
    let file=path.resolve(publicDir,filename);
    check(file.startsWith(publicDir+path.sep),404,'찾을 수 없는 파일이에요.');
-   const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json'};
+   const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json'};
    const contentType=types[path.extname(file)];check(contentType,404,'찾을 수 없는 파일이에요.');
    let bytes;try{bytes=await fs.readFile(file);}catch{throw new ApiError(404,'찾을 수 없는 파일이에요.');}
    if(filename==='runtime-config.json')bytes=Buffer.from(JSON.stringify({apiBase:expectedOrigin}));

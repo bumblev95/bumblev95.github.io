@@ -1,0 +1,10 @@
+{
+  "appId": "com.bumblevai.thenus.test",
+  "appName": "그때 우리 TEST",
+  "webDir": "www",
+  "backgroundColor": "#fbf8f1",
+  "loggingBehavior": "debug",
+  "server": {"hostname": "localhost", "androidScheme": "https", "cleartext": false},
+  "android": {"allowMixedContent": false},
+  "plugins": {"SystemBars": {"insetsHandling": "css", "style": "LIGHT"}}
+}
