@@ -191,3 +191,26 @@ test('party missions default off and cannot be enabled in another mode',async t=
  const h=await harness(t);for(const settings of [{mode:'party'},{mode:'family',partyMissions:true},{mode:'memory',partyMissions:true}]){const a=await h.create('테스트',settings);assert.equal((await h.call(a,'state')).data.view.partyMissions,false);}
  assert.equal((await h.request('/api/rooms',{body:{nickname:'오류',consent:true,partyMissions:'yes'}})).status,400);
 });
+
+
+test('three slots preserve owned photos, rotate authors, allow answer-only players and export text memories',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);
+ const first=await h.question(a);await h.call(a,'action',{type:'submitQuestion',photoId:first,prompt:'첫 번째 기억',options:['A','B','C','D'],correctIndex:0,story:'첫 번째 이야기',confirmed:true,allowKeepsake:true});
+ const second=await h.call(a,'upload',undefined,{raw:jpeg,headers:{'X-Photo-Consent':'yes'}});
+ assert.equal(second.status,201);
+ const q={type:'submitQuestion',slot:1,photoId:second.data.photoId,prompt:'두 번째 기억',options:['A','B','C','D'],correctIndex:0,story:'두 번째 이야기',confirmed:true,allowKeepsake:true};
+ assert.equal((await h.call(a,'action',q)).status,200);
+ assert.equal((await h.call(a,'photo/'+first)).status,200,'upload must preserve photos referenced by other slots');
+ assert.equal((await h.call(a,'action',{...q,slot:2,media:'text',photoId:'',prompt:'글로 남긴 기억'})).status,200);
+ assert.equal((await h.call(a,'action',{...q,slot:3})).status,409);
+ const state=(await h.call(a,'state')).data.view;assert.equal(state.myQuestions.length,3);assert.equal(state.totalPrepared,3);assert.equal((await h.call(b,'state')).data.view.myQuestions.length,0);
+ assert.equal((await h.call(b,'action',{type:'answerOnly',enabled:true})).status,200);
+ assert.equal((await h.call(a,'action',{type:'start'})).data.view.total,3);
+ let final;
+ for(let round=0;round<3;round++){
+  assert.equal((await h.call(a,'action',{type:'answer',round,choice:0})).status,409);
+  assert.equal((await h.call(b,'action',{type:'answer',round,choice:0})).data.view.phase,'reveal');
+  final=await h.call(a,'action',{type:'next',round});
+ }
+ assert.equal(final.data.view.players.find(p=>p.id===b.id).score,300);assert.equal(final.data.memorySnapshot.book.entries.length,3);assert.equal(final.data.memorySnapshot.book.entries[2].media,'text');assert.equal(final.data.mediaStatus,'done');
+});
