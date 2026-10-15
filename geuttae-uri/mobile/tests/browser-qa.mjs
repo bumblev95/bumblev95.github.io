@@ -25,7 +25,7 @@ try{
  assert.match(await page.locator('#modal').innerText(),/로그인한 뒤 한 번 구매/);
  await page.locator('.modal-close').click();await page.locator('#settings-toggle').click();await page.locator('[data-language="en"]').click();await page.locator('#close-settings').click();
  await page.locator('#app [data-action="plans"]').click();const planText=await page.locator('#modal').innerText();
- assert.match(planText,/Sign in and make a one-time purchase/);assert.match(planText,/Google test ads/);assert.match(planText,/Sign-in and payments are not connected/);assert.doesNotMatch(planText,/[가-힣]|Ultimate|AI 100|AI 300|7[.]99/);
+ assert.match(planText,/Sign in and make a one-time purchase/);assert.match(planText,/Google test ads/);assert.match(planText,/Check account, purchase and restore options in Settings/);assert.doesNotMatch(planText,/[가-힣]|Ultimate|AI 100|AI 300|7[.]99/);
  await page.locator('.modal-close').click();await page.locator('#settings-toggle').click();await page.locator('[data-language="ko"]').click();await page.locator('#close-settings').click();
  await page.locator('[data-action="memory-preview"]').click();
  await page.locator('[data-action="memory-save"]').click();await page.waitForFunction(()=>nativeCalls.length>0);let calls=await page.evaluate(()=>nativeCalls);assert.match(calls[0].head,/<!doctype html>/i);assert.equal(calls[0].filename,'Us-Back-Then-Memory-Book.html');

@@ -7,10 +7,10 @@ Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This
 - English brand: Us Back Then. Korean brand: 그때 우리. Store listings en-US and ko-KR are authored separately.
 - First launch follows the primary device locale; an explicit in-app selection takes priority on later launches; unsupported languages fall back to English. No personal story is automatically translated.
 - The app source requests INTERNET; the new Google Mobile Ads/UMP dependencies add network/advertising permissions in the merged manifest, including AD_ID. CI captures and verifies the merged permissions for both variants. No broad photo-library, camera, microphone or location permission is allowed. Photos are selected through the system file chooser.
-- AdMob 25.5.0 and UMP 4.0.0 are integrated: Google test IDs in debug, owner IDs with live serving OFF by default in release. No Billing SDK or live AI service is active in this candidate's UI. The candidate lists only personal ad removal and a memory book as future one-time products, with free exports today. Ultimate and AI packs have been removed from the candidate catalog and product page. No recurring subscription is offered.
+- AdMob 25.5.0 and UMP 4.0.0 are integrated: Google test IDs in debug, owner IDs with live serving OFF by default in release. Google Play Billing Library 9.1.0 now supports personal ad-removal purchase/restore; real checkout remains disabled pending owner Console/service-account configuration. No live AI service is active. The candidate lists only personal ad removal and a memory book as future one-time products, with free exports today. Ultimate and AI packs have been removed from the candidate catalog and product page. No recurring subscription is offered.
 
 ## Monetization setup is incomplete
-- The owner completed AdMob app/ad unit setup and supplied both IDs. Native interstitial/UMP integration is implemented, but live serving is disabled in the default release pending privacy-message setup, AdMob readiness/store linking/app-ads.txt, real-device testing and declarations. Login and Play Billing are still unimplemented. Do not submit this as a completed paid-product release.
+- The owner completed AdMob app/ad unit setup and supplied both IDs. Native interstitial/UMP integration is implemented, but live serving is disabled in the default release pending privacy-message setup, AdMob readiness/store linking/app-ads.txt, real-device testing and declarations. Google sign-in is implemented and was verified by the owner on a phone (including persistence, logout and re-login). Play purchase/restore code is implemented but is not yet configured or physically verified. Do not submit this as a completed paid-product release.
 - See [MONETIZATION-SETUP.md](MONETIZATION-SETUP.md) for exact remaining implementation, account setup, pricing and paid-book delivery gates. Privacy and Console declarations must be updated when those SDKs and accounts actually ship.
 
 ## Data Safety draft (must be confirmed in the actual Console form)
@@ -20,7 +20,7 @@ Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This
 - HTTPS in transit; files protected by session authorization; server expiry access control. Do not claim end-to-end encryption.
 - Deletion: owner photo replacement/removal; host removal/room termination; abandoned room expiry within 24 hours. Physical cleanup retries after outages. Exported books cannot be remotely recalled.
 - Advertising consent: only local self-declared adults can start the UMP process; unknown/under-18 selections do not initialize/request ads. Birth dates are not collected. Age settings are not verified identity. User Messaging Platform handles regional consent and exposes privacy options through settings. Configure AdMob messages and test regional cases before production. Target-audience declarations and any Families obligations still need assessment.
-- No account creation: the account-deletion requirement does not apply to an account system that does not exist. Do not describe temporary room sessions as registered accounts.
+- Optional accounts now exist. Declare verified account email, app/hashed Google identifiers and authentication purposes. In-app deletion and a public external deletion URL are required and implemented; physical deletion checks remain. Play checkout, when activated, adds purchase history (receipt token hash/encrypted token, app-account link, package, verification state and check time) for verification/restoration and fraud prevention. Card details stay with Google Play. Account deletion cascades to server purchase records but does not refund/cancel the Play transaction. Publish the revised billing privacy draft before activation.
 
 ## UGC controls
 - Explicit rules/consent before entering a gathering, with prohibited categories defined before upload.
@@ -48,3 +48,5 @@ Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This
 - https://support.google.com/googleplay/android-developer/answer/10787469
 - https://support.google.com/googleplay/android-developer/answer/14151465
 - https://support.google.com/googleplay/android-developer/answer/9844778
+
+See [GOOGLE-PLAY-BILLING-SETUP.md](GOOGLE-PLAY-BILLING-SETUP.md) for exact Play product ID, matching package, secret configuration, price and license-test gates. The billing privacy additions in privacy-policy-DRAFT.html are not yet public; enabling checkout is blocked operationally until they are published.
