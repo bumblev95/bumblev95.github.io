@@ -1,6 +1,6 @@
-import {buildMemoryBook} from '../releases/0.4.11/memory.js';
+import {buildMemoryBook} from '../releases/0.5.1/memory.js';
 import test from 'node:test';import assert from 'node:assert/strict';
-import {setup,validateAction,applyAction,viewFor,meta,pointsForTime} from '../releases/0.4.11/logic.js';
+import {setup,validateAction,applyAction,viewFor,meta,pointsForTime} from '../releases/0.5.1/logic.js';
 const question=slot=>({type:'submitQuestion',slot,media:'photo',photoId:'photo-'+slot,prompt:'기억',options:['A','B','C','D'],correctIndex:0,story:'이야기',confirmed:true});
 test('ten optional authors can submit fifty photos with five slots each and rotating order',()=>{
  const ps=Array.from({length:10},(_,i)=>({id:'p'+i,name:'친구'+i}));let s=setup(ps);assert.equal(meta.maxPlayers,10);

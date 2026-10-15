@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {renderMemoryHTML} from '../releases/0.5.0/memory.js';
+import {renderMemoryHTML} from '../releases/0.5.1/memory.js';
 
 const out=fileURLToPath(new URL('./qa-output/',import.meta.url));await mkdir(out,{recursive:true});
 const browser=await chromium.launch({args:['--no-sandbox']});
 const errors=[],requests=[];
 try{
- const context=await browser.newContext({viewport:{width:900,height:1000}}),page=await context.newPage();
+ const context=await browser.newContext({locale:'ko-KR',viewport:{width:900,height:1000}}),page=await context.newPage();
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
  const pictures=await page.evaluate(()=>[[720,360],[400,720],[420,420]].map(([w,h],i)=>{
   const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),gradient=g.createLinearGradient(0,0,w,h);

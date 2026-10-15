@@ -12,9 +12,9 @@ const out=fileURLToPath(new URL('./qa-output/',import.meta.url));await mkdir(out
 const app=await createApp({dataDir:dir,aiProvider:null});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${app.server.address().port}`;
 const browser=await chromium.launch({args:['--no-sandbox']}),errors=[],requests=[];
 try{
- const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),page=await context.newPage();
+ const context=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844},isMobile:true,hasTouch:true}),page=await context.newPage();
  page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
- await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.5.0',{exact:true}).waitFor();
+ await page.goto(base+'/geuttae-uri/');await page.getByText('TEST v0.5.1',{exact:true}).waitFor();
  await page.getByRole('button',{name:'무료·선택 상품 안내',exact:true}).click();
  assert.match(await page.locator('#modal').innerText(),/지금은 결제 없는 테스트/);assert.match(await page.locator('#modal').innerText(),/파일 저장도 무료/);
  assert.equal(await page.locator('.plan-card').count(),2);assert.match(await page.locator('.plan-card').first().innerText(),/Ultimate.*출시 예정/s);assert.match(await page.locator('.plan-card').first().innerText(),/US\$7\.99 \/ 월/);

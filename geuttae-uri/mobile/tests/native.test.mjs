@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {roomFromURL} from '../src/links.js';
-import {inviteURL} from '../../releases/0.5.0/platform.js';
+import {inviteURL} from '../../releases/0.5.1/platform.js';
 test('native invitations accept only a room code, never a token or an arbitrary target',()=>{
  assert.equal(roomFromURL('thenus://room?code=ABCDEFGH'),'ABCDEFGH');
  for(const value of ['https://evil.test/?code=ABCDEFGH','thenus://evil?code=ABCDEFGH','thenus://room?code=<script>','thenus://room?code=1234','javascript:alert(1)'])assert.equal(roomFromURL(value),null);
