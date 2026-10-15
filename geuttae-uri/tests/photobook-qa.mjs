@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {renderMemoryHTML} from '../releases/0.4.9/memory.js';
+import {renderMemoryHTML} from '../releases/0.4.10/memory.js';
 
 const out=fileURLToPath(new URL('./qa-output/',import.meta.url));await mkdir(out,{recursive:true});
 const browser=await chromium.launch({args:['--no-sandbox']});
