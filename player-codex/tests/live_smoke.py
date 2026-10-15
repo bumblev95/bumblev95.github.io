@@ -25,12 +25,14 @@ OTHER = {
 OFFICIAL_VIDEOS = {
     "/player-codex/archeage-chronicles/": (
         'id="official-videos"',
+        'https://www.youtube.com/watch?v=E12uscaQvSA',
         'https://www.youtube.com/watch?v=UeRY7LU0x3M',
         'https://www.youtube.com/watch?v=78ZGLdQMPGU',
         'https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/',
     ),
     "/player-codex/archeage-chronicles/ko/": (
         'id="official-videos"',
+        'https://www.youtube.com/watch?v=E12uscaQvSA',
         'https://www.youtube.com/watch?v=UeRY7LU0x3M',
         'https://www.youtube.com/watch?v=78ZGLdQMPGU',
         'https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/',
@@ -58,6 +60,8 @@ def validate() -> None:
         assert phrase in content, f"Missing expected content at {path}: {phrase}"
         for url in OFFICIAL_VIDEOS.get(path, ()):
             assert url in content, f"Missing official video reference: {path} {url}"
+        if path in OFFICIAL_VIDEOS:
+            assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
     for path, expected in OTHER.items():
         body = fetch(BASE + path)

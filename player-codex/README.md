@@ -44,3 +44,7 @@ The ArcheAge Chronicles landing pages (English and Korean) present clearly label
 - Official game YouTube channel: https://www.youtube.com/@ArcheAgeChronicles
 
 All promotional and publisher-described footage remains distinct from independently tested class skills, DPS, NPC positions and boss mechanics. The local Playwright smoke test checks the links for both languages and all existing viewport sizes.
+
+## October 15, 2026 – leading gameplay showcase
+
+Added the official ArcheAge Chronicles video [A Quick Look at Auroria](https://www.youtube.com/watch?v=E12uscaQvSA), published September 7, 2026, as the **first and featured** media card on both EN and KO landing pages. The developer briefing (October 8, 2026) follows as a separate editorial category and the 2024 reveal trailer is third. This prioritizes the newest gameplay-focused footage over the old cinematic announcement. The video is an external YouTube link; nothing is rehosted or auto-played. Both local browser smoke and post-deployment HTTP checks assert card order.
