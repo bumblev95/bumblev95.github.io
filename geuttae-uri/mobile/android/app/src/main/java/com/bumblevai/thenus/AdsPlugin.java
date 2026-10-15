@@ -39,10 +39,8 @@ public class AdsPlugin extends Plugin {
 
     @Override public void load() {
         preferences = getContext().getSharedPreferences("thenus_ad_privacy", Context.MODE_PRIVATE);
-        // An unknown or under-18 age selection never initializes or requests advertising.
-        if (BuildConfig.ADS_ENABLED && preferences.getInt("ageGroup", 0) == 1) {
-            getActivity().runOnUiThread(() -> updateConsent(() -> {}));
-        }
+        // The first eligible break/settings visit refreshes UMP once in this launch.
+        // Do not asynchronously open a consent form over a timed question after startup.
     }
 
     private void result(PluginCall call, String status, boolean shown) {
@@ -165,6 +163,9 @@ public class AdsPlugin extends Plugin {
             if (!test) lastBreak = key;
             if (preferences.getInt("ageGroup", 0) == 0) {
                 chooseAge(call, () -> updateConsent(() -> result(call, consentReady ? "preparing" : "unavailable", false))); return;
+            }
+            if (eligible() && !consentReady) {
+                updateConsent(() -> result(call, consentReady ? "preparing" : "unavailable", false)); return;
             }
             if (!allowed()) { result(call, "not-ready", false); return; }
             long now = SystemClock.elapsedRealtime();
