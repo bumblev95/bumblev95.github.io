@@ -23,6 +23,8 @@ Owner decision: remove Ultimate, recurring subscriptions and AI credit packs fro
 
 ## Remaining implementation and launch gates
 
+Google account menu/native flow, server verification, protected sessions and in-app deletion are now prepared in source. They are not deployed/activated: see GOOGLE-SIGN-IN-SETUP.md for the owner OAuth client/certificate configuration and policy/deletion gates. Purchases and paid ad removal are still unimplemented. The owner has reported the test ad displays on their phone; dismiss/consent and real OAuth require separate validation.
+
 - Native ad SDK and natural-break placement are implemented; physical-device/consent QA remains. No opening-screen or mid-question ads are currently requested. Limit frequency; continue play if no ad is ready. Before selling ad removal, connect verified account entitlements so those accounts never initialize/request advertising. This integration is not present yet. Decide the actual target audience before configuring child/under-age treatment.
 - Configure Google sign-in for the production package and Play signing certificate, validate ID tokens and nonces on the server, and provide secure account sessions, in-app account deletion and an external deletion URL. Regular games must remain usable without account creation.
 - Create only `ad_free` and `memory_book` one-time products in Play Console. The ad-free price is undecided; do not activate an arbitrary price. The book's previously discussed US$0.99 is a planned reference price; display the price returned by Play in the buyer's local currency before checkout.

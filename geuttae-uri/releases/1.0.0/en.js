@@ -1,4 +1,5 @@
 export const english = {
+  "설정에 Google 로그인·로그아웃·계정 삭제 메뉴를 추가했어요. Google 연결 설정 후 이용할 수 있고, 유료 결제는 아직 준비 중이에요.": "Added Google sign-in, sign-out and account deletion in settings. Google configuration is required; paid purchases are still being prepared.",
   "광고 설정": "Advertising",
   "광고 개인정보 설정": "Ad privacy settings",
   "광고 연령 선택 변경": "Change ad age selection",

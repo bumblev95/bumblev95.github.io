@@ -4,6 +4,7 @@ import { App } from '@capacitor/app';
 import { Share } from '@capacitor/share';
 const Keepsake = registerPlugin('Keepsake');
 const Ads = registerPlugin('ThenusAds');
+const Account = registerPlugin('ThenusAccount');
 import { roomFromURL } from './links.js';
 export async function installNative() {
   if (!Capacitor.isNativePlatform()) return;
@@ -13,6 +14,12 @@ export async function installNative() {
       dialogTitle: t("친구 초대하기")
     }),
     exit: () => App.exitApp(),
+    account: {
+      status: () => Account.status(),
+      signIn: () => Account.signIn(),
+      signOut: () => Account.signOut(),
+      deleteAccount: options => Account.deleteAccount({confirmed:options?.confirmed===true})
+    },
     ads: {
       showAtBreak: options => Ads.showAtBreak({...options, language: getLanguage()}),
       privacy: () => Ads.privacy({language: getLanguage()}),

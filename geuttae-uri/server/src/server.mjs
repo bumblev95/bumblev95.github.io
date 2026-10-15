@@ -11,6 +11,7 @@ import {createAiProvider,createAiBudget} from './ai.mjs';
 import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
 import {openCommerceLedger,createCommerce,CommerceError} from './commerce.mjs';
 import {catalog as releaseCatalog} from '../../releases/1.0.0/products.js';
+import {openAccounts,AccountError} from './accounts.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -47,6 +48,7 @@ export async function createApp(options={}){
  const ledger=await openCommerceLedger(path.join(dataDir,'commerce.sqlite'),{now:options.commerceClock||Date.now});
  let commerce;
  try{commerce=createCommerce({...options.commerceFixture,ledger,fixture:!!options.commerceFixture});ledger.recoverPending();}catch(error){ledger.close();throw error;}
+ let accounts;try{accounts=await openAccounts(path.join(dataDir,'accounts.sqlite'),options.accounts);}catch(error){ledger.close();throw error;}
  const aiFlights=new Map(),aiCache=new Map();
  const aiKey=(code,id)=>code+'|'+id;
  function aiStatus(room){
@@ -283,6 +285,17 @@ export async function createApp(options={}){
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
    if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
    if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,options.commerceFixture?commerce.catalog:releaseCatalog);
+   if(u.pathname.startsWith('/api/account/')){
+    const accountToken=req.headers.authorization?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
+    limit(req,'account',40);
+    if(u.pathname==='/api/account/config'&&method==='GET')return respond(res,200,accounts.config());
+    if(u.pathname==='/api/account/challenge'&&method==='POST'){limit(req,'account-sign-in',10);return respond(res,200,accounts.challenge());}
+    if(u.pathname==='/api/account/google'&&method==='POST'){limit(req,'account-verify',10);return respond(res,200,await accounts.signIn(await jsonBody(req)));}
+    if(u.pathname==='/api/account/me'&&method==='GET')return respond(res,200,accounts.me(accountToken));
+    if(u.pathname==='/api/account/logout'&&method==='POST')return respond(res,200,accounts.logout(accountToken));
+    if(u.pathname==='/api/account/delete'&&method==='POST')return respond(res,200,accounts.delete(accountToken,await jsonBody(req)));
+    throw new ApiError(404,'계정 요청 주소를 확인해 주세요.');
+   }
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
     check(nameValid(b.nickname),400,'닉네임을 1~16자로 적어 주세요.');
@@ -428,9 +441,9 @@ export async function createApp(options={}){
    if(method==='HEAD'){res.writeHead(200,{...commonHeaders,'Content-Type':contentType,'Content-Length':bytes.length});res.end();return;}
    return respond(res,200,bytes,{'Content-Type':contentType});
   }catch(e){
-   if(!(e instanceof ApiError)&&!(e instanceof CommerceError))console.error('Request failed safely; no photo or request content logged.');
+   if(!(e instanceof ApiError)&&!(e instanceof CommerceError)&&!(e instanceof AccountError))console.error('Request failed safely; no photo or request content logged.');
    if(res.headersSent){res.end();return;}
-   respond(res,e instanceof ApiError||e instanceof CommerceError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
+   respond(res,e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
   }
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;server.keepAliveTimeout=5_000;
@@ -438,7 +451,7 @@ export async function createApp(options={}){
  const roundClock=setInterval(()=>{for(const code of streams.keys())locked(code,()=>load(code)).catch(()=>{});},1000);roundClock.unref();
  const heartbeat=setInterval(()=>{for(const bucket of streams.values())for(const [res] of bucket){try{res.write(': connected\n\n');}catch{res.destroy();}}},15_000);heartbeat.unref();
  await sweep();
- return {server,dataDir,sweep,commerce,async close(){clearInterval(roundClock);clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));ledger.close();}};
+ return {server,dataDir,sweep,commerce,async close(){clearInterval(roundClock);clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));accounts.close();ledger.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const app=await createApp();const port=Number(process.env.PORT||3000),host=process.env.HOST||'127.0.0.1';

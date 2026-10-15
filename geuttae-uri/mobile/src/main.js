@@ -1,11 +1,13 @@
 import { t, tr, getLanguage } from "../../releases/1.0.0/locale.js";
 import { installNative } from './native.js';
 import version from '../release.json';
+import {installAccountSettings} from './account.js';
 await installNative();
 window.__API_BASE__ = 'https://geuttae-api-test-production.up.railway.app';
 window.__OFFLINE__ = false;
 window.__ASSET_BASE__ = new URL('./assets/', location.href).href;
 await import('../../releases/1.0.0/client.js');
+installAccountSettings();
 document.getElementById('build-label').textContent = t('그때 우리')+' v' + version.version;
 document.getElementById('footer-build').textContent = t('그때 우리')+' v' + version.version;
 const notes = document.getElementById('release-notes');
