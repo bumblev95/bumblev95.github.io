@@ -41,6 +41,21 @@ async function compose(page,prompt){
 }
 try{
  const host=await session('ko-KR','HOST'),guest=await session('en-CA','GUEST'),third=await session('ko-KR','THIRD');const a=host.page,b=guest.page,c=third.page;
+ // Privacy disclosure is readable before affirmative consent; expanding it preserves input.
+ for(const [session, nickname] of [[host,'HOST'],[guest,'GUEST']]){
+  const page=session.page;
+  await page.locator('[data-action="join"]').first().click();
+  await page.locator('[name="nickname"]').fill(nickname);
+  assert.equal(await page.locator('[name="consent"]').isChecked(),false);
+  await page.locator('.entry-privacy summary').click();
+  const notice=await page.locator('.entry-privacy').innerText();
+  assert.match(notice,/Railway/);assert.match(notice,/keetojt@gmail.com/);assert.match(notice,/24/);
+  if(session===guest)assert.doesNotMatch(notice,/[가-힣]/);
+  assert.equal(await page.locator('[name="nickname"]').inputValue(),nickname);
+  assert.equal(await page.locator('[name="consent"]').isChecked(),false);
+  await page.locator('.modal-close').click();
+ }
+
  await a.locator('[data-action="new"]').first().click();await a.locator('[name="nickname"]').fill('HOST');await a.locator('#entry-form [type="submit"]').click();await a.locator('[name="mode"][value="family"]').check();await a.locator('[name="familyScoring"]').check();await a.locator('[name="consent"]').check();await a.locator('#entry-form [type="submit"]').click();await a.waitForURL(/room=/);const code=new URL(a.url()).searchParams.get('room');
  await join(guest,code);await a.locator('[data-action="approve"]').click();await b.locator('[data-action="compose"]').waitFor();await join(third,code);await a.locator('[data-action="approve"]').click();await c.locator('[data-action="compose"]').waitFor();
  await compose(a,'Host photo');await compose(b,'Guest photo');await compose(c,'Third photo');await a.locator('[data-action="start"]').click();await b.locator('.quiz-photo').waitFor();
