@@ -66,7 +66,7 @@ jobs:
           cp geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/Us-Back-Then-v1.0.0-unsigned.apk
           cp geuttae-uri/mobile/README.md android-delivery/README.md
           cp geuttae-uri/mobile/qa-output/ad-build-report.json android-delivery/ad-build-report.json
-          keytool -list -v -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android -keypass android > android-delivery/debug-signing-certificate.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs android-delivery/Us-Back-Then-v1.0.0-candidate.apk > android-delivery/debug-signing-certificate.txt
           sha256sum android-delivery/*.apk > android-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

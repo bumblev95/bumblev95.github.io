@@ -4,7 +4,8 @@ The old AdMob test APK has no account menu. This revision adds **Settings → Ac
 
 ## Code and security
 
-- Native Credential Manager 1.6.0 and Google ID 1.2.1 open Google's account chooser. No embedded web login or app password field.
+- Google ID 1.2.0 is pinned for its Kotlin 2.1 metadata compatibility with the app’s AGP 8.13 lint toolchain; 1.2.1 changes only metrics per Google’s release notes but requires newer metadata support.
+- Native Credential Manager 1.6.0 and Google ID 1.2.0 open Google's account chooser. No embedded web login or app password field.
 - The fixed HTTPS backend provides a random, single-use five-minute nonce challenge. The server uses google-auth-library 11.3.0 to verify signature, audience, issuer and expiry, and checks the nonce and verified email. Google `sub`, hashed with a provider prefix, determines identity; a client-supplied account ID/email/paid flag cannot do so.
 - Accounts contain a random app UUID, hashed Google subject, verified email and creation time. Google ID tokens are not persisted. Opaque 30-day app session tokens are stored only as hashes on the server and encrypted with Android Keystore AES-GCM in private, backup-excluded app storage. Tokens do not cross the JavaScript bridge or enter localStorage. Up to ten sessions per account are retained.
 - Logout revokes the current session and clears native/provider state. Account deletion needs final confirmation and a sign-in less than five minutes old, removes the account and all its sessions, and checkpoints the live SQLite database. It does not delete the person's Google account or downloaded books. Anonymous room data is independent and keeps the existing expiry/deletion rules. Provider logs/backups have separate retention.
