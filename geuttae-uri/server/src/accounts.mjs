@@ -1,6 +1,5 @@
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
-import {OAuth2Client} from 'google-auth-library';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -25,7 +24,8 @@ export async function openAccounts(filename,{clientId=process.env.GOOGLE_WEB_CLI
     CREATE TABLE IF NOT EXISTS account_sessions(token_hash TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL) STRICT;
     CREATE TABLE IF NOT EXISTS account_challenges(id TEXT PRIMARY KEY,nonce TEXT NOT NULL,expires_at INTEGER NOT NULL) STRICT;`);
   for(const suffix of ['','-wal','-shm'])await fs.chmod(filename+suffix,0o600).catch(e=>{if(e.code!=='ENOENT')throw e;});
-  const google=new OAuth2Client({clientId,transporterOptions:{timeout:10_000,retry:false}});
+  // Anonymous/static preview checks do not install optional server-provider packages.
+  const google=clientId&&!verifyToken?new (await import('google-auth-library')).OAuth2Client({clientId,transporterOptions:{timeout:10_000,retry:false}}):null;
   const verify=verifyToken|| (async idToken=>(await google.verifyIdToken({idToken,audience:clientId})).getPayload());
   function cleanup(){db.prepare('DELETE FROM account_challenges WHERE expires_at<=?').run(now());db.prepare('DELETE FROM account_sessions WHERE expires_at<=?').run(now());}
   function current(token){
