@@ -61,6 +61,20 @@ try{
     assert.deepEqual(errors,[],'Runtime errors at '+width+'px');
     await context.close();
   }
+  // Official trailers must link to identifiable publisher sources in both languages.
+  for(const locale of ['', 'ko/']){
+    const pageUrl=origin+'/player-codex/archeage-chronicles/'+locale;
+    const r=await fetch(pageUrl);
+    assert(r.ok(),'Official media test page missing: '+locale);
+    const html=await r.text();
+    assert(html.includes('id="official-videos"'),'Official videos section missing: '+locale);
+    assert(html.includes('data-official-video="reveal"'),'Reveal trailer missing: '+locale);
+    assert(html.includes('data-official-video="developer"'),'Developer briefing missing: '+locale);
+    for(const u of ['https://www.youtube.com/watch?v=UeRY7LU0x3M','https://www.youtube.com/watch?v=78ZGLdQMPGU','https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/','https://www.youtube.com/@ArcheAgeChronicles']){
+      assert(html.includes(u),'Missing source video URL '+u+' : '+locale);
+    }
+    assert(html.includes('target="_blank" rel="noopener noreferrer"'),'Video links should open safely: '+locale);
+  }
   const context=await browser.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
   await page.goto(origin+'/player-codex/',{waitUntil:'domcontentloaded'});
@@ -68,6 +82,7 @@ try{
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/','ArcheAge card navigation');
   await page.locator('.lang').click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/ko/','Language toggle to Korean');
+  assert.equal(await page.locator('.official-video').count(),2,'Korean media cards visible');
   await page.getByRole('link',{name:/준비 가이드 보기/}).click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/demo/ko/','Korean playtest guide link');
   await page.locator('.lang').click();

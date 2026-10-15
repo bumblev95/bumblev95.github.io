@@ -33,3 +33,14 @@ Once approved, update the root sitemap discovery to include `/player-codex/sitem
 Added bilingual `/archeage-chronicles/demo/` playtest notes with explicit sourcing to XLGAMES developer communications. These are stated as announced systems, not measured gameplay outcomes. Internal links and shared assets use root-relative production paths so the site also renders correctly in a local preview server. Small-screen top navigation hides non-essential links while retaining the brand home link and language switch.
 
 Browser smoke tests in `tests/smoke.mjs` verify six URLs in 360 px, 390 px and 1440 px layouts, language links, game card navigation, console errors and horizontal overflow. The GitHub Actions workflow runs the checks without changing the market homepage.
+
+## Official videos linked before the demo (October 15, 2026)
+
+The ArcheAge Chronicles landing pages (English and Korean) present clearly labelled external links to original publisher/official-platform video sources. Pages do not embed or redistribute full video files, and don't load YouTube playback scripts. Optional YouTube-supplied poster thumbnails are requested lazily and with `referrerpolicy=no-referrer` when the media cards come into view. Opening a video sends visitors to its provider in a new tab.
+
+- PlayStation official first announcement trailer (Sep 24, 2024): https://www.youtube.com/watch?v=UeRY7LU0x3M
+- ArcheAge Chronicles / XLGAMES developer video (Oct 8, 2026): https://www.youtube.com/watch?v=78ZGLdQMPGU
+- Official Steam gameplay trailer at the publisher's Steam store: https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/
+- Official game YouTube channel: https://www.youtube.com/@ArcheAgeChronicles
+
+All promotional and publisher-described footage remains distinct from independently tested class skills, DPS, NPC positions and boss mechanics. The local Playwright smoke test checks the links for both languages and all existing viewport sizes.
