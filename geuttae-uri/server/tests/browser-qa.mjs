@@ -84,7 +84,7 @@ try{
  assert.equal(await b.locator('[data-action="answer"]').count(),0);
  assert.match(await b.locator('#app').innerText(),/100/);
  // Update detection must not permit replacement during the game.
- await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.7';await route.fulfill({response:r,json:m});});
+ await a.route('**/version.json?*',async route=>{const r=await route.fetch();const m=await r.json();m.version='0.4.8';await route.fulfill({response:r,json:m});});
  await a.locator('#check-update').click();await a.locator('#apply-update').waitFor();assert.equal(await a.locator('#apply-update').isDisabled(),true);
  await a.locator('[data-action="next"]').click();await a.locator('[data-action="choose"][data-choice="0"]').waitFor();
  assert.equal(await b.locator('[data-action="choose"]:not(:disabled)').count(),0);
@@ -104,7 +104,7 @@ try{
   assert.ok(!(await p.locator('.book-preview').textContent()).includes('DENIED-STORY'));
   assert.ok(!(await p.locator('.book-preview .sample').innerText()).includes('가상 참가자'));
   for(const template of ['photobook','polaroid','album']){
-   await p.locator('#memory-template').selectOption(template);await p.locator('#memory-palette').selectOption('peach');
+   await p.locator(`#memory-template input[value=\"${template}\"]`).locator('..').click();await p.locator('#memory-palette input[value=\"peach\"]').locator('..').click();
    for(const width of [320,390,768,1440]){await p.setViewportSize({width,height:900});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.equal(await p.locator('#modal').evaluate(el=>el.scrollWidth>el.clientWidth),false);}
   }
   assert.equal(await a.locator('#apply-update').isDisabled(),p===a);

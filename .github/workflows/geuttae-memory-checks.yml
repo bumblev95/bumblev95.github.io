@@ -24,7 +24,7 @@ jobs:
       - name: Check syntax and consent/export rules
         working-directory: geuttae-uri
         run: |
-          for file in releases/0.4.6/*.js; do node --check "$file"; done
+          for file in releases/0.4.7/*.js; do node --check "$file"; done
           npm test
       - name: Install Chromium
         working-directory: geuttae-uri
