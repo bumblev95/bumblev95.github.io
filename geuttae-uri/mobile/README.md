@@ -1,6 +1,6 @@
 # Us Back Then / 그때 우리 — Google Play release candidate
 
-Release: com.bumblevai.thenus, version 1.0.1, versionCode 10001. Debug keeps a separate .test package and -TEST version suffix. Android API 24+, target API 36. Java 21 and Node 22+ required.
+Release: com.bumblevai.thenus, version 1.0.2, versionCode 10002. Debug keeps a separate .test package and -TEST version suffix. Android API 24+, target API 36. Java 21 and Node 22+ required.
 
 English app name: Us Back Then. Korean app name: 그때 우리. The initial interface follows the primary device locale, with English fallback. An in-app selection persists; player text stays as written.
 
@@ -11,6 +11,10 @@ The home screen now links directly to personal ad removal, with optional sign-in
 ## Build
 
 Run npm ci, npm run sync, npm test, then android/gradlew assembleDebug bundleRelease assembleRelease lintDebug lintRelease. CI produces a debug APK and unsigned release AAB/APK. Sign privately using the retained upload key; never commit keys or put them in public CI artifacts. Google Play App Signing handles store distribution.
+
+## Teen & family safety (draft)
+
+Android launch now checks a self-declared birth date (never stored or transmitted). A coarse age band is retained locally. Under-13 users cannot enter gameplay; 13–17 users cannot request ads or initiate ad-removal checkout. Legacy ad choices cannot grant adult status. Participants may report and block another player in a room; reports currently expire with the room and are not yet delivered to an operator. This is not verified age assurance or a completed moderation workflow. Privacy/Data safety, physical-device tests and operational moderation must be completed before a closed-test submission.
 
 ## Submission gates
 
