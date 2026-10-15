@@ -22,6 +22,20 @@ OTHER = {
     "/player-codex/assets/status.js": "data-event-status",
     "/player-codex/sitemap.xml": "/player-codex/archeage-chronicles/demo/ko/",
 }
+OFFICIAL_VIDEOS = {
+    "/player-codex/archeage-chronicles/": (
+        'id="official-videos"',
+        'https://www.youtube.com/watch?v=UeRY7LU0x3M',
+        'https://www.youtube.com/watch?v=78ZGLdQMPGU',
+        'https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/',
+    ),
+    "/player-codex/archeage-chronicles/ko/": (
+        'id="official-videos"',
+        'https://www.youtube.com/watch?v=UeRY7LU0x3M',
+        'https://www.youtube.com/watch?v=78ZGLdQMPGU',
+        'https://store.steampowered.com/app/3218230/ArcheAge_Chronicles/',
+    ),
+}
 TIMEOUT_SECONDS = 12
 RETRIES = 25
 DELAY_SECONDS = 8
@@ -42,6 +56,8 @@ def validate() -> None:
         assert '<main id="main">' in content and '<h1' in content, f"Missing body landmarks: {path}"
         assert f'<link rel="canonical" href="{BASE}{path}">' in content, f"Canonical mismatch: {path}"
         assert phrase in content, f"Missing expected content at {path}: {phrase}"
+        for url in OFFICIAL_VIDEOS.get(path, ()):
+            assert url in content, f"Missing official video reference: {path} {url}"
         print(f"PASS page {path}", flush=True)
     for path, expected in OTHER.items():
         body = fetch(BASE + path)
