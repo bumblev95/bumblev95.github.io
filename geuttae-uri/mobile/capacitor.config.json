@@ -1,9 +1,9 @@
 {
-  "appId": "com.bumblevai.thenus.test",
-  "appName": "그때 우리 TEST",
+  "appId": "com.bumblevai.thenus",
+  "appName": "Us Back Then",
   "webDir": "www",
   "backgroundColor": "#fbf8f1",
-  "loggingBehavior": "debug",
+  "loggingBehavior": "none",
   "server": {
     "hostname": "bumblev95.github.io",
     "androidScheme": "https",

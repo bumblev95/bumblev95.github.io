@@ -280,7 +280,7 @@ export async function createApp(options={}){
     if(b.familyScoring!==undefined)check(typeof b.familyScoring==='boolean',400,'점수 설정을 확인해 주세요.');
     if(b.partyMissions!==undefined)check(typeof b.partyMissions==='boolean',400,'파티 미션 설정을 확인해 주세요.');
     const code=roomCode(),secret=token(),id=randomUUID();
-    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',timeLimitSeconds:seconds,createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active'}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}],{mode,partyMissions:b.partyMissions===true,scoring:mode!=='family'||b.familyScoring===true})};
+    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',timeLimitSeconds:seconds,createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active',termsVersion:b.termsVersion==='2026-10-15'?b.termsVersion:null}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}],{mode,partyMissions:b.partyMissions===true,scoring:mode!=='family'||b.familyScoring===true})};
     await fs.mkdir(path.join(roomsDir,code),{recursive:false,mode:0o700});await save(room);
     return respond(res,201,{...safeState(room,room.sessions[0]),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
    }
@@ -298,7 +298,7 @@ export async function createApp(options={}){
       check(room.sessions.filter(s=>s.status==='pending').length<8,409,'입장 대기 인원이 가득 찼어요.');
       check(room.sessions.length<40,429,'입장 요청 한도에 도달했어요. 새 방을 만들어 주세요.');
       check(!room.sessions.some(s=>['active','pending'].includes(s.status)&&s.name.normalize('NFC')===b.nickname.trim().normalize('NFC')),409,'같은 닉네임이 있어요. 다른 이름을 적어 주세요.');
-      const secret=token(),s={id:randomUUID(),name:b.nickname.trim(),tokenHash:hash(secret),status:'pending'};room.sessions.push(s);await save(room);publish(room);
+      const secret=token(),s={id:randomUUID(),name:b.nickname.trim(),tokenHash:hash(secret),status:'pending',termsVersion:b.termsVersion==='2026-10-15'?b.termsVersion:null};room.sessions.push(s);await save(room);publish(room);
       return respond(res,200,{...safeState(room,s),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
      }
      const sess=sessionFor(room,req);check(sess,401,'방 코드와 닉네임으로 먼저 입장해 주세요.');
@@ -368,7 +368,12 @@ export async function createApp(options={}){
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
      if(b.type==='submitQuestion'&&b.photoId){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
-     if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.questions[room.game.order[room.game.round]]?.authorId,reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
+     if(b.type==='report'){
+      const authorId=room.game.questions[room.game.order[room.game.round]]?.authorId;
+      check(authorId,400,'현재 사진의 출제자를 확인할 수 없어요.');
+      room.reports.push({id:randomUUID(),reporterId:s.id,authorId,reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
+      const author=room.sessions.find(person=>person.id===authorId);if(author&&authorId!==s.id)author.status='blocked';
+     }
      const editedKey=questionKey(s.id,b.slot||0),oldPhoto=room.game.questions[editedKey]?.photoId;
      const serverPoints=pointsForTime(room.roundDeadlineAt,room.timeLimitSeconds,gameNow());
      room.game=applyAction(room.game,s.id,{...b,serverPoints});

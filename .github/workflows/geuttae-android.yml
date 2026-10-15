@@ -1,10 +1,10 @@
 name: Then Us Android APK
 on:
   pull_request:
-    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/0.5.2/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
+    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/1.0.0/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
   push:
     branches: [main]
-    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/0.5.2/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
+    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/1.0.0/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -52,15 +52,17 @@ jobs:
 
       - name: Assemble installable test APK and lint
         working-directory: geuttae-uri/mobile/android
-        run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon
+        run: ./gradlew :app:assembleDebug :app:lintDebug :app:bundleRelease :app:assembleRelease :app:lintRelease --no-daemon
       - name: Package app
         run: |
           mkdir -p android-delivery
-          cp geuttae-uri/mobile/android/app/build/outputs/apk/debug/app-debug.apk android-delivery/Then-Us-TEST-v0.5.2.apk
+          cp geuttae-uri/mobile/android/app/build/outputs/apk/debug/app-debug.apk android-delivery/Us-Back-Then-v1.0.0-candidate.apk
+          cp geuttae-uri/mobile/android/app/build/outputs/bundle/release/app-release.aab android-delivery/Us-Back-Then-v1.0.0-unsigned.aab
+          cp geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/Us-Back-Then-v1.0.0-unsigned.apk
           cp geuttae-uri/mobile/README.md android-delivery/README.md
           sha256sum android-delivery/*.apk > android-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Then-Us-TEST-v0.5.2
+          name: Us-Back-Then-v1.0.0-candidate
           path: android-delivery/
           retention-days: 30
