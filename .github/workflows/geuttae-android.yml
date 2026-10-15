@@ -36,10 +36,21 @@ jobs:
           npx playwright install --with-deps chromium
           node mobile/tests/browser-qa.mjs
       - name: Install Android SDK packages
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+        run: |
+          sdk_root="$RUNNER_TEMP/then-us-android-sdk"
+          mkdir -p "$sdk_root/cmdline-tools"
+          curl --fail --location --retry 3 https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip -o "$RUNNER_TEMP/android-tools.zip"
+          echo "7ec965280a073311c339e571cd5de778b9975026cfcbe79f2b1cdcb1e15317ee  $RUNNER_TEMP/android-tools.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/android-tools.zip" -d "$RUNNER_TEMP/then-us-tools"
+          mv "$RUNNER_TEMP/then-us-tools/cmdline-tools" "$sdk_root/cmdline-tools/latest"
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          set +o pipefail
+          yes | "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk_root" --licenses > /dev/null
+          "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk_root" 'platforms;android-36' 'build-tools;36.0.0' 'build-tools;35.0.0'
+
       - name: Assemble installable test APK and lint
         working-directory: geuttae-uri/mobile/android
-        run: ./gradlew assembleDebug lintDebug --no-daemon
+        run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon
       - name: Package app
         run: |
           mkdir -p android-delivery
