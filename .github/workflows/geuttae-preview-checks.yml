@@ -59,8 +59,9 @@ jobs:
           import json, pathlib
           version = json.loads(pathlib.Path('geuttae-uri/version.json').read_text())['version']
           html = pathlib.Path('/tmp/then-us-dom.html').read_text()
-          for expected in ['TEST v' + version, '먼저 체험해 보기', 'data-screen="home"']:
+          for expected in ['TEST v' + version, 'data-screen="home"', 'data-action="demo"']:
               assert expected in html, 'Public homepage did not render: ' + expected
+          assert '먼저 체험해 보기' in html or 'Try the demo' in html, 'Demo label missing in both supported languages'
           print('CHROME PASS: public homepage rendered with TEST v' + version + ' and the demo start button')
           PY
           printf '### Then Us frontend\n\nHTTPS source hashes and Chrome homepage rendering passed.\n\nA configured backend is required for real multiplayer. Physical-device QA and AI generation are separate.\n' >> "$GITHUB_STEP_SUMMARY"
