@@ -8,6 +8,8 @@ import { pointsForTime, setup, validateAction, applyAction, viewFor } from './lo
 import { memoryProduct, captureMemory, buildMemoryBook, renderMemoryHTML, memoryTemplates, memoryPalettes, memoryStyleCSS } from './memory.js';
 import { questionStarters } from './draft.js';
 import { productFor } from './products.js';
+import { createGameBreakGate } from './ads.js';
+const atGameBreak = createGameBreakGate(options => window.__NATIVE__?.ads?.showAtBreak(options));
 const $ = s => document.querySelector(s);
 const app = $('#app'),
   modal = $('#modal');
@@ -620,8 +622,13 @@ function resultMarkup(v) {
 }
 function showPlans() {
   const book = productFor('memory_book');
+  const adNotice = window.__ADS_STATUS__?.enabled
+    ? window.__ADS_STATUS__.testMode
+      ? t('현재는 Google 테스트 광고를 사용해요. 로그인과 결제는 아직 연결되지 않았어요.')
+      : t('무료 게임 사이에 광고가 표시될 수 있어요. 로그인과 결제는 아직 연결되지 않았어요.')
+    : t('현재 버전에는 실제 광고·로그인·결제가 연결되지 않았어요. 추억집 파일 저장은 무료 체험이에요.');
   showModal(t("무료로 함께, 우리답게 간직해요"), tr`<p>사진으로 직접 문제를 만들고, 친구를 초대하고, 기억 대결을 즐기는 건 무료예요. 일반 게임은 로그인 없이 이용해요.</p>
- <div class="notice plan-notice"><strong>광고와 결제를 준비하고 있어요.</strong><br>현재 버전에는 실제 광고·로그인·결제가 연결되지 않았어요. 추억집 파일 저장은 무료 체험이에요.</div>
+ <div class="notice plan-notice"><strong>광고와 결제를 준비하고 있어요.</strong><br>${adNotice}</div>
  <section class="plan-card"><div class="plan-heading"><h3>무료 게임</h3></div><p>게임을 마친 뒤 자연스러운 쉬는 시간에 광고를 보여주는 방식으로 준비해요. 문제를 풀거나 답을 확인하는 동안에는 광고로 가리지 않아요.</p></section>
  <section class="plan-card"><div class="plan-heading"><h3>개인 광고 제거</h3><span class="plan-badge">출시 예정</span></div><p>로그인한 뒤 한 번 구매하면 내 계정의 광고를 없애는 옵션이에요. 다른 참가자의 광고에는 영향을 주지 않아요.</p><p class="microcopy">정기 구독 없이 준비해요. 판매 가격과 구매·복원 기능은 연결 후 안내해요.</p></section>
  <section class="plan-card"><div class="plan-heading"><h3>모임 추억집</h3><span class="plan-badge">출시 예정</span></div><p class="plan-price">${esc(book.price)} <small>예정 가격 · 한 게임 · 일회 구매</small></p><p>저장을 허용한 사진과 이야기를 한 권에 담고 PDF나 HTML 파일로 간직해요. 미리보기는 무료예요.</p><p class="microcopy">현재는 무료 저장 체험이에요. 판매할 때는 Google Play에 표시되는 현지 통화 가격을 결제 전에 안내해요.</p></section>
@@ -1229,11 +1236,18 @@ function showHelp() {
   showModal(t("우리, 이렇게 놀아요"), tr`<div class="help-step"><span>1</span><div><strong>아는 친구를 초대해요.</strong><p>방 코드나 링크를 보내고, 방장이 입장 요청을 승인해요.</p></div></div><div class="help-step"><span>2</span><div><strong>원하는 사람만 사진 문제를 준비해요.</strong><p>질문과 보기 4개, 정답을 직접 입력해요. 사진은 한 사람당 최대 5장이고, 출제하지 않아도 함께 풀 수 있어요.</p></div></div><div class="help-step"><span>3</span><div><strong>돌아가며 기억을 맞혀요.</strong><p>출제자는 자신의 문제에 답하지 않아요. 정답은 최대 100점이며 남은 시간 비율로 줄어요. 가족 모드는 시간제한과 속도 감점이 없어요.</p></div></div><div class="help-step"><span>4</span><div><strong>정답보다 그날의 이야기를 나눠요.</strong><p>모두 답하면 정답을 공개해요. 이야기를 나눈 뒤 방장이 모두 함께 다음 문제를 시작해요.</p></div></div><div class="notice warm">친구와 직접 출제하는 사진 퀴즈와 가상 친구 체험을 사용할 수 있어요.</div>`);
 }
 function showPrivacy() {
+  const adRuntimeNotice = t(window.__ADS_STATUS__?.enabled
+    ? window.__ADS_STATUS__.testMode
+      ? '현재는 Google 테스트 광고를 사용해요. 로그인과 결제는 아직 연결되지 않았어요.'
+      : '무료 게임 사이에 광고가 표시될 수 있어요. 로그인과 결제는 아직 연결되지 않았어요.'
+    : '정식 광고는 아직 활성화하지 않았어요.');
+  const nativeAdNotice = window.__NATIVE__?.ads ? tr`<h3>Android 광고와 개인정보</h3><p>Google AdMob과 UMP를 사용해요. 만 18세 이상이라고 선택하고 필요한 동의 절차를 마친 경우에만 광고를 준비해요. 연령 선택은 생년월일 없이 이 기기에만 저장해요. 광고 요청 시 IP 주소, 기기·광고 식별자, 광고 상호작용과 진단 정보가 Google에 전송될 수 있어요. 퀴즈 사진·이름·질문·답변은 광고 SDK에 전달하지 않아요. 설정에서 광고 개인정보와 연령 선택을 바꿀 수 있어요.</p><p>${adRuntimeNotice}</p>` : '';
+
   if (offline) {
     showModal(t("체험판의 사진 보호"), t("<div class=\"privacy-section\"><h3>선택한 사진은 이 기기에만</h3><p>체험판에서는 사진을 서버로 업로드하지 않아요. 브라우저 메모리에서만 사용하며, 원본은 수정하지 않아요.</p><h3>저장하거나 AI에 보내지 않아요</h3><p>체험 사진은 서버로 보내지 않아요. 저장을 허용한 추억만 탭 메모리에서 모으며, 직접 파일 저장을 눌러야 기기에 저장돼요. 홈 이동·새로고침·탭 종료 시 탭 안의 추억집은 사라져요. 내려받은 파일은 기기에 남아요.</p><h3>공유할 때는 사진 속 사람의 동의를 먼저</h3><p>민감한 사진은 테스트에 사용하지 마세요. 화면 캡처까지 막는 기능은 없어요.</p><h3>이 링크와 코드는 공개되어 있어요</h3><p>누구나 체험 링크를 열 수 있지만, 다른 방문자가 여러분이 선택한 사진을 볼 수는 없어요. 사진 전송이나 실시간 방 기능이 없는 화면 체험판이에요.</p></div>"));
     return;
   }
-  showModal(t("우리 사진, 이렇게 다뤄요"), tr`<div class="privacy-section"><h3>언어 설정</h3><p>선택한 언어만 이 기기에 저장해요. 사진과 문제는 저장하지 않아요.</p><h3>원본은 내 휴대폰에 그대로</h3><p>공유 완료를 누르면 축소한 JPG 사본만 서버에 보내요. 사진의 위치 정보 등 메타데이터는 제거해요.</p><h3>방장이 승인한 참가자만</h3><p>공개 사진 주소나 방 목록은 없어요. 내 사진은 내가 확인할 수 있고, 다른 참가자의 사진은 그 문제가 나왔을 때 볼 수 있어요. 정답은 공개 전까지 서버가 숨겨요.</p><h3>게임 종료 시 임시 사진 삭제</h3><p>게임을 끝내면 사본을 삭제해요. 버려진 방도 생성 후 최대 24시간에 만료돼요. 항상 실행되는 서버가 30초마다 정리해요. 서버가 꺼져 있으면 다시 시작할 때 삭제하며, 만료된 방의 접근은 먼저 차단해요. 삭제에 실패하면 접근을 먼저 막고 재시도해요.</p><h3>함께 찍은 사람의 동의를 먼저</h3><p>사진 속 사람들이 공유에 동의했는지 확인해 주세요. 신분증, 의료 정보 등 민감한 사진과 성적 이미지는 이번 테스트에 사용하지 마세요. 참가자의 화면 캡처까지 막을 수는 없어요.</p><h3>불편한 사진은 즉시 숨겨요</h3><p>사진 숨기기는 내 화면과 내가 받는 추억집에서만 가리며 다시 표시할 수 있어요. 신고는 사유와 최종 확인 후 방의 임시 기록에 남아요. 신고만으로 게임 종료나 자동 강퇴는 하지 않아요. 운영자 검토·삭제 문의는 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 신고 이메일은 자동 발송되지 않아요. 방장만 참가자를 강퇴할 수 있고 강퇴된 참가자의 문제와 임시 사진은 삭제해요.</p><h3>추억집 저장은 별도 동의</h3><p>사진별로 출제자가 저장·공유 동의를 선택해요. 끝까지 마친 게임에서 허용된 사진과 문제·이야기·답변만 종료 때 연결된 참가자 탭에 전달하고 서버 사본을 삭제해요. 전달된 추억집은 탭 메모리에만 남으며, 홈 이동·새로고침·탭 종료 후 다시 받을 수 없어요. 직접 내려받은 파일은 기기에 남고 앱에서 회수할 수 없어요. 중도 종료 시에는 추억집을 만들지 않아요. 현재 저장은 무료 체험이며 실제 결제는 없어요.</p><h3>재접속과 세션</h3><p>이 탭에는 방의 접근 키만 세션 저장소에 보관해요. 사진과 문제는 저장하지 않아요. 같은 탭을 새로고침하면 승인과 점수가 복원돼요. 탭을 닫거나 다른 브라우저를 쓰면 다시 입장 승인이 필요해요.</p><h3>현재 버전의 범위</h3><p>AI 초안 도움은 출시 예정이며 현재 AI에 사진이나 글을 보내지 않아요. 성인 모드와 앱 스토어 배포는 포함되어 있지 않아요.</p></div>`);
+  showModal(t("우리 사진, 이렇게 다뤄요"), tr`<div class="privacy-section">${nativeAdNotice}<h3>언어 설정</h3><p>선택한 언어만 이 기기에 저장해요. 사진과 문제는 저장하지 않아요.</p><h3>원본은 내 휴대폰에 그대로</h3><p>공유 완료를 누르면 축소한 JPG 사본만 서버에 보내요. 사진의 위치 정보 등 메타데이터는 제거해요.</p><h3>방장이 승인한 참가자만</h3><p>공개 사진 주소나 방 목록은 없어요. 내 사진은 내가 확인할 수 있고, 다른 참가자의 사진은 그 문제가 나왔을 때 볼 수 있어요. 정답은 공개 전까지 서버가 숨겨요.</p><h3>게임 종료 시 임시 사진 삭제</h3><p>게임을 끝내면 사본을 삭제해요. 버려진 방도 생성 후 최대 24시간에 만료돼요. 항상 실행되는 서버가 30초마다 정리해요. 서버가 꺼져 있으면 다시 시작할 때 삭제하며, 만료된 방의 접근은 먼저 차단해요. 삭제에 실패하면 접근을 먼저 막고 재시도해요.</p><h3>함께 찍은 사람의 동의를 먼저</h3><p>사진 속 사람들이 공유에 동의했는지 확인해 주세요. 신분증, 의료 정보 등 민감한 사진과 성적 이미지는 이번 테스트에 사용하지 마세요. 참가자의 화면 캡처까지 막을 수는 없어요.</p><h3>불편한 사진은 즉시 숨겨요</h3><p>사진 숨기기는 내 화면과 내가 받는 추억집에서만 가리며 다시 표시할 수 있어요. 신고는 사유와 최종 확인 후 방의 임시 기록에 남아요. 신고만으로 게임 종료나 자동 강퇴는 하지 않아요. 운영자 검토·삭제 문의는 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 신고 이메일은 자동 발송되지 않아요. 방장만 참가자를 강퇴할 수 있고 강퇴된 참가자의 문제와 임시 사진은 삭제해요.</p><h3>추억집 저장은 별도 동의</h3><p>사진별로 출제자가 저장·공유 동의를 선택해요. 끝까지 마친 게임에서 허용된 사진과 문제·이야기·답변만 종료 때 연결된 참가자 탭에 전달하고 서버 사본을 삭제해요. 전달된 추억집은 탭 메모리에만 남으며, 홈 이동·새로고침·탭 종료 후 다시 받을 수 없어요. 직접 내려받은 파일은 기기에 남고 앱에서 회수할 수 없어요. 중도 종료 시에는 추억집을 만들지 않아요. 현재 저장은 무료 체험이며 실제 결제는 없어요.</p><h3>재접속과 세션</h3><p>이 탭에는 방의 접근 키만 세션 저장소에 보관해요. 사진과 문제는 저장하지 않아요. 같은 탭을 새로고침하면 승인과 점수가 복원돼요. 탭을 닫거나 다른 브라우저를 쓰면 다시 입장 승인이 필요해요.</p><h3>현재 버전의 범위</h3><p>AI 초안 도움은 출시 예정이며 현재 AI에 사진이나 글을 보내지 않아요. 성인 모드와 앱 스토어 배포는 포함되어 있지 않아요.</p></div>`);
 }
 document.addEventListener('keydown', e => {
   if (e.target.id === 'photo-pick' && (e.key === 'Enter' || e.key === ' ')) {
@@ -1260,7 +1274,7 @@ document.addEventListener('click', async e => {
   }
   if (action === 'home') return goHome();
   if (action === 'entry-back') return setEntryStep('details');
-  if (action === 'new') return openEntry('new');
+  if (action === 'new') return atGameBreak({...ui.data, demo: ui.demo}, () => openEntry('new'));
   if (action === 'join') return openEntry('join');
   if (action === 'demo') return startDemo();
   if (action === 'help') return showHelp();
@@ -1355,9 +1369,9 @@ document.addEventListener('click', async e => {
     return;
   }
   if (action === 'start') return act('start');
-  if (action === 'rematch') return confirmDialog(t("같은 멤버로 한 판 더 할까요?"), t("모두 추억집을 저장했는지 확인해 주세요. 저장하지 않은 이전 추억집은 사라져요. 방 코드와 참가자는 유지하고 점수·문제는 새로 시작해요."), t("다음 게임 시작"), () => act('rematch', {
+  if (action === 'rematch') return confirmDialog(t("같은 멤버로 한 판 더 할까요?"), t("모두 추억집을 저장했는지 확인해 주세요. 저장하지 않은 이전 추억집은 사라져요. 방 코드와 참가자는 유지하고 점수·문제는 새로 시작해요."), t("다음 게임 시작"), () => atGameBreak({...ui.data, demo: ui.demo}, () => act('rematch', {
     confirmed: true
-  }));
+  })));
   if (['missionDone', 'missionSkip'].includes(action)) return act(action);
   if (action === 'next') return act('next');
   if (action === 'demo-answers') {
