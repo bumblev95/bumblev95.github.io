@@ -3,6 +3,8 @@ package com.bumblevai.thenus;
 import android.content.Context;
 import android.content.MutableContextWrapper;
 import android.os.CancellationSignal;
+import android.os.Handler;
+import android.os.Looper;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -134,13 +136,19 @@ public class AccountPlugin extends Plugin {
     // Native-only: no JavaScript boolean can unlock a purchase or change advertising eligibility.
     void checkAdvertising(java.util.function.Consumer<Boolean> done) {
         if (busy.get()) { done.accept(false); return; }
+        AtomicBoolean delivered = new AtomicBoolean(false);
+        // A slow entitlement service must not hold the next game behind an ad check.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (delivered.compareAndSet(false, true)) done.accept(false);
+        }, 1_000);
         background(() -> {
             boolean allowed = false;
             try {
                 String session = token();
                 allowed = session == null || !request("billing/status", null, session).getBoolean("adFree");
             } catch (Exception ignored) { /* Unknown paid status: skip this ad, retry at the next break. */ }
-            boolean safe = allowed && !busy.get(); ui(() -> done.accept(safe));
+            boolean safe = allowed && !busy.get();
+            ui(() -> { if (delivered.compareAndSet(false, true)) done.accept(safe); });
         });
     }
     void finishBilling(PluginCall call, String status, JSONObject details) {
