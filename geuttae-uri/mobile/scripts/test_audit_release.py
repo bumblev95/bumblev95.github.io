@@ -32,6 +32,11 @@ class ReleaseAudit(unittest.TestCase):
         self.manifest.write_text(XML.format(extra='').replace('package="com.bumblevai.thenus"', 'package="com.bumblevai.thenus.test"'))
         with self.assertRaisesRegex(AssertionError, 'Wrong release package'):
             self.run_audit()
+    def test_unused_foreground_worker_blocks_release(self):
+        xml = XML.format(extra='').replace('/></manifest>', '><service android:name="androidx.work.impl.foreground.SystemForegroundService"/></application></manifest>')
+        self.manifest.write_text(xml)
+        with self.assertRaisesRegex(AssertionError, 'Unexpected foreground service'):
+            self.run_audit()
     def test_native_dependency_requires_page_size_review(self):
         with zipfile.ZipFile(self.aab, 'a') as z:
             z.writestr('base/lib/arm64-v8a/new.so', b'library')

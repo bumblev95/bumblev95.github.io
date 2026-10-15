@@ -26,6 +26,7 @@ def audit(manifest, apk, aab):
     # gets a free pass merely because it wasn't present in the source manifest.
     allowed = {
         'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE',
+        'android.permission.WAKE_LOCK',  # AndroidX WorkManager's ordinary scheduled SDK work
         'com.google.android.gms.permission.AD_ID',
         'android.permission.ACCESS_ADSERVICES_AD_ID',
         'android.permission.ACCESS_ADSERVICES_ATTRIBUTION',
@@ -33,6 +34,7 @@ def audit(manifest, apk, aab):
         PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
     }
     assert 'android.permission.INTERNET' in permissions
+    assert not any(service.get(ANDROID + 'name') == 'androidx.work.impl.foreground.SystemForegroundService' or service.get(ANDROID + 'foregroundServiceType') for service in app.findall('service')), 'Unexpected foreground service: this app has no long-running foreground work'
     assert permissions <= allowed, 'Unreviewed merged permissions: ' + str(permissions - allowed)
     private = PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
     if private in permissions:

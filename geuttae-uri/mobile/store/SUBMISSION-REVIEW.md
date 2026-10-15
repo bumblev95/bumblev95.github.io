@@ -17,11 +17,17 @@ Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This
 | Store/Console | KO/EN text describes only currently working free features. | Final graphic/screenshots, correct audience/IARC, ads/Data safety declarations and app-access instructions, actual account/testing status and any legal acceptance. No declarations were selected. |
 | Monetization | AdMob 25.5.0 and UMP 4.0.0 are now present; release serving defaults OFF. Debug uses Google test ads. No sign-in or Billing SDK; owner AdMob IDs retained. | Verify native ad/UMP behavior and consent setup; implement sign-in/account deletion, paid ad-removal, verified billing and durable paid-book delivery, or obtain an explicit owner change of launch scope. Do not silently submit this as the requested monetized release. |
 
-Local follow-up verification: 118 server tests, 20 core tests, 7 native/advertising tests, 4 release-audit negative/positive cases; bundled KO/EN moderation/consent, home at seven sizes, full demo and stub native save/cancel checks passed. These browser checks do not prove native device behavior.
+Local follow-up verification: 118 server tests, 20 core tests, 7 native/advertising tests, 5 release-audit negative/positive cases; bundled KO/EN moderation/consent, home at seven sizes, full demo and stub native save/cancel checks passed. These browser checks do not prove native device behavior.
 
 Use [DATA-SAFETY-WORKSHEET.md](DATA-SAFETY-WORKSHEET.md), [SIGNING-AND-CONSOLE.md](SIGNING-AND-CONSOLE.md) and [DEVICE-TEST-RECORD.md](DEVICE-TEST-RECORD.md) for the specific handoff. Every physical-device row is deliberately NOT RUN.
 
 Official policy checked on 2026-10-15: User Data requires public non-editable HTML policy plus in-app text/link; Data safety covers pseudonymous data and server disk copies; UGC requires ongoing effective moderation and reporting/blocking appropriate to the actual interaction model. No claim that photo hiding equals user blocking. API 36 matches the current new-app requirement.
+
+### Dependency-permission finding
+
+The final-APK gate caught `FOREGROUND_SERVICE` and `WAKE_LOCK` added transitively by Google Ads API 25.5.0 → AndroidX WorkManager 2.7.0. The app does not implement any long-running foreground worker or user-facing foreground-service feature. The follow-up removes the unused `SystemForegroundService` entry and general `FOREGROUND_SERVICE` permission through manifest merger rules; ordinary WorkManager jobs retain `WAKE_LOCK`. CI must prove the unwanted entry/permission is absent from the final binary. Native Google test-ad/device QA is still required. Do not invent an FGS core use case in Console to justify an unused dependency declaration.
+
+Source examined: Google Maven Ads API 25.5.0 POM/AAR manifest and WorkManager 2.7.0 manifest. Foreground worker reference: https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running
 
 ## Verified facts
 - Package com.bumblevai.thenus, version 1.0.0 (10000), target Android API 36. The debug variant remains a separate .test package.
