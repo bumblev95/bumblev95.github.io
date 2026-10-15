@@ -437,6 +437,7 @@ function quizMarkup(v) {
   const author = v.players.find(p => p.id === q.authorId),
     mine = q.authorId === v.you,
     reveal = v.phase === 'reveal';
+  const blockedAuthor = !ui.demo && ui.data.blockedPlayerIds?.includes(q.authorId);
   const photoHidden = !ui.demo && ui.data.hiddenPhotoIds?.includes(q.photoId);
   const selected = v.myAnswer ?? ui.selected;
   const mayNext = v.you === v.hostId;
@@ -450,8 +451,8 @@ function quizMarkup(v) {
     length: v.total
   }, (_, i) => `<span class="${i < v.round ? 'done' : i === v.round ? 'current' : ''}"></span>`).join('')}</div>
  ${ui.demo ? t("<div class=\"demo-note\">AI 생성 예시 사진 · 가상 참가자와의 체험</div>") : ''}${!ui.demo ? v.players.filter(p => !ui.data.connectedIds?.includes(p.id)).map(p => tr`<p class="notice warning">${esc(p.name)}님 연결을 기다리고 있어요. 돌아오면 현재 문제와 점수로 이어져요.</p>`).join('') : ''}
- <div class="author-line">${avatar(author, v.round)}<span><strong>${esc(author.name)}</strong>님이 꺼낸 추억 ${mine ? t("· 내가 출제한 문제") : ''}</span></div>
- ${photoHidden ? tr`<div class="hidden-photo notice"><p>내 화면에서 사진을 숨겼어요.</p>${button(t("사진 다시 보기"), 'show-photo', 'quiet', ui.busy)}</div>` : q.photoId ? `<figure class="quiz-photo" data-action="zoom" role="button" tabindex="0" aria-label="${t('추억 사진 크게 보기')}"><img src="${esc(photoSrc(q.photoId))}" alt="${esc(author.name)}${t('님이 공유한 추억 사진')}"><figcaption>${ui.demo ? 'SAMPLE MEMORY' : 'OUR LITTLE MEMORY'}${t(' · 터치해서 크게 보기')}</figcaption></figure>` : t('<div class="no-photo-question">사진을 불러오고 있어요.</div>')}
+ <div class="author-line">${avatar(author, v.round)}<span><strong>${blockedAuthor?(getLanguage()==='en'?'Blocked player':'차단한 참가자'):esc(author.name)}</strong>님이 꺼낸 추억 ${mine ? t("· 내가 출제한 문제") : ''}</span></div>
+ ${photoHidden ? tr`<div class="hidden-photo notice"><p>${blockedAuthor?(getLanguage()==='en'?'Blocked participant content is hidden.':'차단한 참가자의 콘텐츠를 숨겼어요.'):'내 화면에서 사진을 숨겼어요.'}</p>${blockedAuthor?'':button(t("사진 다시 보기"), 'show-photo', 'quiet', ui.busy)}</div>` : q.photoId ? `<figure class="quiz-photo" data-action="zoom" role="button" tabindex="0" aria-label="${t('추억 사진 크게 보기')}"><img src="${esc(photoSrc(q.photoId))}" alt="${esc(author.name)}${t('님이 공유한 추억 사진')}"><figcaption>${ui.demo ? 'SAMPLE MEMORY' : 'OUR LITTLE MEMORY'}${t(' · 터치해서 크게 보기')}</figcaption></figure>` : t('<div class="no-photo-question">사진을 불러오고 있어요.</div>')}
  ${!reveal ? '<p id="round-clock" class="notice" role="timer">' + (ui.data.roundDeadlineAt ? t("남은 시간 확인 중…") : t("시간제한 없이 함께 풀어요")) + '</p>' : ''}
  <h1 class="question-title">${esc(q.prompt)}</h1><div class="choices" aria-label="문제의 보기">${choices}</div>
  ${mine && !reveal ? tr`<div class="author-notice"><strong>지금은 내가 이야기꾼이에요.</strong>내가 선택한 정답은 ${q.correctIndex + 1}번이에요.<br>친구들이 답하는 동안 기다려 주세요. 내 점수는 변하지 않아요.</div>` : ''}
