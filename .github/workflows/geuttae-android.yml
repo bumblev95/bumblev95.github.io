@@ -54,6 +54,13 @@ jobs:
       - name: Assemble installable test APK and lint
         working-directory: geuttae-uri/mobile/android
         run: ./gradlew :app:assembleDebug :app:lintDebug :app:bundleRelease :app:assembleRelease :app:lintRelease --no-daemon
+      - name: Audit exact release permissions and record build provenance
+        run: |
+          python3 -m unittest discover -s geuttae-uri/mobile/scripts -p 'test_*.py'
+          mkdir -p android-delivery
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk > android-delivery/merged-release-manifest.xml
+          export RELEASE_SOURCE_SHA="$(git rev-parse HEAD)"
+          python3 geuttae-uri/mobile/scripts/audit-release.py android-delivery/merged-release-manifest.xml geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk geuttae-uri/mobile/android/app/build/outputs/bundle/release/app-release.aab android-delivery/RELEASE-AUDIT.json
       - name: Package app
         run: |
           mkdir -p android-delivery
@@ -61,7 +68,7 @@ jobs:
           cp geuttae-uri/mobile/android/app/build/outputs/bundle/release/app-release.aab android-delivery/Us-Back-Then-v1.0.0-unsigned.aab
           cp geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/Us-Back-Then-v1.0.0-unsigned.apk
           cp geuttae-uri/mobile/README.md android-delivery/README.md
-          sha256sum android-delivery/*.apk > android-delivery/SHA256SUMS.txt
+          sha256sum android-delivery/*.apk android-delivery/*.aab > android-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Us-Back-Then-v1.0.0-candidate

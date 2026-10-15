@@ -11,3 +11,5 @@ android/capacitor-cordova-android-plugins/
 *.jks
 *.keystore
 qa-output/
+
+__pycache__/

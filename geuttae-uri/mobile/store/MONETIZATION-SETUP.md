@@ -11,7 +11,9 @@ Owner decision: remove Ultimate, recurring subscriptions and AI credit packs fro
 
 ## Account setup
 
-1. Create or sign in to an AdMob account at https://admob.google.com/ using the owner's Google account. The owner must supply payment, country and tax information and accept any account agreements.
+The owner has already supplied AdMob configuration identifiers in the 2026-10-15 conversation: App ID `ca-app-pub-9723666081819297~5568418149` and ad unit `ca-app-pub-9723666081819297/3805489340`. Account ownership, Android package association and interstitial format have not been independently verified. Do not ask the owner to repeat these IDs or treat possession of them as an SDK integration. Use Google test ads until all setup and consent gates pass.
+
+1. Verify the existing AdMob account/app association; create an account only if one does not already exist. Sign in to the AdMob account at https://admob.google.com/ using the owner's Google account. The owner must supply payment, country and tax information and accept any account agreements.
 2. Add an Android app as **Unpublished / not yet listed** until its Play listing is publicly available. Use **Us Back Then** and production package **com.bumblevai.thenus**. The `.test` debug package is not the Play app.
 3. Create an **Interstitial** ad unit for a break after the game. Record the public AdMob App ID (`ca-app-pub-…~…`) and ad unit ID (`ca-app-pub-…/…`). These are configuration identifiers, not account passwords.
 4. Configure privacy messages in AdMob. Before production advertising, integrate UMP consent and its privacy-options entry, consent-gated SDK initialization and Google test ads for QA. Never click live ads during testing.

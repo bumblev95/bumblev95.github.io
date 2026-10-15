@@ -2,6 +2,27 @@
 
 Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This agent has not submitted an app review request.
 
+## Follow-up submission audit — 2026-10-15
+
+**NOT READY for production submission.** The following evidence supplements the earlier review; it does not certify Google policy approval. No Play Console record was read or modified and no artifact was signed, uploaded or submitted in this audit.
+
+| Area | Verified evidence | Still required |
+|---|---|---|
+| Source and CI | PR #34 remains Draft/open; head 4e0d950aefc4e2f24c524fb1dc16388b42e2c692. Its Android, multiplayer, memory and preview checks succeeded. Latest original Android run: 38713106267; artifact 11961184071. | Rebuild/review the follow-up PR; do not sign the earlier revision after changing code. |
+| Deployment | Railway deployment 0a5a0083-d46c-4fc1-ac5a-ef3bfd7337fb SUCCESS at 90adf814, one iad replica, private /data volume. HTTPS health reports AI/payments disabled. | Latest catalog revision is absent from live deployment. This endpoint/volume is shared by TEST and the candidate; separate Android packages do not isolate server data. No restart/redeploy/volume change was made. |
+| Deployed moderation API | An opt-in synthetic room verified admission, per-viewer hide/show, reporting without auto-ending, rejection of non-host kick, host kick/session revocation and inaccessible photo endpoints after end. Only this test room and harmless fixture photos were used and cleaned up. | No physical disk-erasure, backup/log retention or operator notification/action proof. |
+| Privacy | Existing draft includes app/developer/contact and data lifecycle. Follow-up adds bilingual disclosures inside the consent form and identifies processor/collected data in the in-app policy. Proposed /geuttae-uri/privacy.html returned HTTP 404. | Confirm provider logs/backups and support correspondence retention, finalize and publish the public HTML policy, then check it from a signed-out browser. A bundled candidate notice is not a final public policy. |
+| UGC | Rules precede upload; report records include photo/author/reason; personal hiding and host removal are distinct. | Reports live only inside room JSON and expire with it; there is no demonstrated ongoing operator queue/notification/action workflow. Email is manual. No individual user blocking exists; room approval is not verified identity. Private invitations alone do not establish compliance with the specified-user exception. Resolve reporting of users and appropriate blocking/moderation before certifying UGC compliance. Do not restore automatic room termination on report. |
+| Android | Source package, target API 36, backups/cleartext disabled; debug stays .test. Follow-up CI audits the merged release APK permissions and both APK/AAB hashes/provenance, rejecting unreviewed SDK permissions/native libraries. | Final follow-up binary audit and actual Android/Play-installed testing. No connected physical device was available. |
+| Store/Console | KO/EN text describes only currently working free features. | Final graphic/screenshots, correct audience/IARC, ads/Data safety declarations and app-access instructions, actual account/testing status and any legal acceptance. No declarations were selected. |
+| Monetization | No live ads, sign-in or billing SDK; supplied AdMob IDs retained in setup notes. | Implement the previously requested ads/ad-removal/book model, consent, account deletion, verified billing and durable paid-book delivery, or obtain an explicit owner change of launch scope. Do not silently submit this as the requested monetized release. |
+
+Local follow-up verification: 118 server tests, 20 core tests, 2 native-source tests, 4 release-audit negative/positive cases; bundled KO/EN moderation/consent, home at seven sizes, full demo and stub native save/cancel checks passed. These browser checks do not prove native device behavior.
+
+Use [DATA-SAFETY-WORKSHEET.md](DATA-SAFETY-WORKSHEET.md), [SIGNING-AND-CONSOLE.md](SIGNING-AND-CONSOLE.md) and [DEVICE-TEST-RECORD.md](DEVICE-TEST-RECORD.md) for the specific handoff. Every physical-device row is deliberately NOT RUN.
+
+Official policy checked on 2026-10-15: User Data requires public non-editable HTML policy plus in-app text/link; Data safety covers pseudonymous data and server disk copies; UGC requires ongoing effective moderation and reporting/blocking appropriate to the actual interaction model. No claim that photo hiding equals user blocking. API 36 matches the current new-app requirement.
+
 ## Verified facts
 - Package com.bumblevai.thenus, version 1.0.0 (10000), target Android API 36. The debug variant remains a separate .test package.
 - English brand: Us Back Then. Korean brand: 그때 우리. Store listings en-US and ko-KR are authored separately.
@@ -10,7 +31,7 @@ Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This
 - No ad, tracking, billing or live AI SDK is active in this candidate's UI. The candidate lists only personal ad removal and a memory book as future one-time products, with free exports today. Ultimate and AI packs have been removed from the candidate catalog and product page. No recurring subscription is offered.
 
 ## Monetization setup is incomplete
-- AdMob account/app/ad unit setup is still needed. Native ads, login and Play Billing are not implemented or enabled by this revision. Do not submit this candidate as a completed ad-funded or paid-product release.
+- The owner has supplied AdMob App ID and ad unit identifiers (see MONETIZATION-SETUP.md); association and format verification plus native integration are still needed. Native ads, login and Play Billing are not implemented or enabled by this revision. Do not submit this candidate as a completed ad-funded or paid-product release.
 - See [MONETIZATION-SETUP.md](MONETIZATION-SETUP.md) for exact remaining implementation, account setup, pricing and paid-book delivery gates. Privacy and Console declarations must be updated when those SDKs and accounts actually ship.
 
 ## Data Safety draft (must be confirmed in the actual Console form)
