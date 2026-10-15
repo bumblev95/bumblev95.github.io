@@ -35,7 +35,7 @@ public class AdsPlugin extends Plugin {
     private long loadedAt, lastLoad = -60_000, lastShown = -300_000;
     private String lastBreak = "";
     private PluginCall displayCall;
-    private boolean accountAllowsAds, checkingAccount;
+    private boolean accountAllowsAds, checkingAccount, audienceSetThisLaunch;
 
     void resetEligibility() { accountAllowsAds = false; consentRevision++; ad = null; }
 
@@ -68,13 +68,14 @@ public class AdsPlugin extends Plugin {
             preferences.edit().putBoolean("ageGate13PlusV1", true)
                 .putInt("ageGroup", "adult".equals(group) ? 1 : 2).apply();
             resetEligibility();
+            audienceSetThisLaunch = true;
             consentReady = false;
             result(call, "updated", false);
         });
     }
 
     private boolean adultChoice() {
-        return BuildConfig.ADS_ENABLED && preferences.getBoolean("ageGate13PlusV1", false)
+        return BuildConfig.ADS_ENABLED && audienceSetThisLaunch && preferences.getBoolean("ageGate13PlusV1", false)
             && preferences.getInt("ageGroup", 0) == 1;
     }
     private boolean eligible() { return accountAllowsAds && adultChoice(); }
