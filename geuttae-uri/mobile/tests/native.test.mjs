@@ -11,7 +11,7 @@ test('native invitations accept only a room code, never a token or an arbitrary 
 });
 test('Android packages local code and no broad photo, camera or storage permissions',async()=>{
  const config=JSON.parse(await readFile(new URL('../capacitor.config.json',import.meta.url)));
- assert.equal(config.server.url,undefined);assert.equal(config.server.hostname,'localhost');assert.equal(config.server.cleartext,false);
+ assert.equal(config.server.url,undefined);assert.equal(config.server.hostname,'bumblev95.github.io');assert.equal(config.server.cleartext,false);
  const manifest=await readFile(new URL('../android/app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
  assert.doesNotMatch(manifest,/READ_MEDIA|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|CAMERA/);assert.match(manifest,/allowBackup="false"/);
  const bundle=await readFile(new URL('../www/mobile.js',import.meta.url),'utf8');assert.doesNotMatch(bundle,/\/ai-draft/);assert.match(bundle,/출시 예정/);

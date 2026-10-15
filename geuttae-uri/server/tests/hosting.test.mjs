@@ -31,11 +31,11 @@ async function withApp(t, options = {}) {
   return {send, port};
 }
 
-test('Railway config derives HTTPS and a private child directory with exact web and Android origins', () => {
+test('Railway config derives HTTPS and a private child directory without extra origins', () => {
   const config = railwayConfig(baseEnv);
   assert.equal(config.publicOrigin, apiOrigin);
   assert.equal(config.dataDir, '/data/geuttae-uri');
-  assert.deepEqual(config.frontendOrigins.split(','), [frontend, 'https://localhost']);
+  assert.equal(config.frontendOrigins, frontend);
   assert.equal(config.healthcheckHost, 'healthcheck.railway.app');
   assert.equal(config.port, 3000);
   assert.equal(railwayConfig({...baseEnv, PUBLIC_ORIGIN: 'https://quiz.example.org'}).publicOrigin, 'https://quiz.example.org');
@@ -132,16 +132,4 @@ test('Deployment preflight rejects invalid URLs before making any request', asyn
     await assert.rejects(checkPublicServer(url, {fetchImpl: async () => { calls++; }}));
   }
   assert.equal(calls, 0);
-});
-
-test('Android exact HTTPS local origin can preflight but cannot read a room without its bearer session', async t => {
-  const {send} = await withApp(t, {frontendOrigins: railwayConfig(baseEnv).frontendOrigins});
-  const host = new URL(apiOrigin).host;
-  const ok = await send('/api/rooms', {host, method:'OPTIONS', origin:'https://localhost',headers:{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,content-type'}});
-  assert.equal(ok.status,204);assert.equal(ok.headers['access-control-allow-origin'],'https://localhost');
-  for (const origin of ['http://localhost','https://localhost.evil.test','https://localhost:9000']) {
-    assert.equal((await send('/api/rooms', {host, method:'OPTIONS', origin})).status,403);
-  }
-  const denied=await send('/api/rooms/ABCDEFGH/state', {host,origin:'https://localhost'});
-  assert.notEqual(denied.status,200);
 });

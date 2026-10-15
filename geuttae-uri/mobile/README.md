@@ -1,6 +1,6 @@
 # 그때 우리 Android TEST
 
-기존 웹 클라이언트를 로컬로 묶은 Capacitor 8 앱입니다. 앱을 열 때 원격 웹 코드를 내려받지 않으며, 기존 Railway 서버와 같은 게임 방을 사용합니다. AI는 출시 예정 안내만 보이며 호출하지 않습니다.
+기존 웹 클라이언트를 로컬로 묶은 Capacitor 8 앱입니다. 앱을 열 때 원격 웹 코드를 내려받지 않으며, 기존 Railway 서버와 같은 게임 방을 사용합니다. AI는 출시 예정 안내만 보이며 호출하지 않습니다. 앱의 로컬 HTTPS hostname은 기존 서버가 허용하는 `bumblev95.github.io`이며, 해당 호스트의 UI 요청은 Capacitor가 APK 안의 파일로 처리합니다. 서버 CORS 설정 변경 없이 기존 API에 연결합니다.
 
 - 앱 ID: `com.bumblevai.thenus.test` (정식 앱과 나란히 설치할 테스트 패키지)
 - 버전: `0.5.0` / versionCode `500`
