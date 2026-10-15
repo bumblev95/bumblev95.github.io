@@ -36,6 +36,9 @@ public class AdsPlugin extends Plugin {
     private long loadedAt, lastLoad = -60_000, lastShown = -300_000;
     private String lastBreak = "";
     private PluginCall displayCall;
+    private boolean accountAllowsAds, checkingAccount;
+
+    void resetEligibility() { accountAllowsAds = false; consentRevision++; ad = null; }
 
     @Override public void load() {
         preferences = getContext().getSharedPreferences("thenus_ad_privacy", Context.MODE_PRIVATE);
@@ -77,7 +80,7 @@ public class AdsPlugin extends Plugin {
             .setOnCancelListener(dialog -> { choosing = false; result(call, "cancelled", false); }).show();
     }
 
-    private boolean eligible() { return BuildConfig.ADS_ENABLED && preferences.getInt("ageGroup", 0) == 1; }
+    private boolean eligible() { return accountAllowsAds && BuildConfig.ADS_ENABLED && preferences.getInt("ageGroup", 0) == 1; }
 
     private void updateConsent(Runnable done) {
         if (!eligible() || updating) { done.run(); return; }
@@ -152,6 +155,23 @@ public class AdsPlugin extends Plugin {
     }
 
     @PluginMethod public void showAtBreak(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (!BuildConfig.ADS_ENABLED) { result(call, "disabled", false); return; }
+            if (checkingAccount || showing || updating) { result(call, "skipped", false); return; }
+            com.getcapacitor.PluginHandle handle = getBridge().getPlugin("ThenusAccount");
+            if (handle == null) { result(call, "account-check", false); return; }
+            checkingAccount = true; final int revision = consentRevision;
+            ((AccountPlugin) handle.getInstance()).checkAdvertising(allowed -> getActivity().runOnUiThread(() -> {
+                checkingAccount = false;
+                if (destroyed || revision != consentRevision) { result(call, "skipped", false); return; }
+                accountAllowsAds = allowed;
+                if (!allowed) { ad = null; result(call, "account-check", false); return; }
+                showEligibleBreak(call);
+            }));
+        });
+    }
+
+    private void showEligibleBreak(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             if (!BuildConfig.ADS_ENABLED) { result(call, "disabled", false); return; }
             boolean test = BuildConfig.DEBUG && "test".equals(call.getString("placement"));

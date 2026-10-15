@@ -12,6 +12,7 @@ import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
 import {openCommerceLedger,createCommerce,CommerceError} from './commerce.mjs';
 import {catalog as releaseCatalog} from '../../releases/1.0.0/products.js';
 import {openAccounts,AccountError} from './accounts.mjs';
+import {BillingError} from './play-billing.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -288,6 +289,9 @@ export async function createApp(options={}){
    if(u.pathname.startsWith('/api/account/')){
     const accountToken=req.headers.authorization?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
     limit(req,'account',40);
+    if(u.pathname==='/api/account/billing/status'&&method==='GET'){limit(req,'billing-status',10);return respond(res,200,await accounts.billing.status(accountToken));}
+    if(u.pathname==='/api/account/billing/context'&&method==='GET'){limit(req,'billing-context',10);return respond(res,200,await accounts.billing.context(accountToken));}
+    if(u.pathname==='/api/account/billing/verify'&&method==='POST'){limit(req,'billing-verify',10);const b=await jsonBody(req);return respond(res,200,await accounts.billing.verify(accountToken,b.purchaseToken));}
     if(u.pathname==='/api/account/config'&&method==='GET')return respond(res,200,accounts.config());
     if(u.pathname==='/api/account/challenge'&&method==='POST'){limit(req,'account-sign-in',10);return respond(res,200,accounts.challenge());}
     if(u.pathname==='/api/account/google'&&method==='POST'){limit(req,'account-verify',10);return respond(res,200,await accounts.signIn(await jsonBody(req)));}
@@ -441,9 +445,9 @@ export async function createApp(options={}){
    if(method==='HEAD'){res.writeHead(200,{...commonHeaders,'Content-Type':contentType,'Content-Length':bytes.length});res.end();return;}
    return respond(res,200,bytes,{'Content-Type':contentType});
   }catch(e){
-   if(!(e instanceof ApiError)&&!(e instanceof CommerceError)&&!(e instanceof AccountError))console.error('Request failed safely; no photo or request content logged.');
+   if(!(e instanceof ApiError)&&!(e instanceof CommerceError)&&!(e instanceof AccountError)&&!(e instanceof BillingError))console.error('Request failed safely; no photo or request content logged.');
    if(res.headersSent){res.end();return;}
-   respond(res,e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
+   respond(res,e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
   }
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;server.keepAliveTimeout=5_000;

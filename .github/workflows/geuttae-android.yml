@@ -36,6 +36,7 @@ jobs:
           npx playwright install --with-deps chromium
           node mobile/tests/browser-qa.mjs
           node mobile/tests/account-qa.mjs
+          node mobile/tests/billing-qa.mjs
           node mobile/tests/home-qa.mjs
           node mobile/tests/moderation-qa.mjs
       - name: Install Android SDK packages

@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
+import {openPlayBilling} from './play-billing.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const secret=()=>randomBytes(32).toString('hex');
@@ -11,7 +12,7 @@ export class AccountError extends Error {
 const demand=(ok,code,status)=>{if(!ok)throw new AccountError(code,status);};
 
 // Account identity and sessions are separate from anonymous room sessions and purchases.
-export async function openAccounts(filename,{clientId=process.env.GOOGLE_WEB_CLIENT_ID||'',now=Date.now,verifyToken,testing=false}={}) {
+export async function openAccounts(filename,{clientId=process.env.GOOGLE_WEB_CLIENT_ID||'',now=Date.now,verifyToken,testing=false,billing}={}) {
   demand(!verifyToken||(testing&&process.env.NODE_ENV!=='production'),'TEST_VERIFIER_FORBIDDEN',503);
   demand(!clientId||/^[0-9]+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(clientId),'INVALID_GOOGLE_CLIENT',503);
   await fs.mkdir(path.dirname(filename),{recursive:true,mode:0o700});
@@ -30,11 +31,13 @@ export async function openAccounts(filename,{clientId=process.env.GOOGLE_WEB_CLI
   function cleanup(){db.prepare('DELETE FROM account_challenges WHERE expires_at<=?').run(now());db.prepare('DELETE FROM account_sessions WHERE expires_at<=?').run(now());}
   function current(token){
     demand(typeof token==='string'&&/^[a-f0-9]{64}$/.test(token),'SIGN_IN_REQUIRED');
-    cleanup();const row=db.prepare('SELECT a.id,a.email,s.created_at FROM account_sessions s JOIN accounts a ON a.id=s.account_id WHERE s.token_hash=? AND s.expires_at>?').get(hash(token),now());
+    cleanup();const row=db.prepare('SELECT a.id,a.email,a.subject_hash,s.created_at FROM account_sessions s JOIN accounts a ON a.id=s.account_id WHERE s.token_hash=? AND s.expires_at>?').get(hash(token),now());
     demand(row,'SIGN_IN_REQUIRED');return row;
   }
   const publicAccount=row=>({id:row.id,email:row.email});
+  let play;try{play=await openPlayBilling(db,current,{now,...billing});}catch(error){db.close();throw error;}
   return {
+    billing:play,
     config(){return {enabled:!!clientId,provider:'google',clientId:clientId||null,paymentsEnabled:false};},
     challenge(){
       demand(clientId,'SIGN_IN_NOT_CONFIGURED',503);cleanup();

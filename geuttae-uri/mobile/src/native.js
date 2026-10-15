@@ -16,6 +16,9 @@ export async function installNative() {
     exit: () => App.exitApp(),
     account: {
       status: () => Account.status(),
+      billingStatus: () => Account.billingStatus(),
+      billingBuy: () => Account.billingBuy(),
+      billingRestore: () => Account.billingRestore(),
       signIn: () => Account.signIn(),
       signOut: () => Account.signOut(),
       deleteAccount: options => Account.deleteAccount({confirmed:options?.confirmed===true})
@@ -39,6 +42,7 @@ export async function installNative() {
       });
     }
   };
+  await Account.addListener('billingChanged',()=>window.dispatchEvent(new Event('thenus-purchases')));
   window.__ADS_STATUS__ = await Ads.status().catch(() => ({enabled:false, testMode:false}));
   await App.addListener('backButton', () => window.dispatchEvent(new Event('thenus-back')));
   await App.addListener('appStateChange', ({

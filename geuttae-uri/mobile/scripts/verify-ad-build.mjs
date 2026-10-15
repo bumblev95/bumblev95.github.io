@@ -18,6 +18,7 @@ for (const variant of ['debug','release']) {
   assert.ok(manifest.includes(debug?'com.bumblevai.thenus.test':'com.bumblevai.thenus'));
   const permissions = [...manifest.matchAll(/<uses-permission\b[^>]*android:name="([^"]+)"/g)].map(m=>m[1]);
   assert.ok(permissions.includes('com.google.android.gms.permission.AD_ID'));
+  assert.ok(permissions.includes('com.android.vending.BILLING'));
   assert.ok(!permissions.some(p=>/READ_MEDIA|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|CAMERA|RECORD_AUDIO|ACCESS_(FINE|COARSE)_LOCATION/.test(p)));
   report.push({variant,adsEnabled:debug,testAds:debug,permissions});
 }

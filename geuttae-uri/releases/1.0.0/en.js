@@ -1,4 +1,14 @@
 export const english = {
+  "Google 테스트 광고가 연결돼 있어요. 계정과 구매·복원은 설정에서 확인해 주세요.": "Google test ads are connected. Check account, purchase and restore options in Settings.",
+  "무료 게임 사이에 광고가 표시될 수 있어요. 계정과 구매·복원은 설정에서 확인해 주세요.": "Ads may appear between free games. Check account, purchase and restore options in Settings.",
+  "현재 광고 표시는 비활성화되어 있어요. 추억집 저장은 무료 체험이에요.": "Ad serving is currently disabled. Memory-book saving is a free preview.",
+  "Android 앱 설정의 계정에서 구매·복원을 확인해 주세요. 가격은 판매 가능한 경우에만 Google Play에서 불러와요.": "Check purchases and restoration under Account in Android app Settings. Prices are loaded from Google Play only when the product is available.",
+  "개인정보처리방침 전문": "Full privacy policy",
+  "계정 삭제 안내": "Account deletion guide",
+  "광고 제거 구매와 구매 복원을 설정에 연결했어요. Google Play 상품 설정이 끝난 뒤 테스트할 수 있어요.": "Ad-removal purchases and purchase restoration are connected in Settings. Testing requires Google Play product configuration.",
+  "Google 로그인·로그아웃과 로그인 유지를 휴대폰에서 확인했어요.": "Google sign-in, sign-out and session persistence were confirmed on a phone.",
+  "AdMob 테스트 광고와 광고 개인정보 설정을 연결했어요. 정식 광고는 아직 활성화하지 않았어요.": "AdMob test ads and ad privacy controls are connected. Live advertising is not enabled.",
+
   "설정에 Google 로그인·로그아웃·계정 삭제 메뉴를 추가했어요. Google 연결 설정 후 이용할 수 있고, 유료 결제는 아직 준비 중이에요.": "Added Google sign-in, sign-out and account deletion in settings. Google configuration is required; paid purchases are still being prepared.",
   "광고 설정": "Advertising",
   "광고 개인정보 설정": "Ad privacy settings",

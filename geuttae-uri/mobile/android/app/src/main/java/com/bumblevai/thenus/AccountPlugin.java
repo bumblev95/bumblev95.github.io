@@ -44,12 +44,13 @@ public class AccountPlugin extends Plugin {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private CancellationSignal cancellation;
+    private final BillingManager billing = new BillingManager(this);
 
-    private static class AccountFailure extends Exception {
+    static class AccountFailure extends Exception {
         final String code;
         AccountFailure(String value) { super(value); code = value; }
     }
-    private JSONObject request(String endpoint, JSONObject body, String token) throws Exception {
+    JSONObject request(String endpoint, JSONObject body, String token) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) URI.create(API + "/api/account/" + endpoint).toURL().openConnection();
         connection.setConnectTimeout(10_000); connection.setReadTimeout(15_000);
         connection.setInstanceFollowRedirects(false);
@@ -96,7 +97,7 @@ public class AccountPlugin extends Plugin {
         if (!getContext().getSharedPreferences(KEY, Context.MODE_PRIVATE).edit().putString("encrypted", value).commit())
             throw new AccountFailure("STORAGE_FAILED");
     }
-    private String token() {
+    String token() {
         String value = getContext().getSharedPreferences(KEY, Context.MODE_PRIVATE).getString("encrypted", null);
         if (value == null) return null;
         try {
@@ -114,10 +115,43 @@ public class AccountPlugin extends Plugin {
         JSObject result = new JSObject(); result.put("status", "busy"); call.resolve(result); return false;
     }
     private void finish(PluginCall call, String status, JSONObject account) {
+        invalidateAdvertising();
         busy.set(false); JSObject value = new JSObject(); value.put("status", status);
         if (account != null) { JSObject safe = new JSObject(); safe.put("id", account.optString("id")); safe.put("email", account.optString("email")); value.put("account", safe); }
         call.resolve(value);
     }
+    void background(Runnable work) { worker.execute(work); }
+    boolean beginBillingResume() { return token() != null && busy.compareAndSet(false, true); }
+    void ui(Runnable work) { getActivity().runOnUiThread(work); }
+    void invalidateAdvertising() {
+        ui(() -> {
+            com.getcapacitor.PluginHandle handle = getBridge().getPlugin("ThenusAds");
+            if (handle != null) ((AdsPlugin) handle.getInstance()).resetEligibility();
+        });
+    }
+    // Native-only: no JavaScript boolean can unlock a purchase or change advertising eligibility.
+    void checkAdvertising(java.util.function.Consumer<Boolean> done) {
+        if (busy.get()) { done.accept(false); return; }
+        background(() -> {
+            boolean allowed = false;
+            try {
+                String session = token();
+                allowed = session == null || !request("billing/status", null, session).getBoolean("adFree");
+            } catch (Exception ignored) { /* Unknown paid status: skip this ad, retry at the next break. */ }
+            boolean safe = allowed && !busy.get(); ui(() -> done.accept(safe));
+        });
+    }
+    void finishBilling(PluginCall call, String status, JSONObject details) {
+        invalidateAdvertising(); busy.set(false);
+        JSObject value = new JSObject(); value.put("status", status);
+        if (details != null) for (String name : new String[]{"adFree", "enabled", "price"})
+            if (details.has(name)) value.put(name, details.opt(name));
+        if (call != null) call.resolve(value);
+        else notifyListeners("billingChanged", value);
+    }
+    @PluginMethod public void billingStatus(PluginCall call) { if (begin(call)) billing.start(call, "status"); }
+    @PluginMethod public void billingBuy(PluginCall call) { if (begin(call)) { invalidateAdvertising(); billing.start(call, "buy"); } }
+    @PluginMethod public void billingRestore(PluginCall call) { if (begin(call)) billing.start(call, "restore"); }
     private void fail(PluginCall call, Exception error) {
         String code = error instanceof AccountFailure ? ((AccountFailure) error).code : "UNAVAILABLE";
         if ("SIGN_IN_REQUIRED".equals(code)) forgetToken();
@@ -201,7 +235,9 @@ public class AccountPlugin extends Plugin {
             } catch (Exception error) { fail(call, error); }
         });
     }
+    @Override protected void handleOnResume() { super.handleOnResume(); billing.resume(); }
     @Override protected void handleOnDestroy() {
+        billing.close();
         if (cancellation != null) cancellation.cancel();
         worker.shutdown();super.handleOnDestroy();
     }
