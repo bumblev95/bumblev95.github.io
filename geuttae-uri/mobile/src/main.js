@@ -1,11 +1,11 @@
-import { t, tr } from "../../releases/0.5.1/locale.js";
+import { t, tr } from "../../releases/0.5.2/locale.js";
 import { installNative } from './native.js';
 import version from '../../version.json';
 await installNative();
 window.__API_BASE__ = 'https://geuttae-api-test-production.up.railway.app';
 window.__OFFLINE__ = false;
 window.__ASSET_BASE__ = new URL('./assets/', location.href).href;
-await import('../../releases/0.5.1/client.js');
+await import('../../releases/0.5.2/client.js');
 document.getElementById('build-label').textContent = 'ANDROID TEST v' + version.version;
 document.getElementById('footer-build').textContent = t("그때 우리 · 안드로이드 테스트 v") + version.version;
 const notes = document.getElementById('release-notes');

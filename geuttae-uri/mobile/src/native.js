@@ -1,4 +1,4 @@
-import { t, tr } from "../../releases/0.5.1/locale.js";
+import { t, tr } from "../../releases/0.5.2/locale.js";
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Share } from '@capacitor/share';

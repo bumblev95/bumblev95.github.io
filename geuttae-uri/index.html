@@ -10,13 +10,18 @@
 <link rel="stylesheet" href="./shell-v1.css">
 </head>
 <body>
-<div class="release-tools"><span id="build-label">테스트 버전 확인 중</span><button type="button" id="release-notes" disabled>변경 내용</button><button type="button" id="check-update" disabled>업데이트 확인</button></div>
 <div class="update-notice" id="update-notice" role="status" hidden><span id="update-message"></span><button type="button" id="apply-update" hidden>새 버전 적용</button></div>
 <div class="app-shell">
-<header class="brand-bar"><button class="brand" data-action="home" aria-label="그때 우리 홈"><img src="./assets/icon.svg" width="38" height="38" alt=""><span>그때 우리<small>사진 한 장, 다시 만나는 우리</small></span></button><button class="help-button" data-action="help" aria-label="이용 안내">?</button></header>
+<header class="brand-bar"><button class="brand" data-action="home" aria-label="그때 우리 홈"><img src="./assets/icon.svg" width="38" height="38" alt=""><span>그때 우리<small>사진 한 장, 다시 만나는 우리</small></span></button><button type="button" class="settings-button" id="settings-toggle" aria-label="설정" aria-haspopup="dialog" aria-controls="settings-dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 3-.6 2-1.8 1-2-.4-2.5 4.3 1.4 1.6v2l-1.4 1.6 2.5 4.3 2-.4 1.8 1 .6 2h5l.6-2 1.8-1 2 .4 2.5-4.3-1.4-1.6v-2l1.4-1.6-2.5-4.3-2 .4-1.8-1-.6-2z"/><circle cx="12" cy="12" r="3"/></svg></button></header>
 <main id="app" tabindex="-1"><div class="loading-state">우리의 추억을 펼치는 중이에요…</div></main>
-<footer class="app-footer"><button data-action="privacy">사진은 어떻게 보관되나요?</button><span id="footer-build">그때 우리 · 온라인 체험판</span></footer>
+<footer class="app-footer"><button data-action="privacy">사진은 어떻게 보관되나요?</button></footer>
 </div>
+<dialog id="settings-dialog" aria-labelledby="settings-heading">
+<div class="settings-heading"><h2 id="settings-heading" data-shell-text="설정">설정</h2><button type="button" id="close-settings" aria-label="닫기" data-shell-text="닫기">닫기</button></div>
+<section class="settings-section"><h3 data-shell-text="앱 언어">앱 언어</h3><div id="settings-language"></div></section>
+<section class="settings-section settings-links"><h3 data-shell-text="도움말">도움말</h3><button type="button" data-action="help" data-shell-text="이용 안내">이용 안내</button><button type="button" data-action="plans" data-shell-text="무료·선택 상품 안내">무료·선택 상품 안내</button><button type="button" data-action="privacy" data-shell-text="사진은 어떻게 보관되나요?">사진은 어떻게 보관되나요?</button></section>
+<section class="settings-section"><h3 data-shell-text="앱 정보">앱 정보</h3><div class="release-tools"><span id="build-label">테스트 버전 확인 중</span><button type="button" id="release-notes" disabled>변경 내용</button><button type="button" id="check-update" disabled>업데이트 확인</button></div><span id="footer-build">그때 우리 · 온라인 체험판</span></section>
+</dialog>
 <dialog id="release-dialog" aria-labelledby="release-heading"><div class="release-modal-body"><h2 id="release-heading">이번 업데이트</h2><p id="release-date"></p><ul id="release-items"></ul><p>사진과 문제는 이 기기의 저장소에 기록하지 않아요. 멀티플레이에서는 임시 서버 사본과 재접속용 접근 키를 사용해요.</p><button type="button" id="close-release">닫기</button></div></dialog>
 <dialog id="modal" aria-labelledby="modal-title"></dialog>
 <div id="toast" role="status" aria-live="polite"></div>

@@ -1,4 +1,4 @@
-import { t, tr } from "./releases/0.5.1/locale.js";
+import { t, tr } from "./releases/0.5.2/locale.js";
 // Stable loader. Versioned releases are immutable; only version.json moves forward.
 const base = new URL('./', import.meta.url);
 const $ = id => document.getElementById(id);

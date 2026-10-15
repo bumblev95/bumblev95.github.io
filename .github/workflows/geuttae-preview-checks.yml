@@ -30,7 +30,7 @@ jobs:
           root = pathlib.Path('geuttae-uri')
           base = 'https://bumblev95.github.io/geuttae-uri/'
           version = json.loads((root / 'version.json').read_text())['version']
-          paths = ['index.html', 'boot-v1.js', 'boot-v2.js', 'shell-v1.css', 'version.json', 'runtime-config.json', 'manifest.webmanifest']
+          paths = ['index.html', 'boot-v1.js', 'boot-v2.js', 'boot-v3.js', 'shell-v1.css', 'version.json', 'runtime-config.json', 'manifest.webmanifest']
           paths += [str(p.relative_to(root)) for p in sorted((root / 'assets').glob('*')) if p.is_file()]
           paths += [str(p.relative_to(root)) for p in sorted((root / 'releases' / version).glob('*')) if p.is_file()]
           expected = {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths}
