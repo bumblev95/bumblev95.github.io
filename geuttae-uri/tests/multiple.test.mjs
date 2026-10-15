@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {setup,validateAction,applyAction,viewFor,meta} from '../releases/0.4.9/logic.js';
+import {setup,validateAction,applyAction,viewFor,meta} from '../releases/0.4.10/logic.js';
 const question=slot=>({type:'submitQuestion',slot,media:'text',photoId:'',prompt:'기억',options:['A','B','C','D'],correctIndex:0,story:'이야기',confirmed:true});
 test('ten players prepare thirty questions in rotating author order; privacy and slot boundaries hold',()=>{
  const players=Array.from({length:10},(_,i)=>({id:'p'+i,name:'사람'+i}));let s=setup(players);assert.equal(meta.maxPlayers,10);
