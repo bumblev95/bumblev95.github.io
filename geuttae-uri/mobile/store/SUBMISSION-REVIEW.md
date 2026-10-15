@@ -1,13 +1,17 @@
 # Google Play submission review — 2026-10-15
 
-Status: RELEASE CANDIDATE. No application has been created and no review request has been submitted.
+Status: RELEASE CANDIDATE. The owner is handling Play Console app creation. This agent has not submitted an app review request.
 
 ## Verified facts
 - Package com.bumblevai.thenus, version 1.0.0 (10000), target Android API 36. The debug variant remains a separate .test package.
 - English brand: Us Back Then. Korean brand: 그때 우리. Store listings en-US and ko-KR are authored separately.
 - First launch follows the primary device locale; an explicit in-app selection takes priority on later launches; unsupported languages fall back to English. No personal story is automatically translated.
 - Only INTERNET permission, no broad photo-library, camera, microphone or location permissions. Photos selected through the system file chooser.
-- No ad, tracking, billing or live AI SDK is active in this candidate's UI. Optional product descriptions remain clearly labelled as future products, with free exports today.
+- No ad, tracking, billing or live AI SDK is active in this candidate's UI. The candidate lists only personal ad removal and a memory book as future one-time products, with free exports today. Ultimate and AI packs have been removed from the candidate catalog and product page. No recurring subscription is offered.
+
+## Monetization setup is incomplete
+- AdMob account/app/ad unit setup is still needed. Native ads, login and Play Billing are not implemented or enabled by this revision. Do not submit this candidate as a completed ad-funded or paid-product release.
+- See [MONETIZATION-SETUP.md](MONETIZATION-SETUP.md) for exact remaining implementation, account setup, pricing and paid-book delivery gates. Privacy and Console declarations must be updated when those SDKs and accounts actually ship.
 
 ## Data Safety draft (must be confirmed in the actual Console form)
 - Data collected: optional user-chosen photos; nicknames; questions/stories/answer choices; gameplay scores and answers; temporary session/player IDs; room-access and reporting records. Photos and room state are stored on private server disk and are NOT eligible for the in-memory-only ephemeral processing exemption.
@@ -35,7 +39,7 @@ Status: RELEASE CANDIDATE. No application has been created and no review request
 
 ## Build status
 - Earlier signed v1.0.0 artifacts predate this moderation revision and must not be submitted. Rebuild and verify the Android candidate from the updated PR head before signing/uploading.
-- Runtime API must advertise moderationSupported before the new photo actions are enabled. Live backend deployment remains separate and unconfirmed.
+- Runtime API must advertise moderationSupported before the new photo actions are enabled. The moderation backend deployment was confirmed successful on Railway at commit 90adf814 on 2026-10-15. This subsequent catalog revision requires a separate backend rollout; it does not add live monetization.
 
 ## Official references
 - https://support.google.com/googleplay/android-developer/answer/9876937

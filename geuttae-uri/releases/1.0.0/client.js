@@ -619,12 +619,13 @@ function resultMarkup(v) {
  ${button(ui.demo ? t("다른 모임도 만들어 볼까요?") : t("새로운 모임 만들기"), 'new', 'primary')}${button(t("홈으로 돌아가기"), 'home', 'quiet')}</section>`;
 }
 function showPlans() {
-  const ultimate = productFor('ultimate_monthly'),
-    book = productFor('memory_book');
-  showModal(t("무료로 함께, 우리답게 간직해요"), tr`<p>사진으로 직접 문제를 만들고, 친구를 초대하고, 기억 대결을 즐기는 건 무료예요.</p><div class="notice plan-notice"><strong>지금은 결제 없는 테스트예요.</strong><br>추억집 파일 저장도 무료로 체험할 수 있어요. 아래는 출시를 준비하는 상품 안내예요.</div>
- <section class="plan-card"><div class="plan-heading"><h3>Ultimate</h3><span class="plan-badge">출시 예정</span></div><p class="plan-price">${esc(t(ultimate.price))}</p><ul><li>매월 AI 초안 300회</li><li>내가 연 모임의 추억집 저장</li><li>광고 없는 모임</li></ul><p class="microcopy">모임의 AI 초안은 방장의 이용 횟수를 함께 써요. 한 번 생성하면 한 번만 사용하고, 생성 실패는 차감하지 않아요.</p><p class="microcopy">월 이용분은 다음 달로 넘어가지 않아요. 따로 산 이용권의 잔액은 남겨 두고, 월 이용분부터 써요.</p><p class="plan-pending">AI 생성·구독·광고 제거는 아직 연결 준비 중이에요.</p></section>
- <section class="plan-card"><div class="plan-heading"><h3>모임 추억집</h3><span class="plan-badge">출시 예정</span></div><p class="plan-price">${esc(book.price)} <small>한 모임 · 일회 구매</small></p><p class="small-text">허용된 사진과 이야기를 참가자들이 함께 간직해요. 우리가 만든 세 가지 디자인에서 골라요.</p><p class="microcopy">구매 여부와 별개로 사진 주인이 저장을 허용한 추억만 담아요. 현재는 무료 저장 체험이에요.</p></section>
- <details class="plan-extras"><summary>필요한 것만 따로</summary><ul><li>AI 100회 이용권</li><li>AI 300회 이용권</li><li>내 화면의 광고 제거</li></ul><p class="microcopy">낱개 옵션도 유지해요. 가격과 실제 구매 연결은 출시 전에 확정할 예정이에요.</p></details>${button(t("무료 게임 계속하기"), 'close-modal', 'primary')}`);
+  const book = productFor('memory_book');
+  showModal(t("무료로 함께, 우리답게 간직해요"), tr`<p>사진으로 직접 문제를 만들고, 친구를 초대하고, 기억 대결을 즐기는 건 무료예요. 일반 게임은 로그인 없이 이용해요.</p>
+ <div class="notice plan-notice"><strong>광고와 결제를 준비하고 있어요.</strong><br>현재 버전에는 실제 광고·로그인·결제가 연결되지 않았어요. 추억집 파일 저장은 무료 체험이에요.</div>
+ <section class="plan-card"><div class="plan-heading"><h3>무료 게임</h3></div><p>게임을 마친 뒤 자연스러운 쉬는 시간에 광고를 보여주는 방식으로 준비해요. 문제를 풀거나 답을 확인하는 동안에는 광고로 가리지 않아요.</p></section>
+ <section class="plan-card"><div class="plan-heading"><h3>개인 광고 제거</h3><span class="plan-badge">출시 예정</span></div><p>로그인한 뒤 한 번 구매하면 내 계정의 광고를 없애는 옵션이에요. 다른 참가자의 광고에는 영향을 주지 않아요.</p><p class="microcopy">정기 구독 없이 준비해요. 판매 가격과 구매·복원 기능은 연결 후 안내해요.</p></section>
+ <section class="plan-card"><div class="plan-heading"><h3>모임 추억집</h3><span class="plan-badge">출시 예정</span></div><p class="plan-price">${esc(book.price)} <small>예정 가격 · 한 게임 · 일회 구매</small></p><p>저장을 허용한 사진과 이야기를 한 권에 담고 PDF나 HTML 파일로 간직해요. 미리보기는 무료예요.</p><p class="microcopy">현재는 무료 저장 체험이에요. 판매할 때는 Google Play에 표시되는 현지 통화 가격을 결제 전에 안내해요.</p></section>
+ ${button(t("무료 게임 계속하기"), 'close-modal', 'primary')}`);
 }
 function showModal(title, body, variant = '') {
   const keepPosition = modal.open && variant === 'memory' && modal.classList.contains('memory-modal');
@@ -1225,7 +1226,7 @@ async function share() {
   }
 }
 function showHelp() {
-  showModal(t("우리, 이렇게 놀아요"), tr`<div class="help-step"><span>1</span><div><strong>아는 친구를 초대해요.</strong><p>방 코드나 링크를 보내고, 방장이 입장 요청을 승인해요.</p></div></div><div class="help-step"><span>2</span><div><strong>원하는 사람만 사진 문제를 준비해요.</strong><p>질문과 보기 4개, 정답을 직접 입력해요. 사진은 한 사람당 최대 5장이고, 출제하지 않아도 함께 풀 수 있어요.</p></div></div><div class="help-step"><span>3</span><div><strong>돌아가며 기억을 맞혀요.</strong><p>출제자는 자신의 문제에 답하지 않아요. 정답은 최대 100점이며 남은 시간 비율로 줄어요. 가족 모드는 시간제한과 속도 감점이 없어요.</p></div></div><div class="help-step"><span>4</span><div><strong>정답보다 그날의 이야기를 나눠요.</strong><p>모두 답하면 정답을 공개해요. 이야기를 나눈 뒤 방장이 모두 함께 다음 문제를 시작해요.</p></div></div><div class="notice warm">AI 초안 도움은 출시 예정이에요. 친구와 직접 출제하는 퀴즈와 가상 친구 체험을 사용할 수 있어요.</div>`);
+  showModal(t("우리, 이렇게 놀아요"), tr`<div class="help-step"><span>1</span><div><strong>아는 친구를 초대해요.</strong><p>방 코드나 링크를 보내고, 방장이 입장 요청을 승인해요.</p></div></div><div class="help-step"><span>2</span><div><strong>원하는 사람만 사진 문제를 준비해요.</strong><p>질문과 보기 4개, 정답을 직접 입력해요. 사진은 한 사람당 최대 5장이고, 출제하지 않아도 함께 풀 수 있어요.</p></div></div><div class="help-step"><span>3</span><div><strong>돌아가며 기억을 맞혀요.</strong><p>출제자는 자신의 문제에 답하지 않아요. 정답은 최대 100점이며 남은 시간 비율로 줄어요. 가족 모드는 시간제한과 속도 감점이 없어요.</p></div></div><div class="help-step"><span>4</span><div><strong>정답보다 그날의 이야기를 나눠요.</strong><p>모두 답하면 정답을 공개해요. 이야기를 나눈 뒤 방장이 모두 함께 다음 문제를 시작해요.</p></div></div><div class="notice warm">친구와 직접 출제하는 사진 퀴즈와 가상 친구 체험을 사용할 수 있어요.</div>`);
 }
 function showPrivacy() {
   if (offline) {

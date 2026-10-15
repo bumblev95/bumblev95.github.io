@@ -1,4 +1,17 @@
 export const english = {
+  "고가·AI 상품을 빼고 광고 제거와 추억집만 남겼어요. 실제 광고·로그인·결제는 연결 준비 중이에요.": "Removed premium and AI products, keeping ad removal and memory books. Live ads, sign-in and payments are still being prepared.",
+  "사진으로 직접 문제를 만들고, 친구를 초대하고, 기억 대결을 즐기는 건 무료예요. 일반 게임은 로그인 없이 이용해요.": "Create your own photo questions, invite friends and play for free. No sign-in is needed for regular games.",
+  "광고와 결제를 준비하고 있어요.": "Ads and purchases are being prepared.",
+  "현재 버전에는 실제 광고·로그인·결제가 연결되지 않았어요. 추억집 파일 저장은 무료 체험이에요.": "Live ads, sign-in and payments are not connected in this version. Memory book exports are a free trial.",
+  "무료 게임": "Free game",
+  "게임을 마친 뒤 자연스러운 쉬는 시간에 광고를 보여주는 방식으로 준비해요. 문제를 풀거나 답을 확인하는 동안에는 광고로 가리지 않아요.": "Ads are planned for natural breaks after a game, without covering questions or answers during play.",
+  "로그인한 뒤 한 번 구매하면 내 계정의 광고를 없애는 옵션이에요. 다른 참가자의 광고에는 영향을 주지 않아요.": "Sign in and make a one-time purchase to remove ads for your account. Other players are unaffected.",
+  "정기 구독 없이 준비해요. 판매 가격과 구매·복원 기능은 연결 후 안내해요.": "No subscription is planned. Pricing, purchasing and restore options will be available after setup.",
+  "예정 가격 · 한 게임 · 일회 구매": "Planned price · one game · one-time purchase",
+  "저장을 허용한 사진과 이야기를 한 권에 담고 PDF나 HTML 파일로 간직해요. 미리보기는 무료예요.": "Collect permitted photos and stories in a memory book to keep as a PDF or HTML file. Previewing is free.",
+  "현재는 무료 저장 체험이에요. 판매할 때는 Google Play에 표시되는 현지 통화 가격을 결제 전에 안내해요.": "Exports are currently a free trial. When purchases are available, Google Play will show the local price before payment.",
+  "친구와 직접 출제하는 사진 퀴즈와 가상 친구 체험을 사용할 수 있어요.": "Play photo quizzes you create with friends, or try a demo with virtual friends.",
+
   "사진 숨기기·신고를 분리하고 방장의 게임 중 강퇴 기능을 추가했어요.": "Separate photo hiding and reporting, with host removal available during play.",
   "중도 종료 시에는 추억집을 만들지 않아요.": "No memory book is created if the gathering ends early.",
   "참가자가 두 명 미만이어서 게임을 마쳤어요. 남은 참가자의 기존 점수는 아래에 남겼어요.": "The game ended because fewer than two players remain. Their existing scores are shown below.",

@@ -10,6 +10,7 @@ import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
 import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
 import {openCommerceLedger,createCommerce,CommerceError} from './commerce.mjs';
+import {catalog as releaseCatalog} from '../../releases/1.0.0/products.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -281,7 +282,7 @@ export async function createApp(options={}){
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
    if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
-   if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,commerce.catalog);
+   if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,options.commerceFixture?commerce.catalog:releaseCatalog);
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
     check(nameValid(b.nickname),400,'닉네임을 1~16자로 적어 주세요.');

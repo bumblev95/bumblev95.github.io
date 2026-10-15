@@ -19,7 +19,15 @@ try{
  await page.evaluate(()=>window.dispatchEvent(new Event('thenus-back')));assert.equal(await page.locator('#modal').isVisible(),false);
  await page.locator('[data-action="start"]').click();
  for(let round=0;round<3;round++){if(round<2){await page.locator('[data-action="choose"][data-choice="0"]').click();await page.locator('[data-action="answer"]').click();}else await page.locator('[data-action="demo-answers"]').click();await page.locator('[data-action="next"]').click();}
- assert.equal(await page.locator('#modal').isVisible(),false);await page.locator('[data-action="memory-preview"]').click();
+ assert.equal(await page.locator('#modal').isVisible(),false);
+ await page.locator('#app [data-action="plans"]').click();
+ assert.doesNotMatch(await page.locator('#modal').innerText(),/Ultimate|AI 100|AI 300|7[.]99/);
+ assert.match(await page.locator('#modal').innerText(),/로그인한 뒤 한 번 구매/);
+ await page.locator('.modal-close').click();await page.locator('#settings-toggle').click();await page.locator('[data-language="en"]').click();await page.locator('#close-settings').click();
+ await page.locator('#app [data-action="plans"]').click();const planText=await page.locator('#modal').innerText();
+ assert.match(planText,/Sign in and make a one-time purchase/);assert.match(planText,/not connected in this version/);assert.doesNotMatch(planText,/[가-힣]|Ultimate|AI 100|AI 300|7[.]99/);
+ await page.locator('.modal-close').click();await page.locator('#settings-toggle').click();await page.locator('[data-language="ko"]').click();await page.locator('#close-settings').click();
+ await page.locator('[data-action="memory-preview"]').click();
  await page.locator('[data-action="memory-save"]').click();await page.waitForFunction(()=>nativeCalls.length>0);let calls=await page.evaluate(()=>nativeCalls);assert.match(calls[0].head,/<!doctype html>/i);assert.equal(calls[0].filename,'Us-Back-Then-Memory-Book.html');
  await page.locator('[data-action="memory-pdf"]').click();await page.waitForFunction(()=>nativeCalls.length===2);calls=await page.evaluate(()=>nativeCalls);assert.equal(calls[1].filename,'Us-Back-Then-Memory-Book.pdf');assert.match(calls[1].head,/%PDF-1.4/);assert.ok(calls[1].size>10000);
  await page.locator('[data-action="memory-pdf"]').waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector('[data-action="memory-pdf"]').disabled);
