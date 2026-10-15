@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.Lifecycle;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -58,29 +57,26 @@ public class AdsPlugin extends Plugin {
         getActivity().runOnUiThread(() -> result(call, "configured", false));
     }
 
-    // This is an eligibility self-declaration, not identity verification or a content-age gate.
-    private void chooseAge(PluginCall call, Runnable adult) {
-        if (choosing) { result(call, "busy", false); return; }
-        choosing = true;
-        boolean ko = "ko".equals(call.getString("language", "en"));
-        new AlertDialog.Builder(getActivity())
-            .setTitle(ko ? "광고 개인정보 설정" : "Ad privacy settings")
-            .setMessage(ko ? "만 18세 이상인가요? 광고는 성인으로 선택한 경우에만 준비해요. 생년월일은 받지 않고 선택은 이 기기에만 저장해요. 게임은 어느 선택이든 계속 이용할 수 있어요."
-                : "Are you 18 or older? Ads are prepared only for users who select 18+. We do not ask for a birth date; this choice stays on your device. Either choice lets you keep playing.")
-            .setPositiveButton(ko ? "만 18세 이상" : "18 or older", (dialog, which) -> {
-                choosing = false;
-                preferences.edit().putInt("ageGroup", 1).apply(); adult.run();
-            })
-            .setNegativeButton(ko ? "만 18세 미만" : "Under 18", (dialog, which) -> {
-                choosing = false; consentReady = false; consentRevision++;
-                preferences.edit().putInt("ageGroup", 2).apply(); ad = null;
-                result(call, "age-ineligible", false);
-            })
-            .setNeutralButton(ko ? "나중에" : "Later", (dialog, which) -> { choosing = false; preferences.edit().putInt("ageGroup", -1).apply(); result(call, "cancelled", false); })
-            .setOnCancelListener(dialog -> { choosing = false; result(call, "cancelled", false); }).show();
+    // Only the neutral, pre-game age gate can set the coarse band. A standalone
+    // ad-dialogue can no longer upgrade a teen into ad-eligible status.
+    @PluginMethod public void setAudience(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            String group = call.getString("group", "");
+            if (!"adult".equals(group) && !"teen".equals(group) && !"under13".equals(group)) {
+                result(call, "invalid-audience", false); return;
+            }
+            preferences.edit().putBoolean("ageGate13PlusV1", true)
+                .putInt("ageGroup", "adult".equals(group) ? 1 : 2).apply();
+            resetEligibility();
+            consentReady = false;
+            result(call, "updated", false);
+        });
     }
 
-    private boolean adultChoice() { return BuildConfig.ADS_ENABLED && preferences.getInt("ageGroup", 0) == 1; }
+    private boolean adultChoice() {
+        return BuildConfig.ADS_ENABLED && preferences.getBoolean("ageGate13PlusV1", false)
+            && preferences.getInt("ageGroup", 0) == 1;
+    }
     private boolean eligible() { return accountAllowsAds && adultChoice(); }
 
     private void updateConsent(Runnable done) {
@@ -131,9 +127,7 @@ public class AdsPlugin extends Plugin {
         getActivity().runOnUiThread(() -> {
             if (!BuildConfig.ADS_ENABLED) { result(call, "disabled", false); return; }
             if (updating || showing) { result(call, "busy", false); return; }
-            if (preferences.getInt("ageGroup", 0) != 1) {
-                chooseAge(call, () -> updateConsent(() -> result(call, consentReady ? "updated" : "unavailable", false))); return;
-            }
+            if (!adultChoice()) { result(call, "age-ineligible", false); return; }
             if (consent == null || !consentReady) { updateConsent(() -> result(call, consentReady ? "updated" : "unavailable", false)); return; }
             if (consent.getPrivacyOptionsRequirementStatus() != ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED) {
                 result(call, "not-required", false); return;
@@ -149,15 +143,13 @@ public class AdsPlugin extends Plugin {
     }
 
     @PluginMethod public void ageChoice(PluginCall call) {
-        getActivity().runOnUiThread(() -> {
-            if (!BuildConfig.ADS_ENABLED || updating || showing) { result(call, "disabled", false); return; }
-            chooseAge(call, () -> updateConsent(() -> result(call, consentReady ? "updated" : "unavailable", false)));
-        });
+        getActivity().runOnUiThread(() -> result(call, "use-app-age", false));
     }
 
     @PluginMethod public void showAtBreak(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             if (!BuildConfig.ADS_ENABLED) { result(call, "disabled", false); return; }
+            if (!adultChoice()) { result(call, "age-ineligible", false); return; }
             if (checkingAccount || showing || updating) { result(call, "skipped", false); return; }
             com.getcapacitor.PluginHandle handle = getBridge().getPlugin("ThenusAccount");
             if (handle == null) { result(call, "account-check", false); return; }
@@ -182,9 +174,7 @@ public class AdsPlugin extends Plugin {
             }
             if (showing || updating || (!test && key.equals(lastBreak))) { result(call, "skipped", false); return; }
             if (!test) lastBreak = key;
-            if (preferences.getInt("ageGroup", 0) == 0) {
-                chooseAge(call, () -> updateConsent(() -> result(call, consentReady ? "preparing" : "unavailable", false))); return;
-            }
+            if (!adultChoice()) { result(call, "age-ineligible", false); return; }
             if (eligible() && !consentReady) {
                 updateConsent(() -> result(call, consentReady ? "preparing" : "unavailable", false)); return;
             }
