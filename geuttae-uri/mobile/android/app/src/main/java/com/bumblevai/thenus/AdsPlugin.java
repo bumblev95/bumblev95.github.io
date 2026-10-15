@@ -80,17 +80,18 @@ public class AdsPlugin extends Plugin {
             .setOnCancelListener(dialog -> { choosing = false; result(call, "cancelled", false); }).show();
     }
 
-    private boolean eligible() { return accountAllowsAds && BuildConfig.ADS_ENABLED && preferences.getInt("ageGroup", 0) == 1; }
+    private boolean adultChoice() { return BuildConfig.ADS_ENABLED && preferences.getInt("ageGroup", 0) == 1; }
+    private boolean eligible() { return accountAllowsAds && adultChoice(); }
 
     private void updateConsent(Runnable done) {
-        if (!eligible() || updating) { done.run(); return; }
+        if (!adultChoice() || updating) { done.run(); return; }
         updating = true; ad = null; consentReady = false; consentRevision++;
         consent = UserMessagingPlatform.getConsentInformation(getContext());
         ConsentRequestParameters params = new ConsentRequestParameters.Builder().setTagForUnderAgeOfConsent(false).build();
         consent.requestConsentInfoUpdate(getActivity(), params, () ->
             UserMessagingPlatform.loadAndShowConsentFormIfRequired(getActivity(), error -> {
                 updating = false;
-                consentReady = error == null && consent.canRequestAds() && eligible();
+                consentReady = error == null && consent.canRequestAds() && adultChoice();
                 if (error == null && consent.canRequestAds() && eligible()) initializeAds();
                 done.run();
             }), error -> { updating = false; done.run(); });
@@ -140,7 +141,7 @@ public class AdsPlugin extends Plugin {
             updating = true; ad = null; consentReady = false; consentRevision++;
             UserMessagingPlatform.showPrivacyOptionsForm(getActivity(), error -> {
                 updating = false;
-                consentReady = error == null && consent.canRequestAds() && eligible();
+                consentReady = error == null && consent.canRequestAds() && adultChoice();
                 if (error == null) initializeAds();
                 result(call, error == null ? "updated" : "unavailable", false);
             });
