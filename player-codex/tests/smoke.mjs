@@ -65,7 +65,7 @@ try{
   for(const locale of ['', 'ko/']){
     const pageUrl=origin+'/player-codex/archeage-chronicles/'+locale;
     const r=await fetch(pageUrl);
-    assert(r.ok(),'Official media test page missing: '+locale);
+    assert(r.ok,'Official media test page missing: '+locale);
     const html=await r.text();
     assert(html.includes('id="official-videos"'),'Official videos section missing: '+locale);
     assert(html.includes('data-official-video="reveal"'),'Reveal trailer missing: '+locale);
