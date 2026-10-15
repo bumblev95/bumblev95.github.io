@@ -17,4 +17,4 @@ Use the signed production package through Play internal testing when available. 
 | Deletion/expiry | End own room and verify photo access denied. In an isolated test environment verify 24h expiry and outage cleanup with private disk evidence; never alter other users' rooms or production clock. | NOT RUN |
 | TEST preservation | Existing TEST package/data/settings still usable. Note that backend is currently shared: separate packages do not provide server isolation. | NOT RUN |
 
-No live-ad tapping, real purchase spending, or sensitive family photos are needed for these checks. If monetization ships, add Google test-ad/consent and license-tester purchase/pending/restore/refund/account-deletion cases first.
+No live-ad tapping, real purchase spending, or sensitive family photos are needed for these checks. AdMob/UMP is now bundled: test Google sample ads and privacy/age/UMP region cases on actual devices before enabling live serving. Before billing ships, add license-tester purchase/pending/restore/refund/account-deletion cases.

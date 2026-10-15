@@ -4,7 +4,7 @@ Release: com.bumblevai.thenus, version 1.0.0, versionCode 10000. Debug keeps a s
 
 English app name: Us Back Then. Korean app name: 그때 우리. The initial interface follows the primary device locale, with English fallback. An in-app selection persists; player text stays as written.
 
-The candidate bundles immutable releases/1.0.0. The published web preview stays on its existing version. The approved yellow photo/quiz icon is packaged in all launcher densities and adaptive icons. No broad photo-library, camera, microphone, location, ad, analytics or billing permission/SDK is added.
+The candidate bundles immutable releases/1.0.0. The published web preview stays on its existing version. The approved yellow photo/quiz icon is packaged in all launcher densities and adaptive icons. No broad photo-library, camera, microphone or location permission is requested. AdMob 25.5.0 and UMP 4.0.0 are included; their merged manifest adds advertising/network permissions, including AD_ID. There is no Billing SDK yet.
 
 ## Build
 
@@ -14,4 +14,4 @@ Run npm ci, npm run sync, npm test, then android/gradlew assembleDebug bundleRel
 
 See store/SUBMISSION-REVIEW.md. This is a release candidate, not Google approval or a completed submission. The final privacy URL, actual hosting/backup retention, operational moderation channel, Console declarations and physical-device tests must be completed. Deploy and verify the backend photo-hiding/reporting/host-removal change before advertising it as live.
 
-Current file exports remain free. AI generation, live purchases and advertising are not enabled. Blocking is room-session scoped, not a global account/device ban.
+Current file exports remain free. AI generation and live purchases are not enabled. Debug builds use Google test advertising IDs; the default release build has live ads disabled. Production IDs supplied by the owner are configured, but activation requires an explicit -PthenusLiveAds=true build after policy, consent and device QA gates. Settings include ad privacy/age controls and a debug-only test-ad button. Unknown or under-18 age choices never initialize/request advertising. This age selection is not identity verification. Ads may run only on a confirmed transition to another game after a completed real gathering, once per game and at most once per five minutes; no-fill never delays play. Blocking is room-session scoped, not a global account/device ban.

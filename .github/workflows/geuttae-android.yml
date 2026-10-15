@@ -54,6 +54,9 @@ jobs:
       - name: Assemble installable test APK and lint
         working-directory: geuttae-uri/mobile/android
         run: ./gradlew :app:assembleDebug :app:lintDebug :app:bundleRelease :app:assembleRelease :app:lintRelease --no-daemon
+      - name: Verify actual ad build configuration and merged permissions
+        working-directory: geuttae-uri/mobile
+        run: node scripts/verify-ad-build.mjs
       - name: Audit exact release permissions and record build provenance
         run: |
           python3 -m unittest discover -s geuttae-uri/mobile/scripts -p 'test_*.py'
@@ -68,6 +71,7 @@ jobs:
           cp geuttae-uri/mobile/android/app/build/outputs/bundle/release/app-release.aab android-delivery/Us-Back-Then-v1.0.0-unsigned.aab
           cp geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/Us-Back-Then-v1.0.0-unsigned.apk
           cp geuttae-uri/mobile/README.md android-delivery/README.md
+          cp geuttae-uri/mobile/qa-output/ad-build-report.json android-delivery/ad-build-report.json
           sha256sum android-delivery/*.apk android-delivery/*.aab > android-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

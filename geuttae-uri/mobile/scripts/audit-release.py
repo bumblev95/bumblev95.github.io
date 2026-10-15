@@ -24,7 +24,14 @@ def audit(manifest, apk, aab):
     permissions = {p.get(ANDROID + 'name') for p in root if p.tag.startswith('uses-permission')}
     # AndroidX may merge a private signature-level receiver permission. No SDK permission
     # gets a free pass merely because it wasn't present in the source manifest.
-    allowed = {'android.permission.INTERNET', PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'}
+    allowed = {
+        'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE',
+        'com.google.android.gms.permission.AD_ID',
+        'android.permission.ACCESS_ADSERVICES_AD_ID',
+        'android.permission.ACCESS_ADSERVICES_ATTRIBUTION',
+        'android.permission.ACCESS_ADSERVICES_TOPICS',
+        PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
+    }
     assert 'android.permission.INTERNET' in permissions
     assert permissions <= allowed, 'Unreviewed merged permissions: ' + str(permissions - allowed)
     private = PACKAGE + '.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
