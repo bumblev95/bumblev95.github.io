@@ -1,5 +1,9 @@
 name: Then Us preview deployment checks
 on:
+  pull_request:
+    paths:
+      - 'geuttae-uri/**'
+      - '.github/workflows/geuttae-preview-checks.yml'
   push:
     branches: [main]
     paths:
@@ -8,60 +12,59 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: then-us-preview-checks
+  group: then-us-preview-checks-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Check JavaScript syntax
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax including all boot loaders
         run: |
-          node --check geuttae-uri/boot-v1.js
-          node --check geuttae-uri/boot-v2.js
-          for file in geuttae-uri/releases/*/*.js; do node --check "$file"; done
+          for file in geuttae-uri/boot-v*.js; do node --check "$file"; done
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find geuttae-uri/releases -type f -name '*.js' -print0)
+      - name: Run locale, frontend and deployment-integrity regression tests
+        run: |
+          npm test --prefix geuttae-uri
+          python3 -m unittest discover -s geuttae-uri/tests -p '*_test.py' -v
+      - name: Install pinned browser QA dependencies
+        working-directory: geuttae-uri
+        run: npm ci
+      - name: Install Chromium
+        working-directory: geuttae-uri
+        run: npx playwright install --with-deps chromium
+      - name: Verify Korean and English startup, switching and persistence locally
+        working-directory: geuttae-uri
+        run: node tests/preview-home-qa.mjs
+      # PRs test their own source locally; only main is compared to the public deployment.
       - name: Verify the published HTTPS files match this commit
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: python3 geuttae-uri/tools/check-preview-files.py
+      - name: Verify Korean and English on the rendered public homepage
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: geuttae-uri
+        env:
+          PREVIEW_BASE_URL: https://bumblev95.github.io/geuttae-uri/
+        run: node tests/preview-home-qa.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: then-us-preview-qa
+          path: geuttae-uri/tests/qa-output/preview-*/
+          retention-days: 7
+      - name: Summarize successful verification
+        if: success()
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          python3 - <<'PY'
-          import hashlib, json, pathlib, time, urllib.request
-          root = pathlib.Path('geuttae-uri')
-          base = 'https://bumblev95.github.io/geuttae-uri/'
-          version = json.loads((root / 'version.json').read_text())['version']
-          paths = ['index.html', 'boot-v1.js', 'boot-v2.js', 'boot-v3.js', 'shell-v1.css', 'version.json', 'runtime-config.json', 'manifest.webmanifest']
-          paths += [str(p.relative_to(root)) for p in sorted((root / 'assets').glob('*')) if p.is_file()]
-          paths += [str(p.relative_to(root)) for p in sorted((root / 'releases' / version).glob('*')) if p.is_file()]
-          expected = {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths}
-          for attempt in range(30):
-              try:
-                  for path in paths:
-                      request = urllib.request.Request(base + path + '?check=' + str(time.time_ns()), headers={'Cache-Control': 'no-cache', 'User-Agent': 'ThenUsDeploymentCheck/1.0'})
-                      with urllib.request.urlopen(request, timeout=15) as response:
-                          assert response.status == 200, path
-                          actual = hashlib.sha256(response.read()).hexdigest()
-                      assert actual == expected[path], 'Published file not current: ' + path
-                  print('HTTPS PASS:', base, 'version', version, '-', len(paths), 'files match the committed source')
-                  break
-              except Exception as error:
-                  print('Deployment check', attempt + 1, type(error).__name__, str(error), flush=True)
-                  if attempt == 29:
-                      raise
-                  time.sleep(6)
-          PY
-      - name: Verify the rendered public homepage in Chrome
-        run: |
-          set -euo pipefail
-          browser=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
-          timeout 60s "$browser" --headless --no-sandbox --disable-gpu --no-first-run --virtual-time-budget=10000 --dump-dom 'https://bumblev95.github.io/geuttae-uri/' > /tmp/then-us-dom.html 2>/tmp/then-us-chrome.log
-          python3 - <<'PY'
-          import json, pathlib
-          version = json.loads(pathlib.Path('geuttae-uri/version.json').read_text())['version']
-          html = pathlib.Path('/tmp/then-us-dom.html').read_text()
-          for expected in ['TEST v' + version, 'data-screen="home"', 'data-action="demo"']:
-              assert expected in html, 'Public homepage did not render: ' + expected
-          assert '먼저 체험해 보기' in html or 'Try the demo' in html, 'Demo label missing in both supported languages'
-          print('CHROME PASS: public homepage rendered with TEST v' + version + ' and the demo start button')
-          PY
-          printf '### Then Us frontend\n\nHTTPS source hashes and Chrome homepage rendering passed.\n\nA configured backend is required for real multiplayer. Physical-device QA and AI generation are separate.\n' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$EVENT_NAME" = push ]; then
+            echo 'Public HTTPS source hashes and Korean/English Chromium homepage checks passed.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Local Korean/English Chromium and regression checks passed. Public deployment is checked after merge on main.' >> "$GITHUB_STEP_SUMMARY"
+          fi
