@@ -20,7 +20,7 @@ const base=`http://127.0.0.1:${app.server.address().port}`;
 const browser=await chromium.launch({args:['--no-sandbox']});
 const errors=[];
 try{
- const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ const context=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  const outbound=[];page.on('request',r=>outbound.push(r.url()));
  await page.goto(base+'/geuttae-uri/');await page.locator('[data-action="new"]').first().click();

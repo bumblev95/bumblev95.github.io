@@ -32,8 +32,8 @@ httpBase=`http://127.0.0.1:${app.server.address().port}`;
 const browser=await chromium.launch({args:['--no-sandbox']});
 const errors=[];
 try{
- const ca=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,ignoreHTTPSErrors:true});
- const cb=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,ignoreHTTPSErrors:true});
+ const ca=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844},isMobile:true,hasTouch:true,ignoreHTTPSErrors:true});
+ const cb=await browser.newContext({locale:'ko-KR',viewport:{width:360,height:800},isMobile:true,hasTouch:true,ignoreHTTPSErrors:true});
  const a=await ca.newPage(),b=await cb.newPage();
  for(const p of [a,b]){p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());}
  await a.goto(base+'/geuttae-uri/');
