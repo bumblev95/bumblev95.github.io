@@ -122,6 +122,8 @@ public class AccountPlugin extends Plugin {
     }
     void background(Runnable work) { worker.execute(work); }
     boolean beginBillingResume() { return token() != null && busy.compareAndSet(false, true); }
+    boolean billingRestoreNeeded() { return getContext().getSharedPreferences(KEY, Context.MODE_PRIVATE).getBoolean("restoreNeeded", false); }
+    boolean markBillingRestoreNeeded(boolean value) { return getContext().getSharedPreferences(KEY, Context.MODE_PRIVATE).edit().putBoolean("restoreNeeded", value).commit(); }
     void ui(Runnable work) { getActivity().runOnUiThread(work); }
     void invalidateAdvertising() {
         ui(() -> {

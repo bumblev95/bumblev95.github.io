@@ -63,6 +63,7 @@ final class BillingManager {
         if (!running) return;
         running = false; processing = false; generation++;
         timer.removeCallbacksAndMessages(null);
+        if ("ad-free".equals(status) || "cancelled".equals(status)) owner.markBillingRestoreNeeded(false);
         PluginCall pending = call; call = null;
         // Only allowlisted public fields are returned to the web view.
         owner.finishBilling(pending, status, state);
@@ -75,7 +76,12 @@ final class BillingManager {
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
             .enableAutoServiceReconnection()
             .setListener((result, purchases) -> owner.ui(() -> {
-                if (!running) return;
+                if (destroyed) return;
+                // Late completion after a timeout is reconciled through a fresh authenticated query.
+                if (!running) {
+                    if (result.getResponseCode() == BillingClient.BillingResponseCode.OK && owner.beginBillingResume()) start(null, "restore");
+                    return;
+                }
                 if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) process(generation, purchases);
                 else if (result.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) finish("cancelled");
                 else if (result.getResponseCode() == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) { action = "restore"; owned(generation); }
@@ -145,6 +151,8 @@ final class BillingManager {
                 if (offer.getOfferToken() != null && !offer.getOfferToken().isEmpty()) selection.setOfferToken(offer.getOfferToken());
                 BillingFlowParams params = BillingFlowParams.newBuilder().setObfuscatedAccountId(accountId)
                     .setProductDetailsParamsList(Collections.singletonList(selection.build())).build();
+                // A recovery marker, never an entitlement or receipt. Survives process death during Play UI.
+                if (!owner.markBillingRestoreNeeded(true)) { finish("BILLING_UNAVAILABLE"); return; }
                 BillingResult launched = client.launchBillingFlow(owner.getActivity(), params);
                 if (launched.getResponseCode() == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) { action = "restore"; owned(revision); }
                 else if (launched.getResponseCode() != BillingClient.BillingResponseCode.OK) finish("BILLING_UNAVAILABLE");
@@ -153,7 +161,7 @@ final class BillingManager {
     void resume() {
         // A pending checkout can complete while Play's UI was open; query only an already-started operation.
         if (running && client != null && client.isReady() && !processing) { action = "restore"; owned(generation); }
-        else if (!running && client != null && owner.beginBillingResume()) start(null, "restore");
+        else if (!running && (client != null || owner.billingRestoreNeeded()) && owner.beginBillingResume()) start(null, "restore");
     }
     void close() { destroyed = true; timer.removeCallbacksAndMessages(null); if (client != null) client.endConnection(); }
 }
