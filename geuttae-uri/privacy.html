@@ -22,7 +22,7 @@
   <section id="ko" lang="ko" aria-labelledby="ko-title">
     <h2 id="ko-title">한국어</h2>
     <p>Bumblev(이하 ‘운영자’)는 비공개 사진 퀴즈 ‘그때 우리 / Us Back Then: Photo Quiz’와 웹 미리보기를 제공합니다. 이 방침은 모임 기능, Android 앱의 광고 기능 및 개인정보 문의에 적용됩니다. 개인정보 보호 담당 및 문의처는 <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a>입니다.</p>
-    <p class="note">현재 회원 가입·로그인과 실제 결제는 제공하지 않습니다. AI 사진 분석·문제 생성 서비스도 활성화되어 있지 않습니다. Android 테스트 앱은 테스트 광고를 사용하며, 현재 기본 출시 후보의 실제 광고는 꺼져 있습니다. 아래 광고 설명은 광고 기능을 사용하는 Android 빌드에 적용됩니다. 웹 미리보기에는 이 Android 광고 SDK가 없습니다.</p>
+    <p class="note">일반 게임은 회원가입 없이 이용할 수 있습니다. Google 로그인은 연결을 완료한 Android 테스트 빌드에서 선택적으로 제공하며, 실제 결제는 아직 제공하지 않습니다. AI 사진 분석·문제 생성 서비스도 활성화되어 있지 않습니다. Android 테스트 앱은 테스트 광고를 사용하며, 현재 기본 출시 후보의 실제 광고는 꺼져 있습니다. 아래 광고 설명은 광고 기능을 사용하는 Android 빌드에 적용됩니다. 웹 미리보기에는 이 Android 광고 SDK가 없습니다.</p>
 
     <h3>1. 처리하는 정보와 목적</h3>
     <ul>
@@ -32,6 +32,11 @@
       <li><strong>접속 및 보안:</strong> 서버·웹 호스팅 제공업체는 서비스 전달과 장애·보안 대응을 위해 IP 주소, 요청 시각·경로, 기기·브라우저 및 기술적 진단 정보 등을 처리할 수 있습니다. 앱에 별도의 사용자 행동 분석 SDK는 두지 않습니다. Google 광고 SDK의 분석 처리는 3항에 설명합니다.</li>
     </ul>
     <p>공유할 사진은 사용자가 직접 선택합니다. 원본은 기기에 남으며, 업로드한 JPEG 사본에서 EXIF 등 부가 메타데이터를 제거합니다. 사진 속 사람·장소의 시각적 정보는 남을 수 있습니다. Android 앱은 사진첩 전체, 카메라, 마이크 또는 위치 권한을 요청하지 않으며 시스템 선택기와 저장 대화상자를 사용합니다.</p>
+
+    <h3>선택형 Google 로그인</h3>
+    <p>사용자가 Google로 로그인을 선택하면 Google의 계정 선택·인증 도구를 통해 기본 프로필이 포함될 수 있는 ID 토큰을 받아 서버에서 유효성과 일회용 요청값을 확인합니다. 계정에는 임의의 앱 계정 ID, Google 사용자 식별자의 해시값, 인증된 이메일 주소와 생성 시각을 기록합니다. Google 비밀번호, ID 토큰 원문, 이름 또는 프로필 사진은 계정 기록에 저장하지 않습니다. 연락처·Gmail·Google Drive 데이터에 접근하는 권한은 요청하지 않습니다. 계정 식별·인증과 로그인 상태 유지에만 사용하며 모임 사진·퀴즈를 Google 로그인에 전달하지 않습니다.</p>
+    <p>계정은 삭제할 때까지 보관합니다. 로그인 세션은 발급 후 최대 30일 동안 유효하고 로그아웃·계정 삭제 시 먼저 폐기할 수 있습니다. 서버에는 세션 키의 해시만 보관하고, 기기의 로그인 키는 Android Keystore로 암호화한 앱 비공개 저장소에 보관합니다. 방 세션과 계정 세션은 서로 독립적이며, 계정 정보에는 방의 24시간 만료 규칙이 적용되지 않습니다. 기기에서 앱 데이터만 지우면 서버 계정은 삭제되지 않습니다.</p>
+    <p>로그인 과정에서 Google 또는 Android가 시스템 인증 수단을 사용할 수 있지만 앱은 지문·얼굴 등 생체정보 원본을 받지 않습니다. Google의 로그인·보안 처리는 <a href="https://policies.google.com/privacy">Google 개인정보처리방침</a>을 따릅니다. 서비스 제공에 필요한 처리를 수행하며, 법률상 동의가 필요한 선택형 처리는 해당 동의를 바탕으로 수행합니다. 로그인만으로 유료 권한이나 광고 제거를 부여하지 않습니다.</p>
 
     <h3>2. 전송·공유 및 보안</h3>
     <p>선택한 모임 정보는 HTTPS로 Railway에 호스팅한 앱 서버로 전송됩니다. 서버는 현재 미국 버지니아 지역에서 운영됩니다. 방장이 승인한 참여자에게 게임에 필요한 내용을 제공하며 공개 사진 피드나 공개 방 목록은 없습니다. 추억집에는 작성자가 저장을 따로 허용한 항목만 포함합니다. 참여자는 표시된 내용을 촬영하거나 저장할 수 있으므로 공유할 권한과 사진 속 사람의 동의를 먼저 확인해 주세요.</p>
@@ -54,7 +59,7 @@
 
     <h3>5. 이용자의 선택과 권리</h3>
     <p>사진을 올리지 않거나 문제를 삭제할 수 있습니다. 사진 숨기기는 본인의 화면과 전달받는 추억집에 적용됩니다. 신고는 사유 입력과 최종 확인을 거쳐 임시 방 기록에 남고 신고자의 화면에서 사진을 숨깁니다. 신고만으로 방이 없어지거나 누군가 자동 강퇴되지는 않습니다. 운영자에게 자동 이메일을 보내는 기능은 없으므로 운영자 검토가 필요하면 문의처로 방 코드와 발생 시각을 알려 주세요. 민감한 사진은 이메일에 첨부하지 마세요.</p>
-    <p>적용되는 법률에 따라 본인 정보의 열람, 정정, 삭제, 처리 제한·반대, 이동 또는 동의 철회를 요청할 수 있습니다. <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a>으로 요청하면 본인 확인에 필요한 최소한의 정보를 확인한 뒤 대응합니다. 이미 만료·삭제한 정보는 복구하지 못할 수 있습니다. 해당 지역 개인정보 감독기관에 민원을 제기할 수도 있습니다. 회원 계정이 없어 계정 삭제 절차는 현재 제공하지 않으며, 개인정보 삭제 요청은 이메일로 접수합니다.</p>
+    <p>적용되는 법률에 따라 본인 정보의 열람, 정정, 삭제, 처리 제한·반대, 이동 또는 동의 철회를 요청할 수 있습니다. <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a>으로 요청하면 본인 확인에 필요한 최소한의 정보를 확인한 뒤 대응합니다. 이미 만료·삭제한 정보는 복구하지 못할 수 있습니다. 해당 지역 개인정보 감독기관에 민원을 제기할 수도 있습니다. Google 로그인 계정은 앱의 설정 → 계정 → 계정 삭제에서 삭제할 수 있습니다. 삭제 전 최근 Google 로그인이 필요하며, 최종 확인 후 계정 기록과 모든 로그인 세션을 삭제합니다. 앱 없이 요청하려면 <a href="./account-deletion.html">계정 및 개인정보 삭제 안내</a>를 이용해 주세요.</p>
 
     <h3>6. 아동 및 방침 변경</h3>
     <p>어린이가 참여하는 모임은 보호자가 사진 공유와 저장을 관리해 주세요. 광고는 앞서 설명한 만 18세 이상 선택 절차를 통과한 사용자에게만 준비합니다. 아동 정보가 부적절하게 공유되었다고 판단되면 문의처로 알려 주세요. 데이터 처리 방식이 변경되면 이 페이지의 시행일과 내용을 갱신하고 필요한 경우 앱 내 안내 또는 추가 동의를 제공합니다.</p>
@@ -63,7 +68,7 @@
   <section id="en" lang="en" aria-labelledby="en-title">
     <h2 id="en-title">English</h2>
     <p>Bumblev (the operator) provides the private photo quiz “Us Back Then: Photo Quiz / 그때 우리” and its web preview. This policy covers gatherings, Android advertising features and privacy enquiries. Our privacy contact is <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a>.</p>
-    <p class="note">There is currently no account registration, login or live payment processing. AI photo analysis and question generation are not active. Android test builds use test advertising; live advertising is off in the current default release candidate. The advertising section below applies to Android builds using that feature. The web preview does not include the Android advertising SDK.</p>
+    <p class="note">Regular games do not require an account. Optional Google sign-in is being connected for supported Android test builds. Live payment processing is not available. AI photo analysis and question generation are not active. Android test builds use test advertising; live advertising is off in the current default release candidate. The advertising section below applies to Android builds using that feature. The web preview does not include the Android advertising SDK.</p>
 
     <h3>1. Information and purposes</h3>
     <ul>
@@ -73,6 +78,11 @@
       <li><strong>Connections and security:</strong> Server and web hosting providers may process IP addresses, request times/paths, device/browser details and technical diagnostics to deliver and secure the service and investigate faults. We do not include a separate user behaviour analytics SDK. Google advertising analytics are described in section 3.</li>
     </ul>
     <p>You select which photos to share. Originals remain on your device; ancillary metadata such as EXIF is removed from uploaded JPEG copies. Visual information about people or places can remain in the image. The Android app uses system file selection and save dialogs and does not request broad photo-library, camera, microphone or location permissions.</p>
+
+    <h3>Optional Google sign-in</h3>
+    <p>When you select Google sign-in, Google's account selection/authentication tools provide an ID token, which may contain basic profile information. Our server verifies it and a single-use request nonce. Account records contain a random app account ID, a hash of the Google user identifier, the verified email address and creation time. We do not store Google passwords, raw ID tokens, names or profile pictures in account records. We do not request access to contacts, Gmail or Google Drive. These records identify/authenticate the account and maintain sign-in; gathering photos and quizzes are not sent through Google sign-in.</p>
+    <p>Account records remain until deletion. Sign-in sessions last at most 30 days from issue and may be revoked earlier by sign-out or account deletion. Only session-key hashes are stored on the server; the native device session key is encrypted with Android Keystore in private app storage. Account and room sessions are independent; the 24-hour room expiry does not apply to accounts. Clearing local app data does not delete your server account.</p>
+    <p>Google or Android may use system authentication methods during sign-in, but the app does not receive raw fingerprint, face or other biometric data. Google's authentication/security processing follows its <a href="https://policies.google.com/privacy">privacy policy</a>. We process information as needed to provide the service and obtain consent for optional processing where required by law. Signing in alone does not grant a paid benefit or remove advertising.</p>
 
     <h3>2. Transfers, sharing and security</h3>
     <p>Selected gathering information is sent over HTTPS to our Railway-hosted app server, currently in Virginia, United States. Participants approved by the host receive content needed for the game. There is no public photo feed or public room directory. Memory books include only entries separately approved for saving by their authors. Participants may capture or save displayed content, so obtain permission to share, including permission from people shown.</p>
@@ -95,12 +105,12 @@
 
     <h3>5. Your choices and rights</h3>
     <p>You may decline to upload photos or remove your questions. Hiding a photo affects your own view and the memory book delivered to you. Reporting requires a reason and final confirmation, records a temporary room report and hides the photo for the reporter. Reporting does not automatically delete a room or remove a participant. Reports do not automatically email the operator. For operator review, email the room code and approximate time; do not attach sensitive photos.</p>
-    <p>Depending on applicable law, you may request access, correction, deletion, restriction, objection, portability or withdrawal of consent. Contact <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a>; we may ask for minimal information needed to verify the request. Information already expired or deleted may not be recoverable. You may also complain to your local data protection authority. There are currently no registered accounts to delete; personal-data deletion requests are accepted by email.</p>
+    <p>Depending on applicable law, you may request access, correction, deletion, restriction, objection, portability or withdrawal of consent. Contact <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a>; we may ask for minimal information needed to verify the request. Information already expired or deleted may not be recoverable. You may also complain to your local data protection authority. To delete a Google-linked app account, use Settings → Account → Delete account, with a recent Google sign-in and final confirmation. This removes the account record and all sign-in sessions. To request deletion without the app, use our <a href="./account-deletion.html">account and personal-data deletion page</a>.</p>
 
     <h3>6. Children and policy updates</h3>
     <p>A guardian should manage photo sharing and saving in gatherings involving children. Advertising is prepared only for users who complete the age-18-or-over choice described above. Contact us if you believe a child’s information has been shared improperly. When data practices change, we will update this page and effective date and provide in-app notice or further consent where required.</p>
   </section>
-  <footer><a href="./">그때 우리 · Us Back Then</a> · <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a></footer>
+  <footer><a href="./account-deletion.html">계정 삭제 · Account deletion</a> · <a href="./">그때 우리 · Us Back Then</a> · <a href="mailto:keetojt@gmail.com">keetojt@gmail.com</a></footer>
 </main>
 </body>
 </html>
