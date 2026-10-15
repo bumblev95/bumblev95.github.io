@@ -390,8 +390,17 @@ function pendingMarkup() {
   const blocked = ['blocked', 'kicked', 'left'].includes(ui.data.access);
   return `${screenTop()}<section class="waiting-view"><span class="waiting-icon" aria-hidden="true">${blocked ? '○' : '✉'}</span><h1>${blocked ? (ui.data.access === 'kicked' ? t("방장이 모임에서 내보냈어요") : t("이 모임에 참여할 수 없어요")) : t("입장 요청을 보냈어요")}</h1><p>${blocked ? t("방장에게 확인하거나 새로운 모임을 만들어 주세요.") : tr`${esc(ui.data.nickname)}님, 방장이 친구인지 확인 중이에요.<br>승인되면 대기방으로 자동으로 이동해요.`}</p><span class="pill muted">${esc(ui.data.title)}</span>${!blocked ? t("<div class=\"notice\">아직 다른 참가자의 사진과 문제는<br>전혀 보이지 않아요.</div>") : ''}</section>${button(t("홈으로 돌아가기"), 'home', 'outline')}`;
 }
+function participantSafetyButtons(v,p) {
+  if (ui.demo || p.id === v.you || !ui.data?.playerBlockingSupported) return '';
+  const blocked = ui.data.blockedPlayerIds?.includes(p.id);
+  const en = getLanguage() === 'en';
+  return `<div class="person-safety">
+    <button class="text-button" type="button" data-action="${blocked?'unblock-player':'block-player'}" data-id="${esc(p.id)}" ${ui.busy?'disabled':''}>${blocked?(en?'Unblock':'차단 해제'):(en?'Block player':'참가자 차단')}</button>
+    <button class="text-button warning" type="button" data-action="report-player" data-id="${esc(p.id)}" ${ui.busy?'disabled':''}>${en?'Report player':'참가자 신고'}</button>
+  </div>`;
+}
 function playerList(v, rank = false, managePlayers = false) {
-  return `<div class="people">${v.players.map((p, i) => `<div class="person">${avatar(p, i)}<span class="person-name">${esc(p.name)}${!ui.demo && !ui.data.connectedIds?.includes(p.id) ? t("<small>잠시 연결 끊김 · 재접속 대기</small>") : ''}${p.id === v.you && p.name !== t("나") ? t("<span class=\"badge-me\">나</span>") : ''}${p.id === v.hostId ? t("<small>방장</small>") : ''}</span>${rank && !managePlayers ? tr`<span class="score">${p.score}점</span>` : `<span class="status ${v.readyIds.includes(p.id) ? 'ready' : ''}">${v.photoOnlyPolicy ? v.questionCounts?.[p.id] ? (getLanguage()==='en'?v.questionCounts[p.id]+' photo'+(v.questionCounts[p.id]===1?'':'s')+' ready':tr`사진 ${v.questionCounts[p.id]}장 준비`) : t("맞히며 참여해요") : v.readyIds.includes(p.id) ? t("✓ 준비 완료") : t("참여 준비 중")}</span>${v.you === v.hostId && p.id !== v.you && !ui.demo ? tr`<button class="text-button warning" data-action="kick" data-id="${p.id}" aria-label="${esc(p.name)}님 내보내기" ${ui.busy ? 'disabled' : ''}>강퇴</button>` : ''}`}</div>`).join('')}</div>`;
+  return `<div class="people">${v.players.map((p, i) => `<div class="person">${avatar(p, i)}<span class="person-name">${esc(p.name)}${!ui.demo && !ui.data.connectedIds?.includes(p.id) ? t("<small>잠시 연결 끊김 · 재접속 대기</small>") : ''}${p.id === v.you && p.name !== t("나") ? t("<span class=\"badge-me\">나</span>") : ''}${p.id === v.hostId ? t("<small>방장</small>") : ''}</span>${rank && !managePlayers ? tr`<span class="score">${p.score}점</span>` : `<span class="status ${v.readyIds.includes(p.id) ? 'ready' : ''}">${v.photoOnlyPolicy ? v.questionCounts?.[p.id] ? (getLanguage()==='en'?v.questionCounts[p.id]+' photo'+(v.questionCounts[p.id]===1?'':'s')+' ready':tr`사진 ${v.questionCounts[p.id]}장 준비`) : t("맞히며 참여해요") : v.readyIds.includes(p.id) ? t("✓ 준비 완료") : t("참여 준비 중")}</span>${participantSafetyButtons(v,p)}${v.you === v.hostId && p.id !== v.you && !ui.demo ? tr`<button class="text-button warning" data-action="kick" data-id="${p.id}" aria-label="${esc(p.name)}님 내보내기" ${ui.busy ? 'disabled' : ''}>강퇴</button>` : ''}`}</div>`).join('')}</div>`;
 }
 function lobbyMarkup(v) {
   const ready = v.players.length >= 2 && (v.photoOnlyPolicy ? v.totalPrepared > 0 : v.players.every(p => v.readyIds.includes(p.id))) && !ui.data.pending?.length;
@@ -1391,6 +1400,34 @@ document.addEventListener('click', async e => {
     return;
   }
   if (action === 'approve' || action === 'deny') return manage(action, target.dataset.id);
+  if (action === 'block-player' || action === 'unblock-player') {
+    const playerId = target.dataset.id;
+    const blocked = action === 'block-player';
+    return confirmDialog(
+      blocked ? (getLanguage()==='en'?'Block this player?':'이 참가자를 차단할까요?') : (getLanguage()==='en'?'Unblock this player?':'차단을 해제할까요?'),
+      getLanguage()==='en'?'Their photos and questions will be hidden from your view in this room.':'이 방에서 해당 참가자의 사진과 문제를 내 화면에서 숨겨요.',
+      blocked?(getLanguage()==='en'?'Block':'차단하기'):(getLanguage()==='en'?'Unblock':'차단 해제'),
+      async()=>{
+        try {await request(`/api/rooms/${ui.code}/action`, {type:blocked?'blockPlayer':'unblockPlayer',playerId,confirmed:true,gameNumber:ui.data.gameNumber||0});}
+        catch(error){toast(appError(error));}
+      });
+  }
+  if (action === 'report-player') {
+    const playerId=target.dataset.id;
+    const name=ui.data.view.players.find(p=>p.id===playerId)?.name||'';
+    showModal(getLanguage()==='en'?'Report player':'참가자 신고',
+      `<form id="report-player-form" data-player-id="${esc(playerId)}">
+       <p>${esc(name)} ${getLanguage()==='en'?'— Choose a reason. The player will also be blocked for you.':'— 신고 사유를 선택해 주세요. 내 화면에서 해당 참가자도 차단돼요.'}</p>
+       <label for="player-report-reason">${getLanguage()==='en'?'Reason':'신고 사유'}</label>
+       <select id="player-report-reason" name="reason" required><option value="">${getLanguage()==='en'?'Select a reason':'사유 선택'}</option>
+       <option value="harassment">${getLanguage()==='en'?'Harassment':'괴롭힘'}</option>
+       <option value="privacy">${getLanguage()==='en'?'Privacy':'개인정보 침해'}</option>
+       <option value="inappropriate">${getLanguage()==='en'?'Inappropriate content':'부적절한 콘텐츠'}</option>
+       <option value="other">${getLanguage()==='en'?'Other':'기타'}</option></select>
+       <p class="small-text">${getLanguage()==='en'?'Reports are stored temporarily with the room; for operator review contact keetojt@gmail.com.':'신고는 현재 방의 임시 기록에 저장돼요. 운영자 검토는 keetojt@gmail.com으로 문의해 주세요.'}</p>
+       <div class="confirm-actions">${button(t('취소'),'close-modal','outline')}<button class="button primary" type="submit">${getLanguage()==='en'?'Continue':'다음'}</button></div></form>`);
+    return;
+  }
   if (action === 'kick') {
     const id = target.dataset.id,
       name = ui.data.view.players.find(p => p.id === id)?.name;
@@ -1426,6 +1463,19 @@ document.addEventListener('click', async e => {
   }
 });
 document.addEventListener('submit', e => {
+  if (e.target.id === 'report-player-form') {
+    e.preventDefault();
+    const form=e.target;
+    if(!form.reportValidity())return;
+    const playerId=form.dataset.playerId,reason=new FormData(form).get('reason');
+    confirmDialog(getLanguage()==='en'?'Submit player report?':'참가자를 신고할까요?',
+      getLanguage()==='en'?'This saves a temporary report and blocks the player in this room.':'임시 신고 기록을 저장하고 이 방에서 해당 참가자를 차단해요.',
+      getLanguage()==='en'?'Report':'신고 접수',async()=>{
+        try {await request(`/api/rooms/${ui.code}/action`,{type:'reportPlayer',playerId,reason,confirmed:true,gameNumber:ui.data.gameNumber||0}); toast(getLanguage()==='en'?'Report recorded.':'참가자 신고를 기록했어요.');}
+        catch(error){toast(appError(error));}
+      });
+    return;
+  }
   if (e.target.id === 'report-form') {
     e.preventDefault();
     const form = e.target;
