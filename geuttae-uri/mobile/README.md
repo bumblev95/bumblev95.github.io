@@ -12,6 +12,6 @@ Run npm ci, npm run sync, npm test, then android/gradlew assembleDebug bundleRel
 
 ## Submission gates
 
-See store/SUBMISSION-REVIEW.md. This is a release candidate, not Google approval or a completed submission. The public support contact, final privacy URL, actual hosting/backup retention, operational moderation channel, Console declarations and physical-device tests must be completed. Deploy and verify the backend report/block change before advertising it as live.
+See store/SUBMISSION-REVIEW.md. This is a release candidate, not Google approval or a completed submission. The final privacy URL, actual hosting/backup retention, operational moderation channel, Console declarations and physical-device tests must be completed. Deploy and verify the backend photo-hiding/reporting/host-removal change before advertising it as live.
 
 Current file exports remain free. AI generation, live purchases and advertising are not enabled. Blocking is room-session scoped, not a global account/device ban.

@@ -30,8 +30,22 @@ test('author excluded, correct answer hidden, scoring atomic under concurrent du
 test('full two-person game ends, deletes all temporary photos, and rejects photo access',async t=>{
  const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});await h.call(a,'action',{type:'answer',round:1,choice:0});const end=await h.call(a,'action',{type:'next',round:1});assert.equal(end.data.mediaStatus,'done');assert.equal(end.data.view.phase,'finished');assert.equal((await h.call(a,'photo/'+id)).status,410);await assert.rejects(access(path.join(h.dir,'rooms',a.code,'media')));assert.deepEqual(end.data.view.result.winners.sort(),[a.id,b.id].sort());
 });
-test('report hides all room photos and ends the game without declaring a winner',async t=>{const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});const r=await h.call(b,'action',{type:'report',reason:'privacy'});assert.equal(r.data.mediaStatus,'done');assert.equal(r.data.view.endReason,'reported');assert.deepEqual(r.data.view.result.winners,[]);assert.equal((await h.call(a,'photo/'+id)).status,403);assert.equal((await h.call(a,'state')).data.access,'blocked');assert.equal((await h.request(`/api/rooms/${a.code}/join`,{cookie:a.cookie,body:{nickname:'again',consent:true}})).status,403);});
-test('host kick deletes member media and makes existing session unusable',async t=>{const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);await h.question(b);await h.call(a,'kick',{playerId:b.id});assert.equal((await h.call(b,'state')).data.access,'blocked');assert.equal((await h.call(b,'action',{type:'start'})).status,403);assert.equal((await h.call(b,'join',{nickname:'new',consent:true})).status,403);});
+test('confirmed report hides only the reporter photo, preserves the game and does not kick its author',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});
+ const report={type:'report',reason:'privacy',round:0,questionId:a.id,confirmed:true};
+ for(const change of [{confirmed:false},{reason:'invalid'},{round:1},{questionId:b.id}])assert.equal((await h.call(b,'action',{...report,...change})).status,409);
+ const r=await h.call(b,'action',report);assert.equal(r.status,200);assert.equal(r.data.reportReceived,true);assert.equal(r.data.view.phase,'question');assert.deepEqual(r.data.view.players.map(p=>p.score),[0,0]);
+ assert.equal((await h.call(b,'photo/'+id)).status,403);assert.equal((await h.call(a,'photo/'+id)).status,200);assert.equal((await h.call(a,'state')).data.access,'active');
+ await h.call(b,'action',report);const disk=JSON.parse(await readFile(path.join(h.dir,'rooms',a.code,'room.json'),'utf8'));assert.equal(disk.reports.length,1);assert.equal(disk.reports[0].reason,'privacy');
+ await h.restart();assert.deepEqual((await h.call(b,'state')).data.hiddenPhotoIds,[id]);assert.equal((await h.call(b,'action',{type:'answer',round:0,choice:0})).data.view.phase,'reveal');
+});
+test('photo hiding is reversible and does not change another participant or scoring',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});
+ const action={type:'hidePhoto',round:0,questionId:a.id,hidden:true};assert.equal((await h.call(b,'action',action)).status,200);assert.equal((await h.call(b,'photo/'+id)).status,403);assert.equal((await h.call(a,'photo/'+id)).status,200);
+ assert.equal((await h.call(b,'action',{...action,hidden:false})).status,200);assert.equal((await h.call(b,'photo/'+id)).status,200);
+ await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});assert.equal((await h.call(b,'action',action)).status,409);
+});
+test('host kick deletes member media and makes existing session unusable',async t=>{const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);await h.question(b);await h.call(a,'kick',{playerId:b.id,confirmed:true});assert.equal((await h.call(b,'state')).data.access,'kicked');assert.equal((await h.call(b,'action',{type:'start'})).status,403);assert.equal((await h.call(b,'join',{nickname:'new',consent:true})).status,403);});
 test('server restart restores sessions and game state from disk',async t=>{const h=await harness(t),a=await h.create();await h.question(a);await h.restart();const r=await h.call(a,'state');assert.equal(r.status,200);assert.equal(r.data.view.you,a.id);assert.equal(r.data.view.myQuestion.prompt,'우리 추억은?');});
 test('expiry refuses access and deletes abandoned room data',async t=>{const h=await harness(t),a=await h.create();await h.question(a);const file=path.join(h.dir,'rooms',a.code,'room.json'),r=JSON.parse(await readFile(file,'utf8'));r.expiresAt=Date.now()-1;await writeFile(file,JSON.stringify(r));assert.equal((await h.call(a,'state')).status,410);await assert.rejects(access(file));});
 test('private state and photos are no-store; no data files can be served as static assets',async t=>{const h=await harness(t),a=await h.create(),id=await h.question(a);for(const route of ['state','photo/'+id]){const r=await h.call(a,route);assert.equal(r.headers.get('cache-control'),'no-store');assert.equal(r.headers.get('x-content-type-options'),'nosniff');}assert.equal((await h.request(`/data/rooms/${a.code}/room.json`)).status,404);});
@@ -114,7 +128,7 @@ test('completed finish delivers only consented revealed content to approved call
   await h.restart();assert.equal((await h.call(a,'state')).data.memorySnapshot,undefined);
  }finally{await events.close();}
 });
-for(const type of ['report','end'])test(`${type} after an allowed reveal never exports a book and purges its transcript`,async t=>{
+for(const type of ['end'])test(`${type} after an allowed reveal never exports a book and purges its transcript`,async t=>{
  const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await allowedQuestion(h,a);await h.question(b);
  await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});
  const finish=await h.call(a,'action',{type,reason:'privacy'});assert.equal(finish.data.memorySnapshot,undefined);assert.equal(finish.data.mediaStatus,'done');
@@ -207,4 +221,34 @@ test('battle host can upload and author more than five; guest uploads and author
  assert.equal((await h.call(b,'upload',undefined,{raw:jpeg,headers:{'X-Photo-Consent':'yes'}})).status,403);
  for(let slot=0;slot<7;slot++){const photoId=await h.photo(a);assert.equal((await h.call(a,'action',{type:'submitQuestion',slot,photoId,prompt:'방장의 기억 '+slot,options:['A','B','C','D'],correctIndex:0,story:'',confirmed:true})).status,200);}
  const start=await h.call(a,'action',{type:'start'});assert.equal(start.data.view.total,7);assert.equal(start.data.view.hostOnlyQuestions,true);
+});
+test('only a confirmed host kick can remove a player during a live round, preserve scores and skip removed questions',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a,'B'),c=await h.join(a,'C');await h.approve(a,b);await h.approve(a,c);
+ await h.question(a);const id=await h.question(b);await h.question(c);await h.call(a,'action',{type:'start'});
+ await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(c,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});
+ assert.equal((await h.call(c,'kick',{playerId:b.id,confirmed:true})).status,403);assert.equal((await h.call(a,'kick',{playerId:b.id})).status,409);assert.equal((await h.call(a,'kick',{playerId:a.id,confirmed:true})).status,400);
+ const bEvents=await eventReader(h,b);try{
+ const r=await h.call(a,'kick',{playerId:b.id,confirmed:true});assert.equal(r.status,200);assert.equal(r.data.view.phase,'question');assert.equal(r.data.view.current.authorId,c.id);assert.equal(r.data.view.round,2);assert.deepEqual(r.data.view.players.map(p=>p.score),[0,100]);
+ const kicked=await bEvents.next(d=>d.access==='kicked');assert.equal(kicked.view,undefined);
+ }finally{await bEvents.close();}
+ assert.equal((await h.call(b,'photo/'+id)).status,403);await assert.rejects(access(path.join(h.dir,'rooms',a.code,'media',id+'.jpg')));
+ assert.equal((await h.call(a,'action',{type:'answer',round:1,choice:0})).status,409);
+ await h.restart();const reveal=await h.call(a,'action',{type:'answer',round:2,choice:0});assert.equal(reveal.data.view.phase,'reveal');assert.deepEqual(reveal.data.view.players.map(p=>p.score),[100,100]);
+ assert.equal((await h.call(a,'action',{type:'next',round:2})).data.view.phase,'finished');
+});
+test('kicking the last unanswered player reveals once and future missing questions are skipped',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a,'B'),c=await h.join(a,'C');await h.approve(a,b);await h.approve(a,c);await h.question(a);await h.question(b);await h.question(c);await h.call(a,'action',{type:'start'});await h.call(b,'action',{type:'answer',round:0,choice:0});
+ const r=await h.call(a,'kick',{playerId:c.id,confirmed:true});assert.equal(r.data.view.phase,'reveal');assert.equal(r.data.view.players.find(p=>p.id===b.id).score,100);
+ const n=await h.call(a,'action',{type:'next',round:0});assert.equal(n.data.view.current.authorId,b.id);await h.call(a,'action',{type:'answer',round:1,choice:0});assert.equal((await h.call(a,'action',{type:'next',round:1})).data.view.phase,'finished');
+});
+test('explicit host kick with fewer than two remaining ends without a winner and deletes photos',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await h.question(a);await h.question(b);await h.call(a,'action',{type:'start'});
+ const r=await h.call(a,'kick',{playerId:b.id,confirmed:true});assert.equal(r.data.view.endReason,'not-enough-players');assert.deepEqual(r.data.view.result.winners,[]);assert.equal(r.data.mediaStatus,'done');assert.equal((await h.call(a,'photo/'+id)).status,410);assert.equal(r.data.memorySnapshot,undefined);
+});
+test('hidden or reported photos never reach that player in a completed book over HTTP or SSE',async t=>{
+ const h=await harness(t),a=await h.create(),b=await h.join(a);await h.approve(a,b);const id=await allowedQuestion(h,a);await h.question(b);await h.call(a,'action',{type:'start'});
+ await h.call(a,'action',{type:'hidePhoto',round:0,questionId:a.id,hidden:true});await h.call(b,'action',{type:'answer',round:0,choice:0});await h.call(a,'action',{type:'next',round:0});await h.call(a,'action',{type:'answer',round:1,choice:0});
+ const events=await eventReader(h,a);try{const end=await h.call(a,'action',{type:'next',round:1});assert.equal(end.data.memorySnapshot.book.entries.length,0);assert.equal(end.data.memorySnapshot.images[id],undefined);
+ const delivered=await events.next(d=>d.view?.phase==='finished');assert.equal(delivered.memorySnapshot.book.entries.length,0);assert.deepEqual(delivered.memorySnapshot.images,{});
+ }finally{await events.close();}
 });

@@ -163,7 +163,7 @@ function avatar(p, index = 0) {
   return `<span class="avatar c${index % 4}" aria-hidden="true">${esc((p.name || '?').slice(0, 1))}</span>`;
 }
 function button(label, action, style = 'primary', disabled = false, extra = '') {
-  return `<button class="button ${style}" data-action="${action}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
+  return `<button type="button" class="button ${style}" data-action="${action}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
 }
 function stateAccept(data) {
   if (data.code === ui.code && Number.isFinite(data.revision) && data.revision < (ui.data?.revision || 0)) return;
@@ -209,7 +209,7 @@ function stateAccept(data) {
       ui.autoReady = false;
     });
   }
-  if (['blocked', 'left'].includes(data.access)) {
+  if (['blocked', 'kicked', 'left'].includes(data.access)) {
     ui.source?.close();
     ui.source = null;
   }
@@ -385,11 +385,11 @@ function homeMarkup() {
 </section>`;
 }
 function pendingMarkup() {
-  const blocked = ['blocked', 'left'].includes(ui.data.access);
-  return `${screenTop()}<section class="waiting-view"><span class="waiting-icon" aria-hidden="true">${blocked ? '○' : '✉'}</span><h1>${blocked ? t("이 모임에 참여할 수 없어요") : t("입장 요청을 보냈어요")}</h1><p>${blocked ? t("방장에게 확인하거나 새로운 모임을 만들어 주세요.") : tr`${esc(ui.data.nickname)}님, 방장이 친구인지 확인 중이에요.<br>승인되면 대기방으로 자동으로 이동해요.`}</p><span class="pill muted">${esc(ui.data.title)}</span>${!blocked ? t("<div class=\"notice\">아직 다른 참가자의 사진과 문제는<br>전혀 보이지 않아요.</div>") : ''}</section>${button(t("홈으로 돌아가기"), 'home', 'outline')}`;
+  const blocked = ['blocked', 'kicked', 'left'].includes(ui.data.access);
+  return `${screenTop()}<section class="waiting-view"><span class="waiting-icon" aria-hidden="true">${blocked ? '○' : '✉'}</span><h1>${blocked ? (ui.data.access === 'kicked' ? t("방장이 모임에서 내보냈어요") : t("이 모임에 참여할 수 없어요")) : t("입장 요청을 보냈어요")}</h1><p>${blocked ? t("방장에게 확인하거나 새로운 모임을 만들어 주세요.") : tr`${esc(ui.data.nickname)}님, 방장이 친구인지 확인 중이에요.<br>승인되면 대기방으로 자동으로 이동해요.`}</p><span class="pill muted">${esc(ui.data.title)}</span>${!blocked ? t("<div class=\"notice\">아직 다른 참가자의 사진과 문제는<br>전혀 보이지 않아요.</div>") : ''}</section>${button(t("홈으로 돌아가기"), 'home', 'outline')}`;
 }
-function playerList(v, rank = false) {
-  return `<div class="people">${v.players.map((p, i) => `<div class="person">${avatar(p, i)}<span class="person-name">${esc(p.name)}${!ui.demo && !ui.data.connectedIds?.includes(p.id) ? t("<small>잠시 연결 끊김 · 재접속 대기</small>") : ''}${p.id === v.you && p.name !== t("나") ? t("<span class=\"badge-me\">나</span>") : ''}${p.id === v.hostId ? t("<small>방장</small>") : ''}</span>${rank ? tr`<span class="score">${p.score}점</span>` : `<span class="status ${v.readyIds.includes(p.id) ? 'ready' : ''}">${v.photoOnlyPolicy ? v.questionCounts?.[p.id] ? (getLanguage()==='en'?v.questionCounts[p.id]+' photo'+(v.questionCounts[p.id]===1?'':'s')+' ready':tr`사진 ${v.questionCounts[p.id]}장 준비`) : t("맞히며 참여해요") : v.readyIds.includes(p.id) ? t("✓ 준비 완료") : t("참여 준비 중")}</span>${v.you === v.hostId && p.id !== v.you && !ui.demo ? tr`<button class="text-button warning" data-action="kick" data-id="${p.id}" aria-label="${esc(p.name)}님 내보내기">×</button>` : ''}`}</div>`).join('')}</div>`;
+function playerList(v, rank = false, managePlayers = false) {
+  return `<div class="people">${v.players.map((p, i) => `<div class="person">${avatar(p, i)}<span class="person-name">${esc(p.name)}${!ui.demo && !ui.data.connectedIds?.includes(p.id) ? t("<small>잠시 연결 끊김 · 재접속 대기</small>") : ''}${p.id === v.you && p.name !== t("나") ? t("<span class=\"badge-me\">나</span>") : ''}${p.id === v.hostId ? t("<small>방장</small>") : ''}</span>${rank && !managePlayers ? tr`<span class="score">${p.score}점</span>` : `<span class="status ${v.readyIds.includes(p.id) ? 'ready' : ''}">${v.photoOnlyPolicy ? v.questionCounts?.[p.id] ? (getLanguage()==='en'?v.questionCounts[p.id]+' photo'+(v.questionCounts[p.id]===1?'':'s')+' ready':tr`사진 ${v.questionCounts[p.id]}장 준비`) : t("맞히며 참여해요") : v.readyIds.includes(p.id) ? t("✓ 준비 완료") : t("참여 준비 중")}</span>${v.you === v.hostId && p.id !== v.you && !ui.demo ? tr`<button class="text-button warning" data-action="kick" data-id="${p.id}" aria-label="${esc(p.name)}님 내보내기" ${ui.busy ? 'disabled' : ''}>강퇴</button>` : ''}`}</div>`).join('')}</div>`;
 }
 function lobbyMarkup(v) {
   const ready = v.players.length >= 2 && (v.photoOnlyPolicy ? v.totalPrepared > 0 : v.players.every(p => v.readyIds.includes(p.id))) && !ui.data.pending?.length;
@@ -426,6 +426,7 @@ function quizMarkup(v) {
   const author = v.players.find(p => p.id === q.authorId),
     mine = q.authorId === v.you,
     reveal = v.phase === 'reveal';
+  const photoHidden = !ui.demo && ui.data.hiddenPhotoIds?.includes(q.photoId);
   const selected = v.myAnswer ?? ui.selected;
   const mayNext = v.you === v.hostId;
   const choices = q.options.map((answer, i) => `<button class="choice ${reveal && q.correctIndex === i ? 'correct' : reveal && v.myAnswer === i ? 'wrong' : selected === i && !mine ? 'selected' : ''}" data-action="choose" data-choice="${i}" ${mine || reveal || v.myAnswer !== null || ui.busy ? 'disabled' : ''} aria-pressed="${selected === i}"><span class="number">${i + 1}</span><span class="answer-label">${esc(answer)}</span>${reveal && q.correctIndex === i ? t("<span class=\"checkmark\" aria-label=\"정답\">✓</span>") : ''}</button>`).join('');
@@ -439,13 +440,13 @@ function quizMarkup(v) {
   }, (_, i) => `<span class="${i < v.round ? 'done' : i === v.round ? 'current' : ''}"></span>`).join('')}</div>
  ${ui.demo ? t("<div class=\"demo-note\">AI 생성 예시 사진 · 가상 참가자와의 체험</div>") : ''}${!ui.demo ? v.players.filter(p => !ui.data.connectedIds?.includes(p.id)).map(p => tr`<p class="notice warning">${esc(p.name)}님 연결을 기다리고 있어요. 돌아오면 현재 문제와 점수로 이어져요.</p>`).join('') : ''}
  <div class="author-line">${avatar(author, v.round)}<span><strong>${esc(author.name)}</strong>님이 꺼낸 추억 ${mine ? t("· 내가 출제한 문제") : ''}</span></div>
- ${q.photoId ? '' : q.media === 'illustration' ? '<div class="no-photo-question">' + icon('photo') + t("<span>우리의 기억을 떠올려 봐요</span></div>") : t("<div class=\"no-photo-question\"><span class=\"text-question-icon\">Aa</span><span>글로 나누는 추억</span></div>")}<figure class="quiz-photo" ${q.photoId ? '' : 'hidden'} data-action="zoom" role="button" tabindex="0" aria-label="추억 사진 크게 보기"><img src="${esc(q.photoId ? photoSrc(q.photoId) : asset('icon.svg'))}" alt="${esc(author.name)}님이 공유한 추억 사진"><figcaption>${ui.demo ? 'SAMPLE MEMORY' : 'OUR LITTLE MEMORY'} · 터치해서 크게 보기</figcaption></figure>
+ ${photoHidden ? tr`<div class="hidden-photo notice"><p>내 화면에서 사진을 숨겼어요.</p>${button(t("사진 다시 보기"), 'show-photo', 'quiet', ui.busy)}</div>` : q.photoId ? `<figure class="quiz-photo" data-action="zoom" role="button" tabindex="0" aria-label="${t('추억 사진 크게 보기')}"><img src="${esc(photoSrc(q.photoId))}" alt="${esc(author.name)}${t('님이 공유한 추억 사진')}"><figcaption>${ui.demo ? 'SAMPLE MEMORY' : 'OUR LITTLE MEMORY'}${t(' · 터치해서 크게 보기')}</figcaption></figure>` : t('<div class="no-photo-question">사진을 불러오고 있어요.</div>')}
  ${!reveal ? '<p id="round-clock" class="notice" role="timer">' + (ui.data.roundDeadlineAt ? t("남은 시간 확인 중…") : t("시간제한 없이 함께 풀어요")) + '</p>' : ''}
  <h1 class="question-title">${esc(q.prompt)}</h1><div class="choices" aria-label="문제의 보기">${choices}</div>
  ${mine && !reveal ? tr`<div class="author-notice"><strong>지금은 내가 이야기꾼이에요.</strong>내가 선택한 정답은 ${q.correctIndex + 1}번이에요.<br>친구들이 답하는 동안 기다려 주세요. 내 점수는 변하지 않아요.</div>` : ''}
  ${reveal ? `<div class="reveal-title">${mine ? t("친구들은 이렇게 기억했네요.") : v.myAnswer !== null && v.myAnswer === q.correctIndex ? t("기억이 딱 맞았네요!") : t("서로 다르게 기억하고 있었네요.")}</div><div class="gain">${v.scoring === false ? t("점수 없이 함께 기억하는 시간") : mine ? t("출제자 · 이번 문제 점수 없음") : v.myAnswer !== null && v.myAnswer === q.correctIndex ? tr`정답 +${v.awards[v.you]}점` : v.myAnswer === null ? t("미응답 · 0점") : t("이번 문제는 0점, 다음 추억도 함께해요.")}</div>${partyMissionMarkup(v)}${q.story ? tr`<div class="story-card"><small>${esc(author.name)}님이 들려주는 그날의 이야기</small><p>${esc(q.story)}</p></div>` : ''}<div class="answer-area">${mayNext ? button(v.round + 1 === v.total ? v.scoring === false ? t("우리 이야기 마치기") : t("오늘의 기억왕 만나기") : t("다음 추억으로"), 'next', 'primary', ui.busy || !ui.demo && !ui.connected) : button(t("방장이 다음으로 넘겨 주세요"), 'none', 'secondary', true)}</div>` : tr`<div class="answer-area">${!mine ? v.myAnswer !== null ? t("<div class=\"sent-state\">✓ 답변을 보냈어요. 잠깐만 기다려 주세요.</div>") : button(t("이 답으로 제출하기"), 'answer', 'primary', ui.selected === null || ui.busy || !ui.demo && !ui.connected) : ui.demo ? button(t("가상 친구들의 답변 확인"), 'demo-answers', 'secondary', ui.busy) : ''}<div class="answer-count">${v.answeredIds.length} / ${v.players.length - 1}명이 답했어요</div>${v.you === v.hostId && !ui.demo && !ui.data.roundDeadlineAt ? t("<div style=\"text-align:center\"><button class=\"text-button\" data-action=\"reveal\">기다리기 / 미응답자 건너뛰기</button></div>") : ''}</div>`}
  <details class="mini-score" ${v.scoring === false ? 'hidden' : ''} ${reveal ? 'open' : ''}><summary>지금까지의 점수</summary>${playerList(v, true)}</details>
- ${!ui.demo ? t("<div style=\"display:flex;justify-content:space-between;margin-top:19px\"><button class=\"text-button warning\" data-action=\"report\">사진 신고·숨기기</button>") + (v.you === v.hostId ? t("<button class=\"text-button warning\" data-action=\"end\">모임 종료</button>") : '') + '</div>' : ''}</section>`;
+ ${!ui.demo ? `<div class="photo-tools">${!photoHidden ? button(t("사진 숨기기"), 'hide-photo', 'quiet', ui.busy || !ui.data.moderationSupported) : ''}${button(t("사진 신고"), 'report', 'quiet', ui.busy || !ui.data.moderationSupported)}${v.you === v.hostId ? button(t("참가자 관리"), 'manage-players', 'quiet', !ui.data.moderationSupported) + button(t("모임 종료"), 'end', 'quiet') : ''}</div>` : ''}</section>`;
 }
 function memoryOfferMarkup() {
   const count = memoryBook?.entries.length || 0;
@@ -608,7 +609,7 @@ function resultMarkup(v) {
   const winners = v.players.filter(p => v.result.winners?.includes(p.id));
   const names = v.scoring === false ? t("함께한 우리") : winners.map(p => p.name).join(' · ');
   const mediaText = ui.demo ? t("체험에서 선택한 사진은 서버로 보내지 않았어요.") : ui.data.mediaStatus === 'done' ? t("서버의 임시 사진을 삭제했어요. 휴대폰 원본은 그대로예요.") : t("사진 접근을 차단했어요. 서버에서 삭제를 다시 시도하고 있어요.");
-  return tr`<section class="fade-in">${screenTop()}<div class="result-hero"><div class="trophy">${icon(complete ? 'trophy' : 'heart')}</div><div class="result-kicker">${v.scoring === false ? t("우리의 사진 이야기를 마쳤어요") : complete ? winners.length > 1 ? t("함께 기억한, 오늘의 공동 기억왕") : t("함께 기억한, 오늘의 기억왕") : t("오늘의 모임을 마쳤어요")}</div><h1 class="winner">${complete ? `<em>${esc(names)}</em>${winners.length === 1 ? t("님!") : ''}` : v.endReason === 'reported' ? t("사진을 숨기고<br>모임을 종료했어요.") : t("다음 추억에서<br>또 만나요.")}</h1><p class="result-sub">${complete ? t("같은 순간을, 이렇게 함께 기억하고 있었네요.") : v.endReason === 'reported' ? t("신고 정보는 이 방에 기록됐어요.<br>이번 버전에는 상시 검토 담당자가 연결되어 있지 않아요.") : t("진행하던 게임의 점수를 아래에 남겼어요.")}</p></div>
+  return tr`<section class="fade-in">${screenTop()}<div class="result-hero"><div class="trophy">${icon(complete ? 'trophy' : 'heart')}</div><div class="result-kicker">${v.scoring === false ? t("우리의 사진 이야기를 마쳤어요") : complete ? winners.length > 1 ? t("함께 기억한, 오늘의 공동 기억왕") : t("함께 기억한, 오늘의 기억왕") : t("오늘의 모임을 마쳤어요")}</div><h1 class="winner">${complete ? `<em>${esc(names)}</em>${winners.length === 1 ? t("님!") : ''}` : v.endReason === 'reported' ? t("사진을 숨기고<br>모임을 종료했어요.") : t("다음 추억에서<br>또 만나요.")}</h1><p class="result-sub">${complete ? t("같은 순간을, 이렇게 함께 기억하고 있었네요.") : v.endReason === 'not-enough-players' ? t("참가자가 두 명 미만이어서 게임을 마쳤어요. 남은 참가자의 기존 점수는 아래에 남겼어요.") : v.endReason === 'reported' ? t("신고 정보는 이 방에 기록됐어요.<br>이번 버전에는 상시 검토 담당자가 연결되어 있지 않아요.") : t("진행하던 게임의 점수를 아래에 남겼어요.")}</p></div>
  <div class="card no-shadow" ${v.scoring === false ? 'hidden' : ''}><div class="card-heading"><span>${complete ? t("오늘의 기억 순위") : t("마지막 점수")}</span><small>${v.players.length}명 함께한 시간</small></div><div class="ranking">${sorted.map((p, i) => {
     const rank = sorted.findIndex(x => x.score === p.score) + 1;
     return tr`<div class="rank-row ${rank === 1 && complete ? 'first' : ''}"><span class="rank-num">${rank}</span>${avatar(p, i)}<span class="person-name">${esc(p.name)}${p.id === v.you && p.name !== t("나") ? t("<span class=\"badge-me\">나</span>") : ''}</span><span class="score">${p.score}<small>점</small></span></div>`;
@@ -739,7 +740,7 @@ function openEntry(kind, code = '') {
   }
   const details = tr`<label class="field"><span>나를 부를 닉네임</span><input name="nickname" placeholder="친구들이 알아볼 이름" maxlength="16" value="${esc(ui.nickname)}" required ${kind === 'new' || code ? 'autofocus' : ''} autocomplete="off"></label>`;
   const consent = t("<label class=\"check-field\"><input type=\"checkbox\" name=\"consent\" required><span>이용규칙과 개인정보 안내를 읽고 동의합니다.</span></label>");
-  const rules = tr`<details class="entry-rules"><summary>이용규칙 보기</summary><p>공유 동의가 있는 일반 사진만 사용합니다. 성적 콘텐츠, 아동 착취, 혐오·폭력·괴롭힘, 불법 콘텐츠와 타인의 개인정보를 올리지 않습니다.</p><p>신고하면 모임이 종료되고 임시 사진이 삭제돼요. 차단은 이 방의 세션에 적용되며 계정 전체 차단 기능은 아니에요.</p></details>`;
+  const rules = tr`<details class="entry-rules"><summary>이용규칙 보기</summary><p>공유 동의가 있는 일반 사진만 사용합니다. 성적 콘텐츠, 아동 착취, 혐오·폭력·괴롭힘, 불법 콘텐츠와 타인의 개인정보를 올리지 않습니다.</p><p>사진 숨기기는 내 화면에만 적용돼요. 신고는 확인 후 기록되며 게임을 종료하거나 참가자를 자동 강퇴하지 않아요. 방장은 참가자 관리에서 강퇴할 수 있어요.</p></details>`;
   const modes = roomModes.map((m, i) => `<label class="room-mode-card"><input type="radio" name="mode" value="${m.id}" ${i === 0 ? 'checked' : ''}><img src="${esc(asset(m.image))}" alt="" width="88" height="88"><span class="room-mode-copy"><strong>${m.name}</strong><span>${m.description}</span><small class="mode-authors">${m.authors}</small></span><span class="mode-check" aria-hidden="true">✓</span></label>`).join('');
   showModal(kind === 'new' ? t("새로운 모임 만들기") : t("친구들의 모임에 참여하기"), `${kind === 'new' ? t("<p id=\"entry-progress\" class=\"entry-progress\" aria-live=\"polite\">1 / 2 · 모임 소개</p>") : t("<p>방 코드로 입장 요청을 보내면 방장이 확인해 줘요.</p>")}<form id="entry-form" data-kind="${kind}" data-step="details">${kind === 'new' ? tr`<fieldset id="entry-details"><legend class="sr-only">모임 소개</legend><p>먼저 나와 우리 모임을 소개해 주세요.</p>${details}<label class="field"><span>모임 이름 <small class="muted">선택</small></span><input name="title" placeholder="예: 오랜만이야, 우리" maxlength="40"></label></fieldset><fieldset id="entry-modes" hidden disabled><legend class="sr-only">게임 모드 선택</legend><p>오늘의 모임에 어울리는 모드를 골라 주세요.</p><div class="room-mode-list" role="radiogroup" aria-label="게임 모드">${modes}</div><label class="check-field" id="party-missions" hidden><input type="checkbox" name="partyMissions"><span>가벼운 파티 미션 켜기 · 언제든 건너뛸 수 있어요</span></label><label class="field" id="room-time"><span>문제당 제한 시간</span><select name="timeLimitSeconds"><option value="10">10초</option><option value="20" selected>20초</option><option value="30">30초</option></select></label><label class="check-field" id="family-scoring" hidden><input type="checkbox" name="familyScoring"><span>가족 모드에서도 점수 계산하기 · 시간제한은 없어요</span></label>${rules}${consent}<p class="microcopy">축소 사본은 종료 시 삭제하고, 방은 생성 후 24시간에 만료돼요.</p></fieldset>` : tr`<label class="field"><span>방 코드</span><input name="code" class="code-input" placeholder="ABCD EFGH" value="${esc(code)}" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" required ${!code ? 'autofocus' : ''}></label>${details}${rules}${consent}`}<div class="form-error" role="alert"></div><div class="entry-actions">${kind === 'new' ? t("<button id=\"entry-back\" class=\"button outline\" type=\"button\" data-action=\"entry-back\" hidden>이전</button>") : ''}<button class="button primary" type="submit">${kind === 'new' ? t("다음 · 모드 선택") : t("입장 요청하기")}</button></div></form>`);
 }
@@ -1129,10 +1130,12 @@ async function act(type, extra = {}) {
     const action = {
       type,
       round: ui.data.view.round,
+      questionId: ui.data.view.current?.questionId,
       gameNumber: ui.data.gameNumber || 0,
       ...extra
     };
     if (ui.demo) demoAction(action);else await request(`/api/rooms/${ui.code}/action`, action);
+    if (type === 'report') toast(t('신고를 기록하고 내 화면에서 사진을 숨겼어요. 게임은 계속돼요.'));
     if (prior?.round !== ui.data.view.round || prior?.phase !== ui.data.view.phase) window.scrollTo({
       top: 0,
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
@@ -1175,13 +1178,13 @@ function goHome() {
     confirmDialog(t("홈으로 돌아갈까요?"), t("방과 임시 사진은 계속 유지돼요. 완전히 끝내려면 방장이 <strong>모임 종료</strong>를 눌러 주세요."), t("홈으로"), goHomeNow);
   } else goHomeNow();
 }
-async function manage(kind, id) {
+async function manage(kind, id, gameNumber = ui.data.gameNumber || 0) {
   if (ui.busy) return;
   ui.busy = true;
   render();
   try {
     await request(`/api/rooms/${ui.code}/${kind}`, {
-      playerId: id
+      playerId: id, confirmed: true, gameNumber
     });
   } catch (e) {
     toast(appError(e));
@@ -1229,7 +1232,7 @@ function showPrivacy() {
     showModal(t("체험판의 사진 보호"), t("<div class=\"privacy-section\"><h3>선택한 사진은 이 기기에만</h3><p>체험판에서는 사진을 서버로 업로드하지 않아요. 브라우저 메모리에서만 사용하며, 원본은 수정하지 않아요.</p><h3>저장하거나 AI에 보내지 않아요</h3><p>체험 사진은 서버로 보내지 않아요. 저장을 허용한 추억만 탭 메모리에서 모으며, 직접 파일 저장을 눌러야 기기에 저장돼요. 홈 이동·새로고침·탭 종료 시 탭 안의 추억집은 사라져요. 내려받은 파일은 기기에 남아요.</p><h3>공유할 때는 사진 속 사람의 동의를 먼저</h3><p>민감한 사진은 테스트에 사용하지 마세요. 화면 캡처까지 막는 기능은 없어요.</p><h3>이 링크와 코드는 공개되어 있어요</h3><p>누구나 체험 링크를 열 수 있지만, 다른 방문자가 여러분이 선택한 사진을 볼 수는 없어요. 사진 전송이나 실시간 방 기능이 없는 화면 체험판이에요.</p></div>"));
     return;
   }
-  showModal(t("우리 사진, 이렇게 다뤄요"), tr`<div class="privacy-section"><h3>언어 설정</h3><p>선택한 언어만 이 기기에 저장해요. 사진과 문제는 저장하지 않아요.</p><h3>원본은 내 휴대폰에 그대로</h3><p>공유 완료를 누르면 축소한 JPG 사본만 서버에 보내요. 사진의 위치 정보 등 메타데이터는 제거해요.</p><h3>방장이 승인한 참가자만</h3><p>공개 사진 주소나 방 목록은 없어요. 내 사진은 내가 확인할 수 있고, 다른 참가자의 사진은 그 문제가 나왔을 때 볼 수 있어요. 정답은 공개 전까지 서버가 숨겨요.</p><h3>게임 종료 시 임시 사진 삭제</h3><p>게임을 끝내면 사본을 삭제해요. 버려진 방도 생성 후 최대 24시간에 만료돼요. 항상 실행되는 서버가 30초마다 정리해요. 서버가 꺼져 있으면 다시 시작할 때 삭제하며, 만료된 방의 접근은 먼저 차단해요. 삭제에 실패하면 접근을 먼저 막고 재시도해요.</p><h3>함께 찍은 사람의 동의를 먼저</h3><p>사진 속 사람들이 공유에 동의했는지 확인해 주세요. 신분증, 의료 정보 등 민감한 사진과 성적 이미지는 이번 테스트에 사용하지 마세요. 참가자의 화면 캡처까지 막을 수는 없어요.</p><h3>불편한 사진은 즉시 숨겨요</h3><p>사진 신고·숨기기를 누르면 해당 게임을 종료하고 임시 사진을 삭제해요. 신고는 방 기록에 남지만, 상시 운영자 검토나 자동 콘텐츠 필터는 아직 연결되지 않았어요.</p><h3>추억집 저장은 별도 동의</h3><p>사진별로 출제자가 저장·공유 동의를 선택해요. 끝까지 마친 게임에서 허용된 사진과 문제·이야기·답변만 종료 때 연결된 참가자 탭에 전달하고 서버 사본을 삭제해요. 전달된 추억집은 탭 메모리에만 남으며, 홈 이동·새로고침·탭 종료 후 다시 받을 수 없어요. 직접 내려받은 파일은 기기에 남고 앱에서 회수할 수 없어요. 신고·중도 종료 시에는 추억집을 만들지 않아요. 현재 저장은 무료 체험이며 실제 결제는 없어요.</p><h3>재접속과 세션</h3><p>이 탭에는 방의 접근 키만 세션 저장소에 보관해요. 사진과 문제는 저장하지 않아요. 같은 탭을 새로고침하면 승인과 점수가 복원돼요. 탭을 닫거나 다른 브라우저를 쓰면 다시 입장 승인이 필요해요.</p><h3>현재 버전의 범위</h3><p>AI 초안 도움은 출시 예정이며 현재 AI에 사진이나 글을 보내지 않아요. 성인 모드와 앱 스토어 배포는 포함되어 있지 않아요.</p></div>`);
+  showModal(t("우리 사진, 이렇게 다뤄요"), tr`<div class="privacy-section"><h3>언어 설정</h3><p>선택한 언어만 이 기기에 저장해요. 사진과 문제는 저장하지 않아요.</p><h3>원본은 내 휴대폰에 그대로</h3><p>공유 완료를 누르면 축소한 JPG 사본만 서버에 보내요. 사진의 위치 정보 등 메타데이터는 제거해요.</p><h3>방장이 승인한 참가자만</h3><p>공개 사진 주소나 방 목록은 없어요. 내 사진은 내가 확인할 수 있고, 다른 참가자의 사진은 그 문제가 나왔을 때 볼 수 있어요. 정답은 공개 전까지 서버가 숨겨요.</p><h3>게임 종료 시 임시 사진 삭제</h3><p>게임을 끝내면 사본을 삭제해요. 버려진 방도 생성 후 최대 24시간에 만료돼요. 항상 실행되는 서버가 30초마다 정리해요. 서버가 꺼져 있으면 다시 시작할 때 삭제하며, 만료된 방의 접근은 먼저 차단해요. 삭제에 실패하면 접근을 먼저 막고 재시도해요.</p><h3>함께 찍은 사람의 동의를 먼저</h3><p>사진 속 사람들이 공유에 동의했는지 확인해 주세요. 신분증, 의료 정보 등 민감한 사진과 성적 이미지는 이번 테스트에 사용하지 마세요. 참가자의 화면 캡처까지 막을 수는 없어요.</p><h3>불편한 사진은 즉시 숨겨요</h3><p>사진 숨기기는 내 화면과 내가 받는 추억집에서만 가리며 다시 표시할 수 있어요. 신고는 사유와 최종 확인 후 방의 임시 기록에 남아요. 신고만으로 게임 종료나 자동 강퇴는 하지 않아요. 운영자 검토·삭제 문의는 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 신고 이메일은 자동 발송되지 않아요. 방장만 참가자를 강퇴할 수 있고 강퇴된 참가자의 문제와 임시 사진은 삭제해요.</p><h3>추억집 저장은 별도 동의</h3><p>사진별로 출제자가 저장·공유 동의를 선택해요. 끝까지 마친 게임에서 허용된 사진과 문제·이야기·답변만 종료 때 연결된 참가자 탭에 전달하고 서버 사본을 삭제해요. 전달된 추억집은 탭 메모리에만 남으며, 홈 이동·새로고침·탭 종료 후 다시 받을 수 없어요. 직접 내려받은 파일은 기기에 남고 앱에서 회수할 수 없어요. 중도 종료 시에는 추억집을 만들지 않아요. 현재 저장은 무료 체험이며 실제 결제는 없어요.</p><h3>재접속과 세션</h3><p>이 탭에는 방의 접근 키만 세션 저장소에 보관해요. 사진과 문제는 저장하지 않아요. 같은 탭을 새로고침하면 승인과 점수가 복원돼요. 탭을 닫거나 다른 브라우저를 쓰면 다시 입장 승인이 필요해요.</p><h3>현재 버전의 범위</h3><p>AI 초안 도움은 출시 예정이며 현재 AI에 사진이나 글을 보내지 않아요. 성인 모드와 앱 스토어 배포는 포함되어 있지 않아요.</p></div>`);
 }
 document.addEventListener('keydown', e => {
   if (e.target.id === 'photo-pick' && (e.key === 'Enter' || e.key === ' ')) {
@@ -1260,7 +1263,7 @@ document.addEventListener('click', async e => {
   if (action === 'join') return openEntry('join');
   if (action === 'demo') return startDemo();
   if (action === 'help') return showHelp();
-  if (action === 'rules') return showModal(t('이용규칙'),tr`<p>성적 콘텐츠, 아동 착취, 혐오·폭력·괴롭힘, 불법 콘텐츠, 개인정보 침해를 금지해요. 사진 속 사람의 공유 동의를 먼저 받고, 저장·공유는 별도로 동의한 사진만 허용돼요.</p><p>신고하면 모임이 종료되고 임시 사진이 삭제돼요. 차단은 이 방의 세션에 적용되며 계정 전체 차단 기능은 아니에요.</p>`);
+  if (action === 'rules') return showModal(t('이용규칙'),tr`<p>성적 콘텐츠, 아동 착취, 혐오·폭력·괴롭힘, 불법 콘텐츠, 개인정보 침해를 금지해요. 사진 속 사람의 공유 동의를 먼저 받고, 저장·공유는 별도로 동의한 사진만 허용돼요.</p><p>사진 숨기기는 내 화면에만 적용돼요. 신고는 확인 후 기록되며 게임을 종료하거나 참가자를 자동 강퇴하지 않아요. 방장은 참가자 관리에서 강퇴할 수 있어요.</p>`);
   if (action === 'plans') return showPlans();
   if (action === 'privacy') return showPrivacy();
   if (action === 'compose') return openComposer(Number(target.dataset.slot || 0));
@@ -1376,7 +1379,8 @@ document.addEventListener('click', async e => {
   if (action === 'kick') {
     const id = target.dataset.id,
       name = ui.data.view.players.find(p => p.id === id)?.name;
-    return confirmDialog(t("이 친구를 내보낼까요?"), tr`${esc(name)}님의 문제와 임시 사진도 삭제해요.`, t("내보내기"), () => manage('kick', id));
+    const gameNumber = ui.data.gameNumber || 0;
+    return confirmDialog(t("이 참가자를 강퇴할까요?"), tr`${esc(name)}님의 문제와 임시 사진도 삭제해요.` + t(" 남은 참가자가 두 명 미만이면 게임이 종료돼요. 다른 참가자의 기존 점수는 유지돼요."), t("강퇴하기"), () => manage('kick', id, gameNumber));
   }
   if (action === 'remove-question') return confirmDialog(t("내 문제를 삭제할까요?"), t("문제와 서버의 해당 임시 사진을 삭제해요. 다시 사진을 골라 출제할 수 있어요."), t("삭제하기"), () => act('removeQuestion', {
     slot: Number(target.dataset.slot || 0)
@@ -1385,9 +1389,13 @@ document.addEventListener('click', async e => {
     confirmed: true
   }));
   if (action === 'end') return confirmDialog(t("모임을 끝낼까요?"), t("진행 중인 게임을 종료하고 서버의 모든 임시 사진을 삭제해요. 다시 시작하려면 새 모임을 만들어 주세요."), t("종료하기"), () => act('end'));
-  if (action === 'report') return confirmDialog(t("사진·출제자 신고"), t("신고하면 사진을 숨기고 모임을 종료해요. 이 방에서 해당 출제자의 세션도 차단해요."), t("신고·차단하고 종료"), () => act('report', {
-    reason: 'inappropriate'
-  }));
+  if (action === 'manage-players') return showModal(t('참가자 관리'), playerList(ui.data.view, true, true));
+  if (action === 'hide-photo' || action === 'show-photo') return act('hidePhoto', {hidden: action === 'hide-photo'});
+  if (action === 'report') {
+    const v = ui.data.view;
+    showModal(t('사진 신고'), tr`<form id="report-form" data-question-id="${esc(v.current.questionId)}" data-round="${v.round}" data-game="${ui.data.gameNumber || 0}"><p>신고 사유를 선택해 주세요. 게임은 계속되고 참가자를 자동 강퇴하지 않아요.</p><label for="report-reason">신고 사유</label><select id="report-reason" name="reason" required><option value="">사유 선택</option><option value="privacy">개인정보·공유 동의 문제</option><option value="inappropriate">부적절한 콘텐츠</option><option value="other">기타</option></select><p class="small-text">신고는 방의 임시 기록에 남아요. 운영자 검토가 필요하면 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 이메일은 자동 발송되지 않아요.</p><div class="confirm-actions">${button(t('취소'), 'close-modal', 'outline')}<button class="button primary" type="submit">다음 · 신고 확인</button></div></form>`);
+    return;
+  }
   if (action === 'leave') return confirmDialog(t("대기방에서 나갈까요?"), t("내 문제와 임시 사진을 삭제하고 이 방에서 나가요."), t("나가기"), async () => {
     try {
       await request(`/api/rooms/${ui.code}/leave`, {});
@@ -1397,11 +1405,20 @@ document.addEventListener('click', async e => {
     }
   });
   if (action === 'zoom') {
+    if (ui.data.hiddenPhotoIds?.includes(ui.data.view.current?.photoId)) return;
     const src = photoSrc(ui.data.view.current.photoId);
     return showModal(t("그날의 사진"), tr`<img class="zoom-photo" src="${esc(src)}" alt="크게 보는 추억 사진">`, 'photo');
   }
 });
 document.addEventListener('submit', e => {
+  if (e.target.id === 'report-form') {
+    e.preventDefault();
+    const form = e.target;
+    if (!form.reportValidity()) return;
+    const reason = new FormData(form).get('reason');
+    const target = {round: Number(form.dataset.round), questionId: form.dataset.questionId, gameNumber: Number(form.dataset.game), reason, confirmed: true};
+    confirmDialog(t('이 사진을 신고할까요?'), t('신고를 기록하고 내 화면에서 사진을 숨겨요. 모임 종료나 자동 강퇴는 하지 않아요.'), t('신고 접수'), () => act('report', target));
+  }
   if (e.target.id === 'entry-form') {
     e.preventDefault();
     submitEntry(e.target);

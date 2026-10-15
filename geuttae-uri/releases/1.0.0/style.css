@@ -103,3 +103,5 @@ body[data-screen="home"] .app-footer,body[data-screen="home"] .banner-demo{displ
 @media(max-height:600px){.home-screen .home-facts{display:none}.home-screen .memory-collage{min-height:64px}.home-screen .home-title{font-size:27px}}
 
 .entry-rules{margin:12px 0;font-size:12px;color:var(--muted)}.entry-rules summary{min-height:44px;display:flex;align-items:center;color:var(--sage);cursor:pointer}.entry-rules p{margin:8px 0;line-height:1.8}
+
+.photo-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.photo-tools .button{flex:1 1 40%;padding:10px 12px;font-size:14px}.hidden-photo{min-height:140px;display:grid;place-content:center;text-align:center}#report-reason{width:100%;margin:10px 0;padding:12px;border:1px solid var(--line,#d8dbcf);border-radius:12px;background:var(--paper,#fffdf4);font:inherit}#report-form .confirm-actions{margin-top:18px}

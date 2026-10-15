@@ -14,14 +14,15 @@ Status: RELEASE CANDIDATE. No application has been created and no review request
 - Purpose: app functionality and safety/abuse prevention. No sale of personal data or advertising use is implemented.
 - User-directed sharing: selected room participants and explicit saved-book export; consider the Console's user-initiated transfer exception when completing the sharing questions. Railway is a hosting processor; confirm its actual access-log, region and backup settings before claiming retention guarantees.
 - HTTPS in transit; files protected by session authorization; server expiry access control. Do not claim end-to-end encryption.
-- Deletion: owner photo replacement/removal; report/room termination; abandoned room expiry within 24 hours. Physical cleanup retries after outages. Exported books cannot be remotely recalled.
+- Deletion: owner photo replacement/removal; host removal/room termination; abandoned room expiry within 24 hours. Physical cleanup retries after outages. Exported books cannot be remotely recalled.
 - No account creation: the account-deletion requirement does not apply to an account system that does not exist. Do not describe temporary room sessions as registered accounts.
 
 ## UGC controls
 - Explicit rules/consent before entering a gathering, with prohibited categories defined before upload.
 - Consent from people shown; separate optional consent for book exports.
-- Private room admission; host removal in the lobby; immediate photo/report takedown; reported author's session blocked in that room. Self-report still removes content without blocking the reporter.
-- Blocking is scoped to a room session; no account-wide or device-wide blocking is claimed.
+- Private room admission; host-only removal in the lobby and during play, requiring explicit confirmation. Removal deletes the removed player's questions/photos and revokes their room session. Existing scores of other players remain; fewer than two remaining players ends play.
+- Reversible per-participant photo hiding, including server photo access and delivered book filtering. A reason plus final confirmation is required for reports; reporting hides the photo for the reporter and saves a temporary record without ending the game or automatically removing anyone. Duplicate reports from the same player/photo are idempotent.
+- No personal user-blocking or account/device-wide blocking is implemented. Host removal and photo hiding must not be advertised as personal user blocking. Reassess the current Google Play UGC requirements for this invitation-only design before certifying compliance.
 - The owner authorized keetojt@gmail.com as the public customer-support, reporting and privacy/deletion contact on 2026-10-15. The contact is included in the bilingual policy draft and store metadata; publication and operational report handling still need verification. Do NOT certify full policy compliance or request public production review until that channel and the deployed backend controls are verified.
 
 ## Remaining required inputs/actions
@@ -30,7 +31,11 @@ Status: RELEASE CANDIDATE. No application has been created and no review request
 3. Owner approval of Play App Signing Terms and the export-law declaration on the new-app form. No boxes were selected on the owner's behalf.
 4. IARC questionnaire and target audience based on the actual release; do not invent an Everyone rating. The app is intended for people who know one another, not public anonymous matching.
 5. Confirm whether the personal account requires 12 opted-in closed testers for 14 continuous days before production access; the Console determines applicability.
-6. Closed-test physical Android installation, real multi-device play, room reporting/blocking and cleanup verification after the backend update.
+6. Closed-test physical Android installation, real multi-device play, room hiding/reporting/removal and cleanup verification after the backend update.
+
+## Build status
+- Earlier signed v1.0.0 artifacts predate this moderation revision and must not be submitted. Rebuild and verify the Android candidate from the updated PR head before signing/uploading.
+- Runtime API must advertise moderationSupported before the new photo actions are enabled. Live backend deployment remains separate and unconfirmed.
 
 ## Official references
 - https://support.google.com/googleplay/android-developer/answer/9876937

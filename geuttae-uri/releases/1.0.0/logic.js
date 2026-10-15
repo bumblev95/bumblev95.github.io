@@ -35,7 +35,11 @@ export function validateAction(s,id,a) {
     return {ok:true};
   }
   if(a.type==='end')return id===s.hostId&&s.phase!=='finished'?{ok:true}:fail('방장만 모임을 종료할 수 있어요.');
-  if(a.type==='report')return q&&['question','reveal'].includes(s.phase)?{ok:true}:fail('현재 문제에서만 신고할 수 있어요.');
+  if(['report','hidePhoto'].includes(a.type)) {
+    if(!q||!['question','reveal'].includes(s.phase)||a.round!==s.round||a.questionId!==q.questionId)return fail('문제가 바뀌었어요. 현재 화면에서 다시 시도해 주세요.');
+    if(a.type==='hidePhoto')return typeof a.hidden==='boolean'?{ok:true}:fail('사진 표시 설정을 확인해 주세요.');
+    return a.confirmed===true&&['privacy','inappropriate','other'].includes(a.reason)?{ok:true}:fail('신고 사유와 최종 확인을 선택해 주세요.');
+  }
   if(!q||a.round!==s.round)return fail('문제가 바뀌었어요. 현재 화면에서 다시 시도해 주세요.');
   if(a.type==='answer') {
     if(s.phase!=='question')return fail('이미 정답을 공개했어요.');
@@ -66,9 +70,25 @@ export function applyAction(s,id,a) {
   if(a.type==='start')return {...s,phase:'question',order:questionOrder(s),round:0,answers:{},answerPoints:{},awards:{},partyMission:null};
   if(a.type==='answer'){const next={...s,answers:{...s.answers,[id]:a.choice},answerPoints:{...s.answerPoints,[id]:Number.isInteger(a.serverPoints)?Math.max(0,Math.min(100,a.serverPoints)):100}};return Object.keys(next.answers).length===s.players.length-1?revealed(next):next;}
   if(a.type==='reveal')return revealed(s);
-  if(a.type==='next')return s.round+1>=s.order.length?{...s,phase:'finished',questions:{},answers:{},answerPoints:{},awards:{},partyMission:null,endReason:'completed'}:{...s,phase:'question',round:s.round+1,answers:{},answerPoints:{},awards:{},partyMission:null};
-  if(a.type==='end'||a.type==='report')return {...s,phase:'finished',questions:{},answers:{},answerPoints:{},awards:{},partyMission:null,endReason:a.type==='report'?'reported':'host-ended'};
+  if(a.type==='next')return advanceRound(s);
+  if(a.type==='end')return finish(s,'host-ended');
   return s;
+}
+const finish=(s,endReason)=>({...s,phase:'finished',questions:{},answers:{},answerPoints:{},awards:{},partyMission:null,endReason});
+function advanceRound(s) {
+  // Keep round numbers stable so delayed answers cannot target a different question after a kick.
+  const round=s.order.findIndex((key,i)=>i>s.round&&s.questions[key]);
+  return round<0?finish(s,'completed'):{...s,phase:'question',round,answers:{},answerPoints:{},awards:{},partyMission:null};
+}
+export function removeParticipant(s,id) {
+  const questions=Object.fromEntries(Object.entries(s.questions).filter(([,q])=>q.authorId!==id));
+  const without=values=>Object.fromEntries(Object.entries(values||{}).filter(([key])=>key!==id));
+  let next={...s,players:s.players.filter(p=>p.id!==id),questions,answerOnlyIds:(s.answerOnlyIds||[]).filter(x=>x!==id),answers:without(s.answers),answerPoints:without(s.answerPoints),awards:without(s.awards),partyMission:s.partyMission?.targetId===id?null:s.partyMission};
+  if(s.phase==='lobby'||s.phase==='finished')return next;
+  if(next.players.length<2)return finish(next,'not-enough-players');
+  if(!questions[s.order[s.round]])return advanceRound(next);
+  if(next.phase==='question'&&Object.keys(next.answers).length===next.players.length-1)next=revealed(next);
+  return next;
 }
 export function isGameOver(s) {
   if(s.phase!=='finished')return {over:false};

@@ -4,7 +4,7 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor} from '../../releases/0.5.0/logic.js';
+import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor,removeParticipant} from '../../releases/1.0.0/logic.js';
 import {captureMemory,buildMemoryBook} from '../../releases/0.5.0/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
@@ -117,16 +117,21 @@ export async function createApp(options={}){
  function safeState(room,s){
   const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
   if(s.status!=='active')return {...base,nickname:s.name};
+  base.moderationSupported=true;base.hiddenPhotoIds=[...(s.hiddenPhotoIds||[])];
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
  }
  function publish(room,memorySnapshot=null){
   for(const [res,id] of streams.get(room.code)||[]){
    const s=room.sessions.find(x=>x.id===id);if(!s)continue;
-   try{res.write('data: '+JSON.stringify({...safeState(room,s),...(s.status==='active'&&memorySnapshot?{memorySnapshot}:{})})+'\n\n');if(!['active','pending'].includes(s.status)){res.end();streams.get(room.code)?.delete(res);}}catch{res.destroy();}
+   try{res.write('data: '+JSON.stringify({...safeState(room,s),...(s.status==='active'&&memorySnapshot?{memorySnapshot:visibleSnapshot(memorySnapshot,s)}:{})})+'\n\n');if(!['active','pending'].includes(s.status)){res.end();streams.get(room.code)?.delete(res);}}catch{res.destroy();}
   }
  }
  function closeStreams(code){for(const [res] of streams.get(code)||[]){try{res.write('event: expired\ndata: {}\n\n');res.end();}catch{res.destroy();}}streams.delete(code);}
+ function visibleSnapshot(snapshot,s){
+  const hidden=new Set(s.hiddenPhotoIds||[]);
+  return {...snapshot,book:{...snapshot.book,entries:snapshot.book.entries.filter(e=>!hidden.has(e.photoId))},images:Object.fromEntries(Object.entries(snapshot.images).filter(([id])=>!hidden.has(id))),missing:snapshot.missing.filter(id=>!hidden.has(id))};
+ }
  async function memorySnapshotFor(room){
   const entries=(room.memories||[]).filter(e=>{
    if(e.media&&e.media!=='photo')return room.sessions.some(s=>s.id===e.authorId&&s.status==='active');
@@ -182,7 +187,15 @@ export async function createApp(options={}){
  async function removeMember(room,id,status){
   cancelAi(room.code,id);
   room.sessions.find(s=>s.id===id).status=status;
-  room.game={...room.game,players:room.game.players.filter(p=>p.id!==id),questions:{...room.game.questions}};for(const [key,q] of Object.entries(room.game.questions))if(q.authorId===id)delete room.game.questions[key];room.game.answerOnlyIds=(room.game.answerOnlyIds||[]).filter(x=>x!==id);
+  const oldRound=room.game.round;
+  room.game=removeParticipant(room.game,id);
+  room.memories=(room.memories||[]).filter(e=>e.authorId!==id);
+  if(room.game.round!==oldRound)room.roundDeadlineAt=room.timeLimitSeconds?gameNow()+room.timeLimitSeconds*1000:null;
+  if(room.game.phase!=='question')room.roundDeadlineAt=null;
+  if(room.game.phase==='reveal'){
+   const q=room.game.questions[room.game.order[room.game.round]],entry=captureMemory(viewFor(room.game,room.game.hostId),q?.allowKeepsake===true);
+   if(entry)room.memories=[...room.memories.filter(e=>e.round!==entry.round),entry];
+  }
   for(const photo of Object.values(room.photos))if(photo.ownerId===id)photo.deleting=true;
   await save(room);
   for(const [photoId,photo] of Object.entries(room.photos))if(photo.ownerId===id)await dropPhoto(room,photoId);
@@ -292,7 +305,7 @@ export async function createApp(options={}){
      const room=await load(code);
      if(route==='join'&&method==='POST'){
       limit(req,'join',20);const b=await jsonBody(req);const old=sessionFor(room,req);
-      if(old){check(old.status!=='blocked'&&old.status!=='left',403,'이 모임에 참여할 수 없어요.');return respond(res,200,safeState(room,old));}
+      if(old){check(!['blocked','kicked','left'].includes(old.status),403,'이 모임에 참여할 수 없어요.');return respond(res,200,safeState(room,old));}
       check(room.game.phase==='lobby',409,'이미 시작한 모임이에요. 다음 모임에 참여해 주세요.');
       check(nameValid(b.nickname)&&b.consent===true,400,'닉네임과 이용 동의를 확인해 주세요.');
       check(room.sessions.filter(s=>s.status==='pending').length<8,409,'입장 대기 인원이 가득 찼어요.');
@@ -322,7 +335,7 @@ export async function createApp(options={}){
      if(route.startsWith('photo/')&&method==='GET'){
       check(room.game.phase!=='finished'&&room.deletion!=='pending',410,'이 사진은 더 이상 볼 수 없어요.');
       const photo=room.photos[photoId],q=room.game.questions[room.game.order[room.game.round]];
-      check(photo&&!photo.deleting&&(photo.ownerId===s.id||q?.photoId===photoId),403,'지금 볼 수 있는 사진이 아니에요.');
+      check(photo&&!photo.deleting&&!(s.hiddenPhotoIds||[]).includes(photoId)&&(photo.ownerId===s.id||q?.photoId===photoId),403,'지금 볼 수 있는 사진이 아니에요.');
       const bytes=await fs.readFile(mediaOf(code,photoId));return respond(res,200,bytes,{'Content-Type':'image/jpeg','Content-Disposition':'inline'});
      }
      check(method==='POST',405,'지원하지 않는 요청이에요.');limit(req,'write',80);
@@ -341,15 +354,18 @@ export async function createApp(options={}){
      }
      const b=await jsonBody(req);
      if(['approve','deny','kick'].includes(route)){
-      check(s.id===room.game.hostId&&room.game.phase==='lobby',403,'방장만 대기방에서 참가자를 관리할 수 있어요.');
+      check(s.id===room.game.hostId&&(route==='kick'?room.game.phase!=='finished':room.game.phase==='lobby'),403,'방장만 참가자를 관리할 수 있어요.');
+      if(route==='kick')check(b.confirmed===true&&(b.gameNumber??0)===(room.gameNumber||0),409,'강퇴할 참가자와 최종 확인을 선택해 주세요.');
       const person=room.sessions.find(x=>x.id===b.playerId);
       check(person&&person.id!==s.id,400,'참가자를 확인해 주세요.');
       if(route==='approve'){
        check(person.status==='pending',409,'이미 처리한 요청이에요.');check(room.game.players.length<meta.maxPlayers,409,'최대 10명까지 참여할 수 있어요.');
        person.status='active';room.game={...room.game,players:[...room.game.players,{id:person.id,name:person.name,score:0}]};
       }else if(route==='deny'){check(person.status==='pending',409,'이미 처리한 요청이에요.');person.status='blocked';}
-      else{check(person.status==='active',409,'참가자를 확인해 주세요.');await removeMember(room,person.id,'blocked');}
-      await save(room);publish(room);return respond(res,200,safeState(room,s));
+      else{check(person.status==='active',409,'참가자를 확인해 주세요.');await removeMember(room,person.id,'kicked');}
+      const snapshot=room.game.phase==='finished'&&room.game.endReason==='completed'?await memorySnapshotFor(room):null;
+      if(room.game.phase==='finished'){room.deletion='pending';room.memories=[];await save(room);try{await deletePhotos(room);}catch{/* Sweep retries with access already denied. */}}
+      await save(room);publish(room,snapshot);return respond(res,200,{...safeState(room,s),...(snapshot?{memorySnapshot:visibleSnapshot(snapshot,s)}:{})});
      }
      if(route==='leave'){
       check(s.id!==room.game.hostId,400,'방장은 모임 종료 버튼을 이용해 주세요.');
@@ -368,11 +384,14 @@ export async function createApp(options={}){
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
      if(b.type==='submitQuestion'&&b.photoId){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
-     if(b.type==='report'){
-      const authorId=room.game.questions[room.game.order[room.game.round]]?.authorId;
-      check(authorId,400,'현재 사진의 출제자를 확인할 수 없어요.');
-      room.reports.push({id:randomUUID(),reporterId:s.id,authorId,reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
-      const author=room.sessions.find(person=>person.id===authorId);if(author&&authorId!==s.id)author.status='blocked';
+     if(['report','hidePhoto'].includes(b.type)){
+      const q=room.game.questions[room.game.order[room.game.round]];
+      if(b.type==='report'){
+       room.reports||=[];
+       if(!room.reports.some(r=>r.reporterId===s.id&&r.photoId===q.photoId))room.reports.push({id:randomUUID(),reporterId:s.id,authorId:q.authorId,questionId:q.questionId,photoId:q.photoId,reason:b.reason,at:Date.now()});
+      }
+      const hidden=new Set(s.hiddenPhotoIds||[]);if(b.type==='report'||b.hidden)hidden.add(q.photoId);else hidden.delete(q.photoId);s.hiddenPhotoIds=[...hidden];
+      await save(room);publish(room);return respond(res,200,{...safeState(room,s),...(b.type==='report'?{reportReceived:true}:{})});
      }
      const editedKey=questionKey(s.id,b.slot||0),oldPhoto=room.game.questions[editedKey]?.photoId;
      const serverPoints=pointsForTime(room.roundDeadlineAt,room.timeLimitSeconds,gameNow());
@@ -390,7 +409,7 @@ export async function createApp(options={}){
      await save(room);
      if(['submitQuestion','removeQuestion'].includes(b.type)&&oldPhoto&&oldPhoto!==room.game.questions[editedKey]?.photoId&&!Object.values(room.game.questions).some(q=>q.photoId===oldPhoto)){await dropPhoto(room,oldPhoto);}
      if(room.game.phase==='finished'){try{await deletePhotos(room);}catch{room.deletion='pending';await save(room);}}
-     publish(room,memorySnapshot);return respond(res,200,{...safeState(room,s),...(memorySnapshot?{memorySnapshot}:{})});
+     publish(room,memorySnapshot);return respond(res,200,{...safeState(room,s),...(memorySnapshot?{memorySnapshot:visibleSnapshot(memorySnapshot,s)}:{})});
     });
    }
    if(u.pathname.startsWith('/api/'))throw new ApiError(404,'방 주소를 확인해 주세요.');
