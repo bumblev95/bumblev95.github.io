@@ -13,7 +13,9 @@ const routes=[
   '/player-codex/archeage-chronicles/',
   '/player-codex/archeage-chronicles/ko/',
   '/player-codex/archeage-chronicles/demo/',
-  '/player-codex/archeage-chronicles/demo/ko/'
+  '/player-codex/archeage-chronicles/demo/ko/',
+  '/player-codex/archeage-chronicles/news/',
+  '/player-codex/archeage-chronicles/news/ko/'
 ];
 let server;
 let browser;
@@ -26,6 +28,10 @@ try{
     assert(html.includes('rel="canonical"'), 'Canonical: '+route);
     assert(html.includes('hreflang="ko"') && html.includes('hreflang="en"'), 'Bilingual hreflang: '+route);
     assert(html.includes('<main id="main">'), 'Main landmark: '+route);
+    if(route.includes('/archeage-chronicles/') && !route.includes('/demo/') && !route.includes('/news/')) {
+      assert(html.includes('<!-- official-news:start -->') && html.includes('<!-- official-news:end -->'),'Safe news markers missing: '+route);
+      assert(html.includes('id="official-updates"'),'Latest official updates block missing: '+route);
+    }
     const expectedLocale=route.includes('/ko/')?'ko':'en';
     assert(html.includes('<html lang="'+expectedLocale+'">'), 'Locale: '+route);
     assert(html.includes('href="/player-codex/assets/site.css'), 'Portable styling: '+route);

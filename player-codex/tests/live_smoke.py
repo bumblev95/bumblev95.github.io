@@ -16,6 +16,8 @@ ROUTES = {
     "/player-codex/archeage-chronicles/ko/": ("ko", "준비 중인 공략"),
     "/player-codex/archeage-chronicles/demo/": ("en", "Seven things to verify"),
     "/player-codex/archeage-chronicles/demo/ko/": ("ko", "데모에서 먼저 확인할"),
+    "/player-codex/archeage-chronicles/news/": ("en", "Official Updates"),
+    "/player-codex/archeage-chronicles/news/ko/": ("ko", "공식 업데이트"),
 }
 OTHER = {
     "/player-codex/assets/site.css": "@media",
