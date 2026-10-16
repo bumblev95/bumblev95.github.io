@@ -63,6 +63,15 @@ def safe_url(value):
             "store.steampowered.com", "steamcommunity.com"
         ) and str(APP_ID) in url.path:
             return urllib.parse.urlunsplit((url.scheme, url.netloc, url.path, "", ""))
+        # Steam's official API also emits URLs on its news CDN without the
+        # AppID in the path. The caller has already verified the AppID and
+        # filtered to the game's developer-only announcement feed.
+        if (url.scheme == "https"
+                and url.hostname in {"steamstore-a.akamaihd.net", "store.steampowered.com"}
+                and re.fullmatch(
+                    r"/news/externalpost/steam_community_announcements/[0-9]{6,30}",
+                    url.path)):
+            return urllib.parse.urlunsplit((url.scheme, url.netloc, url.path, "", ""))
     except ValueError:
         pass
     return INDEX

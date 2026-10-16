@@ -61,6 +61,13 @@ class OfficialNewsTests(unittest.TestCase):
         self.assertEqual(s.safe_url("https://steamcommunity.com/app/3218230/allnews/?foo=bar"),
                          s.INDEX)
 
+    def test_allowed_publisher_news_cdn_links(self):
+        url = "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846651706677839"
+        self.assertEqual(s.safe_url(url), url)
+        self.assertEqual(s.safe_url(url + "?foo=1"), url)
+        self.assertEqual(s.safe_url("https://steamstore-a.akamaihd.net.evil.test/news/externalpost/steam_community_announcements/1846651706677839"), s.INDEX)
+        self.assertEqual(s.safe_url("https://steamstore-a.akamaihd.net/news/externalpost/blog/1846651706677839"), s.INDEX)
+
     def test_output_has_bilingual_static_urls(self):
         news = s.news_page([], ko=True)
         self.assertIn('lang="ko"', news)
