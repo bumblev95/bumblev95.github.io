@@ -28,3 +28,5 @@ https://bumblev95.github.io/player-codex/archeage-chronicles/
 https://bumblev95.github.io/player-codex/archeage-chronicles/ko/
 https://bumblev95.github.io/player-codex/archeage-chronicles/demo/
 https://bumblev95.github.io/player-codex/archeage-chronicles/demo/ko/
+https://bumblev95.github.io/player-codex/archeage-chronicles/news/
+https://bumblev95.github.io/player-codex/archeage-chronicles/news/ko/

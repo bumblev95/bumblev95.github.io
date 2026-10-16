@@ -48,3 +48,16 @@ All promotional and publisher-described footage remains distinct from independen
 ## October 15, 2026 – leading gameplay showcase
 
 Added the official ArcheAge Chronicles video [A Quick Look at Auroria](https://www.youtube.com/watch?v=E12uscaQvSA), published September 7, 2026, as the **first and featured** media card on both EN and KO landing pages. The developer briefing (October 8, 2026) follows as a separate editorial category and the 2024 reveal trailer is third. This prioritizes the newest gameplay-focused footage over the old cinematic announcement. The video is an external YouTube link; nothing is rehosted or auto-played. Both local browser smoke and post-deployment HTTP checks assert card order.
+
+## Automatic official announcements (October 2026)
+
+GitHub Actions checks Steam's public ISteamNews GetNewsForApp v2 endpoint for ArcheAge Chronicles AppID 3218230 every three hours. It auto-publishes only the steam_community_announcements feed from the game publisher; other news feeds and player posts are not automatically published. New items are attributed, dated, deduplicated and limited to brief source excerpts. Korean pages retain original headlines rather than invent translations. Up to 80 items are kept in the machine-readable archive.
+
+- EN archive: /player-codex/archeage-chronicles/news/
+- KO archive: /player-codex/archeage-chronicles/news/ko/
+- Latest three official updates are highlighted on both game homepages.
+- Git commits are produced only when publisher content changes.
+- The official Steam API is the source; if it fails, the job fails without removing existing news.
+- The job explicitly requests a new GitHub Pages build after bot commits, which normally do not trigger branch-based Pages builds automatically. Pages write permission is required.
+- To run immediately, use Actions > ArcheAge Chronicles · official news sync > Run workflow.
+- This does not crawl restricted forums or players' personal data; it does not claim skills, DPS, boss patterns, maps or community rumors have been verified. Those require editorial review or documented gameplay.

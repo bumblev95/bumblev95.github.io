@@ -120,3 +120,28 @@ a{color:inherit}a:focus-visible,button:focus-visible{outline:3px solid #e8c88f;o
 .official-video--featured .official-video-description{font-size:14px}
 .official-video-latest{position:absolute;z-index:1;top:15px;left:16px;padding:7px 11px;border-radius:6px;color:#151f26;background:#f0d39e;letter-spacing:.09em;font-size:11px;font-weight:900}
 @media(max-width:950px){.official-video--featured{grid-template-columns:1fr}.official-video--featured .official-video-poster{height:auto;min-height:0;aspect-ratio:16/9}.official-video--featured .official-video-copy{padding:21px;gap:9px}}
+
+/* Steam official news collection: newest posts, attributed and concise. */
+.official-news{margin:65px 0 57px;min-width:0}
+.official-news .section-title{gap:18px;align-items:flex-end}
+.official-news .section-title>div{min-width:0}
+.official-news .section-title .eyebrow{margin:0 0 9px}
+.official-news .section-title p{margin:10px 0 0;max-width:610px}
+.official-news-all{display:inline-flex;align-items:center;flex-shrink:0;padding:10px 14px;border:1px solid var(--line);border-radius:9px;text-decoration:none;font-size:12px;font-weight:800;color:#f0e0bc}
+.official-news-all:hover{background:rgba(255,255,255,.06);border-color:var(--gold)}
+.official-news-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.official-news-item{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:212px;border:1px solid var(--line);border-radius:14px;padding:19px;background:linear-gradient(150deg,#182335,#111826)}
+.official-news-meta{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:11px;color:#cbb992;font-variant-numeric:tabular-nums}
+.official-news-meta span{color:#a5c5cf;font-weight:800;letter-spacing:.04em}
+.official-news-item h3{font-size:16px;line-height:1.45;margin:0;overflow-wrap:anywhere}
+.official-news-item h3 a{text-decoration:none}
+.official-news-item h3 a:hover{text-decoration:underline;text-decoration-color:#e7c995}
+.official-news-item p{font-size:12px;color:var(--muted);line-height:1.7;margin:0;overflow-wrap:anywhere}
+.official-news-open{margin-top:auto;text-decoration:none;font-size:12px;font-weight:800;color:#efd8a6}
+.official-news-empty{font-size:14px;color:var(--muted);border:1px dashed var(--line);padding:19px;border-radius:12px}
+.official-news-empty a{color:var(--gold)}
+.official-news-origin{color:var(--muted);font-size:11px;line-height:1.6;margin-top:13px}
+.official-news-archive .official-news-list{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:55px}
+.official-news-archive .official-news-item{min-height:175px}
+@media(max-width:850px){.official-news-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.official-news{margin:46px 0}.official-news .section-title{display:block}.official-news-all{margin-top:14px}.official-news-list,.official-news-archive .official-news-list{grid-template-columns:1fr}.official-news-item{min-height:0}}

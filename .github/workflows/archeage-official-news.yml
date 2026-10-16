@@ -1,0 +1,57 @@
+name: ArcheAge Chronicles · official news sync
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archeage-official-news.yml'
+      - 'player-codex/scripts/sync_official_news.py'
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: archeage-official-news
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Test parser, sanitization and static templates
+        run: python -m unittest discover -s player-codex/tests -p 'test_official_news.py' -v
+      - name: Fetch Steam publisher-only news
+        run: python player-codex/scripts/sync_official_news.py
+      - name: Commit only game news and announcements when they change
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- player-codex/archeage-chronicles/data/official-news.json \
+            player-codex/archeage-chronicles/index.html \
+            player-codex/archeage-chronicles/ko/index.html \
+            player-codex/archeage-chronicles/news/index.html \
+            player-codex/archeage-chronicles/news/ko/index.html
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No change in official Steam announcements."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "content(archeage): refresh official Steam publisher news"
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Request Pages build for GitHub Actions bot commit
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${{ github.repository }}/pages/builds"
