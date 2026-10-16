@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "game": "archeage-chronicles",
+  "release": {
+    "id": "steam-next-fest-2026-10",
+    "starts_at": "2026-10-19T17:00:00Z",
+    "ends_at": "2026-10-26T17:00:00Z",
+    "active_build": null
+  },
+  "checklist": [
+    {
+      "id": "class-weapons",
+      "kinds": [
+        "class",
+        "skill"
+      ],
+      "title": {
+        "en": "Classes and weapons",
+        "ko": "클래스와 무기"
+      },
+      "prompt": {
+        "en": "Capture all four announced classes and their two demo weapons; record skill tooltips separately.",
+        "ko": "공개된 4개 클래스와 각 2개 무기를 촬영하고 스킬 툴팁은 따로 기록하세요."
+      }
+    },
+    {
+      "id": "level-stats",
+      "kinds": [
+        "stat"
+      ],
+      "title": {
+        "en": "Level-up attributes",
+        "ko": "레벨업 능력치"
+      },
+      "prompt": {
+        "en": "Capture before/after values, level, gear and allocation conditions.",
+        "ko": "레벨·장비·분배 조건과 변화 전후 수치를 함께 기록하세요."
+      }
+    },
+    {
+      "id": "weapon-traits",
+      "kinds": [
+        "trait",
+        "skill"
+      ],
+      "title": {
+        "en": "Weapon traits and skills",
+        "ko": "무기 특성과 스킬"
+      },
+      "prompt": {
+        "en": "Capture trait branches, prerequisites, tooltips, units and test conditions.",
+        "ko": "특성 분기·선행 조건·스킬 툴팁·단위·측정 조건을 촬영하세요."
+      }
+    },
+    {
+      "id": "diamond-shores",
+      "kinds": [
+        "location"
+      ],
+      "title": {
+        "en": "Diamond Shores landmarks",
+        "ko": "빛나는 해안 이동 거점"
+      },
+      "prompt": {
+        "en": "Record NPCs, quests and travel points with a map reference and explicit coordinate basis.",
+        "ko": "NPC·퀘스트·이동 거점을 기준 지도와 좌표계와 함께 기록하세요."
+      }
+    },
+    {
+      "id": "collectibles",
+      "kinds": [
+        "collectible"
+      ],
+      "title": {
+        "en": "Nui Tears and Coilstones",
+        "ko": "Nui Tears·Coilstones 수집"
+      },
+      "prompt": {
+        "en": "Capture the item and map together; distinguish Nui Tears, Coilstones and chests.",
+        "ko": "실제 수집물과 지도를 함께 촬영하고 수집물 종류를 구분하세요."
+      }
+    },
+    {
+      "id": "hinnon-patterns",
+      "kinds": [
+        "boss_pattern"
+      ],
+      "title": {
+        "en": "Throne of Hinnon patterns",
+        "ko": "Throne of Hinnon 보스 패턴"
+      },
+      "prompt": {
+        "en": "Keep a video clip covering the cue and impact, phase and observed response.",
+        "ko": "텔레그래프부터 판정까지 담긴 영상에 페이즈와 실제 대응을 기록하세요."
+      }
+    },
+    {
+      "id": "channel-differences",
+      "kinds": [
+        "channel"
+      ],
+      "title": {
+        "en": "Regular and PvP channels",
+        "ko": "일반·PvP 채널 차이"
+      },
+      "prompt": {
+        "en": "Capture the switching steps and actual effects with the channel and build.",
+        "ko": "채널 전환 과정과 실제 효과를 채널·빌드 정보와 함께 촬영하세요."
+      }
+    }
+  ],
+  "evidence": [],
+  "records": []
+}

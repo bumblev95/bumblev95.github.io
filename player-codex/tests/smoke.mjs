@@ -43,7 +43,7 @@ try{
     if(i===59)throw Error('Preview server did not start');
   }
   mkdirSync(path.join(root,'player-codex-test-screens'),{recursive:true});
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||undefined});
   for(const width of [360,390,768,1440]){
     const context=await browser.newContext({viewport:{width,height:900},deviceScaleFactor:1});
     const page=await context.newPage();
@@ -98,7 +98,7 @@ try{
   await page.locator('.lang').click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/demo/','Guide language switch');
   await context.close();
-  console.log('PASS: 6 routes × 4 viewport sizes, internal navigation, language links, page errors and horizontal overflow.');
+  console.log('PASS: 8 routes × 4 viewport sizes, internal navigation, language links, page errors and horizontal overflow.');
 }finally{
   if(browser)await browser.close();
   if(server)server.kill('SIGTERM');

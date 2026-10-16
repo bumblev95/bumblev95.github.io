@@ -1,0 +1,625 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ArcheAge Chronicles gameplay evidence dataset v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "game": {
+      "const": "archeage-chronicles"
+    },
+    "release": {
+      "$ref": "#/$defs/release"
+    },
+    "checklist": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      },
+      "maxItems": 50
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      },
+      "maxItems": 10000
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/record"
+      },
+      "maxItems": 4000
+    }
+  },
+  "required": [
+    "schema_version",
+    "game",
+    "release",
+    "checklist",
+    "evidence",
+    "records"
+  ],
+  "$defs": {
+    "i18n": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "en": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "ko": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "en",
+        "ko"
+      ]
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ends_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "active_build": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "starts_at",
+        "ends_at",
+        "active_build"
+      ]
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "title": {
+          "$ref": "#/$defs/i18n"
+        },
+        "prompt": {
+          "$ref": "#/$defs/i18n"
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "class",
+              "skill",
+              "stat",
+              "trait",
+              "location",
+              "collectible",
+              "boss_pattern",
+              "channel"
+            ]
+          },
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "prompt",
+        "kinds"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "enum": [
+            "screenshot",
+            "video"
+          ]
+        },
+        "origin": {
+          "enum": [
+            "gameplay",
+            "official_promo",
+            "community_claim"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 2000,
+          "format": "https-url"
+        },
+        "creator": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "caption": {
+          "$ref": "#/$defs/i18n"
+        },
+        "captured_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "build": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "start_seconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "end_seconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "url",
+        "creator",
+        "caption",
+        "captured_at",
+        "build",
+        "sha256",
+        "start_seconds",
+        "end_seconds"
+      ]
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reviewer": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "reject"
+          ]
+        },
+        "revision_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+          },
+          "maxItems": 40
+        },
+        "notes": {
+          "$ref": "#/$defs/i18n"
+        }
+      },
+      "required": [
+        "reviewer",
+        "reviewed_at",
+        "decision",
+        "revision_sha256",
+        "evidence_ids",
+        "notes"
+      ]
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "release_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "target_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "enum": [
+            "class",
+            "skill",
+            "stat",
+            "trait",
+            "location",
+            "collectible",
+            "boss_pattern",
+            "channel"
+          ]
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "fact_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+        },
+        "title": {
+          "$ref": "#/$defs/i18n"
+        },
+        "claim": {
+          "$ref": "#/$defs/i18n"
+        },
+        "recorded_by": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "build": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+            },
+            "region": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+            },
+            "channel": {
+              "enum": [
+                "regular",
+                "pvp"
+              ]
+            },
+            "class_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "weapon_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "variant": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+            }
+          },
+          "required": [
+            "build",
+            "region",
+            "channel",
+            "class_id",
+            "weapon_id",
+            "level",
+            "variant"
+          ]
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "weapons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+              },
+              "maxItems": 8
+            },
+            "measurements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "metric": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+                  },
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "conditions": {
+                    "$ref": "#/$defs/i18n"
+                  }
+                },
+                "required": [
+                  "metric",
+                  "value",
+                  "unit",
+                  "conditions"
+                ]
+              },
+              "maxItems": 30
+            },
+            "location": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "map_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+                },
+                "coordinate_system": {
+                  "enum": [
+                    "normalized_0_1",
+                    "game_xy",
+                    "map_pixels"
+                  ]
+                },
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "reference_evidence_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+                },
+                "reference_width": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reference_height": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "map_id",
+                "coordinate_system",
+                "x",
+                "y",
+                "reference_evidence_id",
+                "reference_width",
+                "reference_height"
+              ]
+            },
+            "boss_pattern": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "boss_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+                },
+                "phase": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "cue": {
+                  "$ref": "#/$defs/i18n"
+                },
+                "response": {
+                  "$ref": "#/$defs/i18n"
+                },
+                "cue_seconds": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "impact_seconds": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "boss_id",
+                "phase",
+                "cue",
+                "response",
+                "cue_seconds",
+                "impact_seconds"
+              ]
+            },
+            "prerequisite_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+              },
+              "maxItems": 30
+            },
+            "transition": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "enum": [
+                    "regular",
+                    "pvp"
+                  ]
+                },
+                "to": {
+                  "enum": [
+                    "regular",
+                    "pvp"
+                  ]
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ]
+            }
+          },
+          "required": []
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,95}$"
+          },
+          "maxItems": 40
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "enum": [
+                "unverified",
+                "in_review",
+                "verified",
+                "rejected"
+              ]
+            },
+            "review": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/review"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "status",
+            "review"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "release_id",
+        "target_id",
+        "kind",
+        "subject_id",
+        "fact_key",
+        "title",
+        "claim",
+        "recorded_by",
+        "observed_at",
+        "context",
+        "details",
+        "evidence_ids",
+        "verification"
+      ]
+    }
+  }
+}

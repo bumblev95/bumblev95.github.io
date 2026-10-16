@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "game": "archeage-chronicles",
+  "release": {
+    "id": "steam-next-fest-2026-10",
+    "starts_at": "2026-10-19T17:00:00Z",
+    "ends_at": "2026-10-26T17:00:00Z",
+    "active_build": null
+  },
+  "findings": []
+}
