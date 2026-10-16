@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import re
+import html
+import json
+from pathlib import Path
 import sys
 import time
 import urllib.error
@@ -65,6 +68,25 @@ def validate() -> None:
         if path in OFFICIAL_VIDEOS:
             assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
+    # Compare published pages with the latest reviewed official-feed snapshot,
+    # preventing a successful API fetch from being confused with a successful deployment.
+    source = Path(__file__).resolve().parents[1] / "archeage-chronicles/data/official-news.json"
+    snapshot = json.loads(source.read_text(encoding="utf-8"))
+    if snapshot.get("items"):
+        latest = snapshot["items"][0]
+        title_id = html.escape(str(latest["id"]), quote=True)
+        source_url = html.escape(str(latest["url"]), quote=True)
+        for route in (
+            "/player-codex/archeage-chronicles/",
+            "/player-codex/archeage-chronicles/ko/",
+            "/player-codex/archeage-chronicles/news/",
+            "/player-codex/archeage-chronicles/news/ko/",
+        ):
+            published = fetch(BASE + route)
+            assert f'data-news-id="{title_id}"' in published, f"Newest official post not deployed: {route}"
+            assert source_url in published, f"Individual source link not deployed: {route}"
+            print(f"PASS latest official post {route}", flush=True)
+
     for path, expected in OTHER.items():
         body = fetch(BASE + path)
         assert expected in body, f"Asset missing expected marker: {path}"

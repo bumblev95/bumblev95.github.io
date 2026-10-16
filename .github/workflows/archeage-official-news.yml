@@ -55,3 +55,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api --method POST "repos/${{ github.repository }}/pages/builds"
+      - name: Confirm latest source article is visible on public Pages
+        run: python player-codex/tests/live_smoke.py

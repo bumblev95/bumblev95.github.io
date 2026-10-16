@@ -61,3 +61,5 @@ GitHub Actions checks Steam's public ISteamNews GetNewsForApp v2 endpoint for Ar
 - The job explicitly requests a new GitHub Pages build after bot commits, which normally do not trigger branch-based Pages builds automatically. Pages write permission is required.
 - To run immediately, use Actions > ArcheAge Chronicles · official news sync > Run workflow.
 - This does not crawl restricted forums or players' personal data; it does not claim skills, DPS, boss patterns, maps or community rumors have been verified. Those require editorial review or documented gameplay.
+
+A live HTTP check now compares the most recent official article ID and its individual source link against both published landing pages and both news archives on each scheduled run. It retries during CDN propagation and fails the workflow when the site is stale rather than silently reporting a successful update.
