@@ -13,6 +13,7 @@ import {openCommerceLedger,createCommerce,CommerceError} from './commerce.mjs';
 import {catalog as releaseCatalog} from '../../releases/1.0.0/products.js';
 import {openAccounts,AccountError} from './accounts.mjs';
 import {BillingError} from './play-billing.mjs';
+import {openReports,reportOperators,ReportError} from './reports.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -29,6 +30,7 @@ const nameValid=n=>typeof n==='string'&&n.trim().length>=1&&n.length<=16&&!/[\x0
 export async function createApp(options={}){
  const dataDir=path.resolve(options.dataDir||process.env.DATA_DIR||path.join(ROOT,'data'));
  const roomsDir=path.join(dataDir,'rooms');
+ const moderator=reportOperators(options.moderationOperators);
  const publicDir=path.resolve(ROOT,'..');
  const publicOrigin=(options.publicOrigin||process.env.PUBLIC_ORIGIN||process.env.RENDER_EXTERNAL_URL||'').replace(/\/$/,'');
  if(publicOrigin){const u=new URL(publicOrigin);if(u.origin!==publicOrigin||u.protocol!=='https:')throw new Error('PUBLIC_ORIGIN must be an HTTPS origin without a path.');}
@@ -50,6 +52,7 @@ export async function createApp(options={}){
  let commerce;
  try{commerce=createCommerce({...options.commerceFixture,ledger,fixture:!!options.commerceFixture});ledger.recoverPending();}catch(error){ledger.close();throw error;}
  let accounts;try{accounts=await openAccounts(path.join(dataDir,'accounts.sqlite'),options.accounts);}catch(error){ledger.close();throw error;}
+ let reports;try{reports=await openReports(path.join(dataDir,'reports.sqlite'),{now:options.reportClock||Date.now});}catch(error){accounts.close();ledger.close();throw error;}
  const aiFlights=new Map(),aiCache=new Map();
  const aiKey=(code,id)=>code+'|'+id;
  function aiStatus(room){
@@ -167,7 +170,19 @@ export async function createApp(options={}){
   await fs.rm(path.join(roomsDir,room.code,'media'),{recursive:true,force:true});
   room.photos={};room.memories=[];room.deletion='done';room.game.questions={};await save(room);
  }
+ async function migrateReports(room){
+  if(!room.reports?.length)return;
+  for(const r of room.reports){
+   // Import only known sessions and fixed fields. Never carry arbitrary legacy
+   // fields, names, credentials, questions or photo bytes into the queue.
+   if(!room.sessions.some(s=>s.id===r.reporterId)||!room.sessions.some(s=>s.id===r.authorId))continue;
+   try{reports.receive({room,reporterId:r.reporterId,authorId:r.authorId,kind:r.kind==='player'?'player':'photo',photoId:r.photoId,reason:r.reason,at:r.at,legacy:true});}
+   catch(e){if(!(e instanceof ReportError)||e.status!==400)throw e;}
+  }
+  room.reports=[];await save(room);
+ }
  async function expire(room){
+  room.expiresAt=Math.min(room.expiresAt,Date.now());
   cancelAi(room.code);
   closeStreams(room.code);
   room.game={...room.game,phase:'finished',questions:{},answers:{},endReason:'expired'};room.memories=[];room.deletion='pending';
@@ -176,7 +191,11 @@ export async function createApp(options={}){
  }
  async function load(code){
   let room;try{room=JSON.parse(await fs.readFile(fileOf(code),'utf8'));}catch(e){if(e.code==='ENOENT')throw new ApiError(404,'방을 찾을 수 없어요. 코드를 확인해 주세요.');throw e;}
-  if(room.expiresAt<=Date.now()){await expire(room);throw new ApiError(410,'모임이 만료됐어요. 새 모임을 만들어 주세요.');}
+  if(room.expiresAt<=Date.now()){
+   // A failed moderation import must never extend photo or room retention.
+   try{await migrateReports(room);}catch{console.error('Legacy report import incomplete; expired room deletion takes priority.');}
+   await expire(room);throw new ApiError(410,'모임이 만료됐어요. 새 모임을 만들어 주세요.');}
+  await migrateReports(room);
   if(room.game.phase==='question'&&room.roundDeadlineAt&&gameNow()>=room.roundDeadlineAt){
    room.game=applyAction(room.game,room.game.hostId,{type:'reveal',confirmed:true,round:room.game.round});room.roundDeadlineAt=null;
    const entry=captureMemory(viewFor(room.game,room.game.hostId),room.game.questions[room.game.order[room.game.round]]?.allowKeepsake===true);if(entry)room.memories=[...(room.memories||[]).filter(e=>e.round!==entry.round),entry];
@@ -216,6 +235,7 @@ export async function createApp(options={}){
   for(const [photoId,photo] of Object.entries(room.photos))if(photo.ownerId===id)await dropPhoto(room,photoId);
  }
  async function sweep(){
+  try{reports.purge();}catch{console.error('Report cleanup will retry.');}
   for(const item of await fs.readdir(roomsDir,{withFileTypes:true})){
    if(!item.isDirectory()||!validCode(item.name))continue;
    await locked(item.name,async()=>{
@@ -284,6 +304,68 @@ export async function createApp(options={}){
  const server=createServer(async(req,res)=>{
   try{
    const expectedOrigin=originFor(req);const u=new URL(req.url,expectedOrigin);const method=req.method;
+   if(u.pathname.startsWith('/api/moderation')){
+    // Private machine API: no browser origins, cookies, query-string credentials
+    // or frontend CORS. Authentication precedes report existence disclosure.
+    check(req.headers.origin===undefined&&!u.search,403,'MODERATOR_SERVER_CLIENT_REQUIRED');
+    let actor;try{actor=moderator(req.headers.authorization);}catch(e){limit(req,'moderator-auth-failure',20);throw e;}
+    limit(req,'moderator',120);
+    if(u.pathname==='/api/moderation/reports'&&method==='POST'){
+     const b=await jsonBody(req);check(Object.keys(b).every(k=>['status','offset'].includes(k)),400,'INVALID_REPORT_FILTER');
+     return respond(res,200,reports.list(b));
+    }
+    const match=u.pathname.match(/^\/api\/moderation\/reports\/([a-f0-9-]{36})(?:\/(review|photo))?$/);
+    check(match,404,'REPORT_ROUTE_NOT_FOUND');
+    const [,id,route]=match;
+    const initial=reports.get(id);
+    return await locked(initial.roomCode,async()=>{
+     const report=reports.get(id);
+     let room=null;
+     try{room=await load(report.roomCode);}catch(e){if(!(e instanceof ApiError)||![404,410].includes(e.status))throw e;}
+     // Room codes can be reused: never enforce a report against a later room.
+     if(room?.createdAt!==report.roomCreatedAt)room=null;
+     if(!route&&method==='GET')return respond(res,200,{report,history:reports.events(id),live:{available:!!room,photoAvailable:!!(room&&report.kind==='photo'&&room.game.phase!=='finished'&&room.photos[report.targetId]?.ownerId===report.authorId&&!room.photos[report.targetId]?.deleting),authorPresent:!!room?.sessions.some(s=>s.id===report.authorId&&s.status==='active')}});
+     if(route==='photo'&&method==='GET'){
+      check(room&&report.kind==='photo'&&room.game.phase!=='finished'&&room.photos[report.targetId]?.ownerId===report.authorId&&!room.photos[report.targetId]?.deleting,410,'REPORT_PHOTO_UNAVAILABLE');
+      let bytes;try{bytes=await fs.readFile(mediaOf(room.code,report.targetId));}catch(e){if(e.code==='ENOENT')throw new ApiError(410,'REPORT_PHOTO_UNAVAILABLE');throw e;}
+      return respond(res,200,bytes,{'Content-Type':'image/jpeg','Content-Disposition':'inline'});
+     }
+     check(route==='review'&&method==='POST',405,'METHOD_NOT_ALLOWED');
+     const b=await jsonBody(req);reports.validateReview(id,b);
+     let result='recorded',attempt=null;
+     if(['remove_photo','remove_player','close_room'].includes(b.action)){
+      attempt=reports.beginEnforcement(id,b,actor);
+      result=room?'applied':'room_unavailable';
+      if(room&&b.action==='remove_photo'){
+       const photo=room.photos[report.targetId];
+       if(!photo||photo.ownerId!==report.authorId)result='target_unavailable';
+       else{
+        // Tombstone denies reads before IO. Remove from every future keepsake,
+        // even if a delete needs retry; question order and scores remain valid.
+        room.memories=(room.memories||[]).filter(e=>e.photoId!==report.targetId);
+        for(const q of Object.values(room.game.questions))if(q.photoId===report.targetId)q.allowKeepsake=false;
+        await dropPhoto(room,report.targetId);
+        check(!room.photos[report.targetId],503,'PHOTO_DELETE_PENDING_RETRY');
+       }
+      }
+      if(room&&b.action==='remove_player'){
+       const person=room.sessions.find(s=>s.id===report.authorId);
+       if(!person)result='target_unavailable';
+       else if(person.id===room.game.hostId){await expire(room);room=null;result='host_room_closed';}
+       else{
+        if(person.status==='active')await removeMember(room,person.id,'kicked');
+        // Failed media removal remains denied and is retried by sweep/reviewer.
+        for(const [photoId,photo] of Object.entries(room.photos))if(photo.ownerId===person.id)await dropPhoto(room,photoId);
+        check(!Object.values(room.photos).some(p=>p.ownerId===person.id),503,'PLAYER_PHOTO_DELETE_PENDING_RETRY');
+        if(room.game.phase==='finished'){room.deletion='pending';await save(room);await deletePhotos(room);}
+       }
+      }
+      if(room&&b.action==='close_room'){await expire(room);room=null;}
+      if(room){await save(room);publish(room);}
+     }
+     return respond(res,200,{report:attempt?reports.completeEnforcement(id,attempt.version,result):reports.finishReview(id,b,actor,result),result});
+    });
+   }
    const origin=req.headers.origin;
    const allowedOrigin=origin===expectedOrigin||frontendOrigins.has(origin);
    if(origin&&allowedOrigin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');}
@@ -412,12 +494,11 @@ export async function createApp(options={}){
       s.blockedPlayerIds=[...blocked];
       if(b.type==='reportPlayer'){
        check(['harassment','privacy','inappropriate','other'].includes(b.reason),400,'신고 사유를 선택해 주세요.');
-       room.reports||=[];
-       if(!room.reports.some(r=>r.reporterId===s.id&&r.authorId===player.id&&r.kind==='player'))
-        room.reports.push({id:randomUUID(),kind:'player',reporterId:s.id,authorId:player.id,reason:b.reason,at:Date.now()});
+       const receipt=reports.receive({room,reporterId:s.id,authorId:player.id,kind:'player',reason:b.reason});
+       b.reportId=receipt.id;
       }
       await save(room);publish(room);
-      return respond(res,200,{...safeState(room,s),...(b.type==='reportPlayer'?{reportReceived:true}:{})});
+      return respond(res,200,{...safeState(room,s),...(b.type==='reportPlayer'?{reportReceived:true,reportId:b.reportId}:{})});
      }
      if(b.type==='rematch'){
       check(s.id===room.game.hostId&&room.game.phase==='finished'&&room.game.endReason==='completed'&&b.confirmed===true,409,'방장만 완료한 게임에서 다시 시작할 수 있어요.');
@@ -432,11 +513,12 @@ export async function createApp(options={}){
      if(['report','hidePhoto'].includes(b.type)){
       const q=room.game.questions[room.game.order[room.game.round]];
       if(b.type==='report'){
-       room.reports||=[];
-       if(!room.reports.some(r=>r.reporterId===s.id&&r.photoId===q.photoId))room.reports.push({id:randomUUID(),reporterId:s.id,authorId:q.authorId,questionId:q.questionId,photoId:q.photoId,reason:b.reason,at:Date.now()});
+       check(room.photos[q.photoId]&&!room.photos[q.photoId].deleting,410,'REPORT_PHOTO_UNAVAILABLE');
+       const receipt=reports.receive({room,reporterId:s.id,authorId:q.authorId,kind:'photo',photoId:q.photoId,reason:b.reason});
+       b.reportId=receipt.id;
       }
       const hidden=new Set(s.hiddenPhotoIds||[]);if(b.type==='report'||b.hidden)hidden.add(q.photoId);else hidden.delete(q.photoId);s.hiddenPhotoIds=[...hidden];
-      await save(room);publish(room);return respond(res,200,{...safeState(room,s),...(b.type==='report'?{reportReceived:true}:{})});
+      await save(room);publish(room);return respond(res,200,{...safeState(room,s),...(b.type==='report'?{reportReceived:true,reportId:b.reportId}:{})});
      }
      const editedKey=questionKey(s.id,b.slot||0),oldPhoto=room.game.questions[editedKey]?.photoId;
      const serverPoints=pointsForTime(room.roundDeadlineAt,room.timeLimitSeconds,gameNow());
@@ -472,9 +554,9 @@ export async function createApp(options={}){
    if(method==='HEAD'){res.writeHead(200,{...commonHeaders,'Content-Type':contentType,'Content-Length':bytes.length});res.end();return;}
    return respond(res,200,bytes,{'Content-Type':contentType});
   }catch(e){
-   if(!(e instanceof ApiError)&&!(e instanceof CommerceError)&&!(e instanceof AccountError)&&!(e instanceof BillingError))console.error('Request failed safely; no photo or request content logged.');
+   if(!(e instanceof ApiError)&&!(e instanceof CommerceError)&&!(e instanceof AccountError)&&!(e instanceof BillingError)&&!(e instanceof ReportError))console.error('Request failed safely; no photo or request content logged.');
    if(res.headersSent){res.end();return;}
-   respond(res,e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
+   respond(res,e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError||e instanceof ReportError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError||e instanceof ReportError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
   }
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;server.keepAliveTimeout=5_000;
@@ -482,7 +564,7 @@ export async function createApp(options={}){
  const roundClock=setInterval(()=>{for(const code of streams.keys())locked(code,()=>load(code)).catch(()=>{});},1000);roundClock.unref();
  const heartbeat=setInterval(()=>{for(const bucket of streams.values())for(const [res] of bucket){try{res.write(': connected\n\n');}catch{res.destroy();}}},15_000);heartbeat.unref();
  await sweep();
- return {server,dataDir,sweep,commerce,async close(){clearInterval(roundClock);clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));accounts.close();ledger.close();}};
+ return {server,dataDir,sweep,commerce,async close(){clearInterval(roundClock);clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));reports.close();accounts.close();ledger.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const app=await createApp();const port=Number(process.env.PORT||3000),host=process.env.HOST||'127.0.0.1';

@@ -1155,8 +1155,9 @@ async function act(type, extra = {}) {
       gameNumber: ui.data.gameNumber || 0,
       ...extra
     };
-    if (ui.demo) demoAction(action);else await request(`/api/rooms/${ui.code}/action`, action);
-    if (type === 'report') toast(t('신고를 기록하고 내 화면에서 사진을 숨겼어요. 게임은 계속돼요.'));
+    let receipt;
+    if (ui.demo) demoAction(action);else receipt=await request(`/api/rooms/${ui.code}/action`, action);
+    if (type === 'report') toast(t('신고를 기록하고 내 화면에서 사진을 숨겼어요. 게임은 계속돼요.')+(receipt?.reportId?' · ID: '+receipt.reportId:''));
     if (prior?.round !== ui.data.view.round || prior?.phase !== ui.data.view.phase) window.scrollTo({
       top: 0,
       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
@@ -1260,7 +1261,7 @@ function showPrivacy() {
     showModal(t("체험판의 사진 보호"), t("<div class=\"privacy-section\"><h3>선택한 사진은 이 기기에만</h3><p>체험판에서는 사진을 서버로 업로드하지 않아요. 브라우저 메모리에서만 사용하며, 원본은 수정하지 않아요.</p><h3>저장하거나 AI에 보내지 않아요</h3><p>체험 사진은 서버로 보내지 않아요. 저장을 허용한 추억만 탭 메모리에서 모으며, 직접 파일 저장을 눌러야 기기에 저장돼요. 홈 이동·새로고침·탭 종료 시 탭 안의 추억집은 사라져요. 내려받은 파일은 기기에 남아요.</p><h3>공유할 때는 사진 속 사람의 동의를 먼저</h3><p>민감한 사진은 테스트에 사용하지 마세요. 화면 캡처까지 막는 기능은 없어요.</p><h3>이 링크와 코드는 공개되어 있어요</h3><p>누구나 체험 링크를 열 수 있지만, 다른 방문자가 여러분이 선택한 사진을 볼 수는 없어요. 사진 전송이나 실시간 방 기능이 없는 화면 체험판이에요.</p></div>"));
     return;
   }
-  showModal(t("우리 사진, 이렇게 다뤄요"), tr`<div class="privacy-section">${nativeAdNotice}<p><a href="https://bumblev95.github.io/geuttae-uri/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침 전문</a> · <a href="https://bumblev95.github.io/geuttae-uri/account-deletion.html" target="_blank" rel="noopener noreferrer">계정 삭제 안내</a></p><h3>언어 설정</h3><p>선택한 언어만 이 기기에 저장해요. 사진과 문제는 저장하지 않아요.</p><h3>원본은 내 휴대폰에 그대로</h3><p>공유 완료를 누르면 축소한 JPG 사본만 서버에 보내요. 사진의 위치 정보 등 메타데이터는 제거해요.</p><h3>방장이 승인한 참가자만</h3><p>공개 사진 주소나 방 목록은 없어요. 내 사진은 내가 확인할 수 있고, 다른 참가자의 사진은 그 문제가 나왔을 때 볼 수 있어요. 정답은 공개 전까지 서버가 숨겨요.</p><h3>게임 종료 시 임시 사진 삭제</h3><p>게임을 끝내면 사본을 삭제해요. 버려진 방도 생성 후 최대 24시간에 만료돼요. 항상 실행되는 서버가 30초마다 정리해요. 서버가 꺼져 있으면 다시 시작할 때 삭제하며, 만료된 방의 접근은 먼저 차단해요. 삭제에 실패하면 접근을 먼저 막고 재시도해요.</p><h3>함께 찍은 사람의 동의를 먼저</h3><p>사진 속 사람들이 공유에 동의했는지 확인해 주세요. 신분증, 의료 정보 등 민감한 사진과 성적 이미지는 이번 테스트에 사용하지 마세요. 참가자의 화면 캡처까지 막을 수는 없어요.</p><h3>불편한 사진은 즉시 숨겨요</h3><p>사진 숨기기는 내 화면과 내가 받는 추억집에서만 가리며 다시 표시할 수 있어요. 신고는 사유와 최종 확인 후 방의 임시 기록에 남아요. 신고만으로 게임 종료나 자동 강퇴는 하지 않아요. 운영자 검토·삭제 문의는 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 신고 이메일은 자동 발송되지 않아요. 방장만 참가자를 강퇴할 수 있고 강퇴된 참가자의 문제와 임시 사진은 삭제해요.</p><h3>추억집 저장은 별도 동의</h3><p>사진별로 출제자가 저장·공유 동의를 선택해요. 끝까지 마친 게임에서 허용된 사진과 문제·이야기·답변만 종료 때 연결된 참가자 탭에 전달하고 서버 사본을 삭제해요. 전달된 추억집은 탭 메모리에만 남으며, 홈 이동·새로고침·탭 종료 후 다시 받을 수 없어요. 직접 내려받은 파일은 기기에 남고 앱에서 회수할 수 없어요. 중도 종료 시에는 추억집을 만들지 않아요. 현재 저장은 무료 체험이며 실제 결제는 없어요.</p><h3>재접속과 세션</h3><p>이 탭에는 방의 접근 키만 세션 저장소에 보관해요. 사진과 문제는 저장하지 않아요. 같은 탭을 새로고침하면 승인과 점수가 복원돼요. 탭을 닫거나 다른 브라우저를 쓰면 다시 입장 승인이 필요해요.</p><h3>현재 버전의 범위</h3><p>AI 초안 도움은 출시 예정이며 현재 AI에 사진이나 글을 보내지 않아요. 성인 모드와 앱 스토어 배포는 포함되어 있지 않아요.</p></div>`);
+  showModal(t("우리 사진, 이렇게 다뤄요"), tr`<div class="privacy-section">${nativeAdNotice}<p><a href="https://bumblev95.github.io/geuttae-uri/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침 전문</a> · <a href="https://bumblev95.github.io/geuttae-uri/account-deletion.html" target="_blank" rel="noopener noreferrer">계정 삭제 안내</a></p><h3>언어 설정</h3><p>선택한 언어만 이 기기에 저장해요. 사진과 문제는 저장하지 않아요.</p><h3>원본은 내 휴대폰에 그대로</h3><p>공유 완료를 누르면 축소한 JPG 사본만 서버에 보내요. 사진의 위치 정보 등 메타데이터는 제거해요.</p><h3>방장이 승인한 참가자만</h3><p>공개 사진 주소나 방 목록은 없어요. 내 사진은 내가 확인할 수 있고, 다른 참가자의 사진은 그 문제가 나왔을 때 볼 수 있어요. 정답은 공개 전까지 서버가 숨겨요.</p><h3>게임 종료 시 임시 사진 삭제</h3><p>게임을 끝내면 사본을 삭제해요. 버려진 방도 생성 후 최대 24시간에 만료돼요. 항상 실행되는 서버가 30초마다 정리해요. 서버가 꺼져 있으면 다시 시작할 때 삭제하며, 만료된 방의 접근은 먼저 차단해요. 삭제에 실패하면 접근을 먼저 막고 재시도해요.</p><h3>함께 찍은 사람의 동의를 먼저</h3><p>사진 속 사람들이 공유에 동의했는지 확인해 주세요. 신분증, 의료 정보 등 민감한 사진과 성적 이미지는 이번 테스트에 사용하지 마세요. 참가자의 화면 캡처까지 막을 수는 없어요.</p><h3>불편한 사진은 즉시 숨겨요</h3><p>사진 숨기기는 내 화면과 내가 받는 추억집에서만 가리며 다시 표시할 수 있어요. 신고는 사유와 최종 확인 후 운영자 검토 목록에 접수돼요. 최소 정보와 처리 이력은 접수일부터 최대 30일 후 자동 삭제하고 사진·방의 24시간 만료는 연장하지 않아요. 신고만으로 게임 종료나 자동 강퇴는 하지 않아요. 운영자는 검토 후 사진 삭제, 참가자 퇴장 또는 모임 종료를 할 수 있어요. 추가 문의는 접수 ID 또는 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 방장도 참가자를 강퇴할 수 있고 강퇴된 참가자의 문제와 임시 사진은 삭제해요.</p><h3>추억집 저장은 별도 동의</h3><p>사진별로 출제자가 저장·공유 동의를 선택해요. 끝까지 마친 게임에서 허용된 사진과 문제·이야기·답변만 종료 때 연결된 참가자 탭에 전달하고 서버 사본을 삭제해요. 전달된 추억집은 탭 메모리에만 남으며, 홈 이동·새로고침·탭 종료 후 다시 받을 수 없어요. 직접 내려받은 파일은 기기에 남고 앱에서 회수할 수 없어요. 중도 종료 시에는 추억집을 만들지 않아요. 현재 저장은 무료 체험이며 실제 결제는 없어요.</p><h3>재접속과 세션</h3><p>이 탭에는 방의 접근 키만 세션 저장소에 보관해요. 사진과 문제는 저장하지 않아요. 같은 탭을 새로고침하면 승인과 점수가 복원돼요. 탭을 닫거나 다른 브라우저를 쓰면 다시 입장 승인이 필요해요.</p><h3>현재 버전의 범위</h3><p>AI 초안 도움은 출시 예정이며 현재 AI에 사진이나 글을 보내지 않아요. 성인 모드와 앱 스토어 배포는 포함되어 있지 않아요.</p></div>`);
 }
 document.addEventListener('keydown', e => {
   if (e.target.id === 'photo-pick' && (e.key === 'Enter' || e.key === ' ')) {
@@ -1428,7 +1429,7 @@ document.addEventListener('click', async e => {
        <option value="privacy">${getLanguage()==='en'?'Privacy':'개인정보 침해'}</option>
        <option value="inappropriate">${getLanguage()==='en'?'Inappropriate content':'부적절한 콘텐츠'}</option>
        <option value="other">${getLanguage()==='en'?'Other':'기타'}</option></select>
-       <p class="small-text">${getLanguage()==='en'?'Reports are stored temporarily with the room; for operator review contact keetojt@gmail.com.':'신고는 현재 방의 임시 기록에 저장돼요. 운영자 검토는 keetojt@gmail.com으로 문의해 주세요.'}</p>
+       <p class="small-text">${getLanguage()==='en'?'Reports enter a private operator queue. Minimal records expire 30 days after receipt; photos and rooms still expire within 24 hours.':'신고는 비공개 운영자 검토 목록에 접수돼요. 최소 기록은 접수일부터 30일 후 삭제하고 사진·방의 24시간 만료는 유지해요.'}</p>
        <div class="confirm-actions">${button(t('취소'),'close-modal','outline')}<button class="button primary" type="submit">${getLanguage()==='en'?'Continue':'다음'}</button></div></form>`);
     return;
   }
@@ -1449,7 +1450,7 @@ document.addEventListener('click', async e => {
   if (action === 'hide-photo' || action === 'show-photo') return act('hidePhoto', {hidden: action === 'hide-photo'});
   if (action === 'report') {
     const v = ui.data.view;
-    showModal(t('사진 신고'), tr`<form id="report-form" data-question-id="${esc(v.current.questionId)}" data-round="${v.round}" data-game="${ui.data.gameNumber || 0}"><p>신고 사유를 선택해 주세요. 게임은 계속되고 참가자를 자동 강퇴하지 않아요.</p><label for="report-reason">신고 사유</label><select id="report-reason" name="reason" required><option value="">사유 선택</option><option value="privacy">개인정보·공유 동의 문제</option><option value="inappropriate">부적절한 콘텐츠</option><option value="other">기타</option></select><p class="small-text">신고는 방의 임시 기록에 남아요. 운영자 검토가 필요하면 방 코드와 발생 시각을 keetojt@gmail.com으로 보내 주세요. 이메일은 자동 발송되지 않아요.</p><div class="confirm-actions">${button(t('취소'), 'close-modal', 'outline')}<button class="button primary" type="submit">다음 · 신고 확인</button></div></form>`);
+    showModal(t('사진 신고'), tr`<form id="report-form" data-question-id="${esc(v.current.questionId)}" data-round="${v.round}" data-game="${ui.data.gameNumber || 0}"><p>신고 사유를 선택해 주세요. 게임은 계속되고 참가자를 자동 강퇴하지 않아요.</p><label for="report-reason">신고 사유</label><select id="report-reason" name="reason" required><option value="">사유 선택</option><option value="privacy">개인정보·공유 동의 문제</option><option value="inappropriate">부적절한 콘텐츠</option><option value="other">기타</option></select><p class="small-text">신고는 비공개 운영자 검토 목록에 접수돼요. 최소한의 신고 정보와 처리 이력은 접수일부터 최대 30일 보관하고 자동 삭제해요. 사진·방의 24시간 만료는 연장하지 않아요. 검토는 즉시 이루어지지 않을 수 있어요.</p><div class="confirm-actions">${button(t('취소'), 'close-modal', 'outline')}<button class="button primary" type="submit">다음 · 신고 확인</button></div></form>`);
     return;
   }
   if (action === 'leave') return confirmDialog(t("대기방에서 나갈까요?"), t("내 문제와 임시 사진을 삭제하고 이 방에서 나가요."), t("나가기"), async () => {
@@ -1473,9 +1474,9 @@ document.addEventListener('submit', e => {
     if(!form.reportValidity())return;
     const playerId=form.dataset.playerId,reason=new FormData(form).get('reason');
     confirmDialog(getLanguage()==='en'?'Submit player report?':'참가자를 신고할까요?',
-      getLanguage()==='en'?'This saves a temporary report and blocks the player in this room.':'임시 신고 기록을 저장하고 이 방에서 해당 참가자를 차단해요.',
+      getLanguage()==='en'?'This submits a report for operator review and blocks the player in this room.':'운영자 검토 목록에 신고를 접수하고 이 방에서 해당 참가자를 차단해요.',
       getLanguage()==='en'?'Report':'신고 접수',async()=>{
-        try {await request(`/api/rooms/${ui.code}/action`,{type:'reportPlayer',playerId,reason,confirmed:true,gameNumber:ui.data.gameNumber||0}); toast(getLanguage()==='en'?'Report recorded.':'참가자 신고를 기록했어요.');}
+        try {const receipt=await request(`/api/rooms/${ui.code}/action`,{type:'reportPlayer',playerId,reason,confirmed:true,gameNumber:ui.data.gameNumber||0}); toast((getLanguage()==='en'?'Report recorded.':'참가자 신고를 기록했어요.')+(receipt?.reportId?' · ID: '+receipt.reportId:''));}
         catch(error){toast(appError(error));}
       });
     return;
