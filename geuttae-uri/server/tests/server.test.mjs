@@ -36,7 +36,7 @@ test('confirmed report hides only the reporter photo, preserves the game and doe
  for(const change of [{confirmed:false},{reason:'invalid'},{round:1},{questionId:b.id}])assert.equal((await h.call(b,'action',{...report,...change})).status,409);
  const r=await h.call(b,'action',report);assert.equal(r.status,200);assert.equal(r.data.reportReceived,true);assert.equal(r.data.view.phase,'question');assert.deepEqual(r.data.view.players.map(p=>p.score),[0,0]);
  assert.equal((await h.call(b,'photo/'+id)).status,403);assert.equal((await h.call(a,'photo/'+id)).status,200);assert.equal((await h.call(a,'state')).data.access,'active');
- await h.call(b,'action',report);const disk=JSON.parse(await readFile(path.join(h.dir,'rooms',a.code,'room.json'),'utf8'));assert.equal(disk.reports.length,1);assert.equal(disk.reports[0].reason,'privacy');
+ await h.call(b,'action',report);const disk=JSON.parse(await readFile(path.join(h.dir,'rooms',a.code,'room.json'),'utf8'));assert.deepEqual(disk.reports,[]);assert.match(r.data.reportId,/^[a-f0-9-]{36}$/);
  await h.restart();assert.deepEqual((await h.call(b,'state')).data.hiddenPhotoIds,[id]);assert.equal((await h.call(b,'action',{type:'answer',round:0,choice:0})).data.view.phase,'reveal');
 });
 test('photo hiding is reversible and does not change another participant or scoring',async t=>{
@@ -275,7 +275,7 @@ test('participant reports and blocking persist, hide the blocked photos and do n
  assert.equal(report.data.reportReceived,true);
  await h.call(guest,'action',{type:'reportPlayer',playerId:host.id,reason:'harassment',confirmed:true});
  const disk=JSON.parse(await readFile(path.join(h.dir,'rooms',host.code,'room.json'),'utf8'));
- assert.equal(disk.reports.filter(r=>r.kind==='player').length,1);
+ assert.deepEqual(disk.reports,[]);
  await h.restart();
  assert.equal((await h.call(guest,'photo/'+photoId)).status,403);
  const unblocked=await h.call(guest,'action',{type:'unblockPlayer',playerId:host.id,confirmed:true});
