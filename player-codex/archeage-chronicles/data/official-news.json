@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-15T14:00:43Z",
+  "last_post_at": "2026-10-16T02:04:32Z",
   "items": [
+    {
+      "id": "1846651706679841",
+      "title": "ArcheAge Chronicles – Introducing Our Partner Creators",
+      "published_at": "2026-10-16T02:04:32Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846651706679841",
+      "excerpt": "We’re excited to announce the selected creators for the ArcheAge Chronicles Partner Creator Program!A big thank you to everyone who applied and expressed interest in joining the…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1846651706677839",
       "title": "How Progression Works in ArcheAge Chronicles",
