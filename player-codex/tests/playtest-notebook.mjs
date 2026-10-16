@@ -58,10 +58,18 @@ try {
   assert.equal(await page.locator('#draft-list li').count(),1);
   await page.getByRole('button',{name:/Remove draft:/}).click();assert.equal(await page.locator('#draft-list li').count(),0);
   // Malformed/stale storage must remain recoverable and cannot be overwritten.
-  await page.evaluate(k=>localStorage.setItem(k,'BROKEN SAVED DRAFT'),key);
+  await page.evaluate(k=>{localStorage.setItem(k,'BROKEN SAVED DRAFT');localStorage.setItem('synthetic-other-app-data','MUST KEEP');},key);
   await page.reload();await page.waitForFunction(()=>!document.getElementById('notebook-app').hidden);
   assert(await page.locator('button[type="submit"]').isDisabled());
   assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),'BROKEN SAVED DRAFT');
+  await page.locator('#playtest-notebook summary').click();
+  const [oldDownload]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Export draft file'}).click()]);
+  let oldBytes='';for await(const chunk of await oldDownload.createReadStream())oldBytes+=chunk;
+  assert.equal(oldBytes,'BROKEN SAVED DRAFT');
+  await page.getByRole('button',{name:'Start a new notebook draft'}).click();
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),null);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('synthetic-other-app-data')),'MUST KEEP');
+  assert(!(await page.locator('button[type="submit"]').isDisabled()));
   assert.deepEqual(errors,[]);
   await context.close();
   // A blocked-storage browser still offers an exportable in-memory draft.

@@ -454,6 +454,7 @@ def notebook(ko):
            '<div class="actions"><button class="btn" type="button" id="export-drafts">',text(ko,'Export draft file','초안 파일 내보내기'),
            '</button><label class="btn field-import">',text(ko,'Import draft file','초안 파일 가져오기'),
            '<input type="file" id="import-drafts" accept="application/json,.json"></label></div>',
+           '<button class="btn" type="button" id="restart-drafts" hidden>', text(ko, 'Start a new notebook draft', '이 기록장에 새 초안 시작'), '</button>',
            '<p id="draft-count"></p><ul id="draft-list"></ul></div></details>']
     return ''.join(out)
 

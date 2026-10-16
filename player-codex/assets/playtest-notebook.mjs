@@ -62,7 +62,21 @@ try {
   document.getElementById('export-drafts').addEventListener('click',()=>{
     const blob=new Blob([blocked?saved:JSON.stringify(bundle,null,2)+'\n'],{type:'application/json'});
     const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='archeage-playtest-drafts.json';a.click();URL.revokeObjectURL(url);
-    if(blocked) show(say('Old draft exported. After keeping the file, clear this site’s browser storage and reload to start a new draft.','기존 초안을 내보냈습니다. 파일을 보관한 뒤 이 사이트의 브라우저 저장 데이터를 지우고 새로고침하면 새 초안을 시작할 수 있습니다.'));
+    if(blocked) {
+      document.getElementById('restart-drafts').hidden=false;
+      show(say('Old draft exported. After keeping the file, use “Start a new notebook draft” to replace only this notebook’s saved draft.','기존 초안을 내보냈습니다. 파일을 보관한 뒤 “이 기록장에 새 초안 시작”을 누르면 이 기록장의 초안만 새로 시작합니다.'));
+    }
+  });
+  document.getElementById('restart-drafts').addEventListener('click',()=>{
+    if(!blocked)return;
+    try {
+      localStorage.removeItem(storageKey);
+      bundle=emptyBundle(meta);blocked=false;saved=null;
+      form.querySelector('button[type="submit"]').disabled=false;
+      document.getElementById('import-drafts').disabled=false;
+      document.getElementById('restart-drafts').hidden=true;
+      list();show(say('New notebook draft started. Other browser data was preserved.','이 기록장에 새 초안을 시작했습니다. 다른 브라우저 데이터는 유지됩니다.'));
+    } catch {show(say('Unable to reset the notebook draft; keep your exported file.','초안을 초기화하지 못했습니다. 내보낸 파일을 보관해 주세요.'));}
   });
   document.getElementById('import-drafts').addEventListener('change',async event=>{
     try {

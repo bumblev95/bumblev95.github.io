@@ -53,13 +53,20 @@ locations or measured values are prefilled as gameplay facts.
    EN/KO on the same origin reuses them. **Export draft file** preserves a JSON
    bundle. Imports are local, idempotent and accept unverified records only.
    When storage is blocked, the session still supports export. Old/corrupt
-   storage is not overwritten: export it first and reconcile its metadata.
+   storage is not overwritten: export it first and reconcile its metadata. After
+   export, **Start a new notebook draft** resets only this notebook's storage key;
+   other app data on the same domain is preserved.
 
 The compact form captures one measurement and one media source per observation.
 The common structure supports multiple measurements and sources; extend those
 arrays in the canonical file during review. New observations can reuse a source
 already in local drafts or the repository. Canonical records are not overwritten
 by a draft import; use a reviewed repository change to amend them.
+
+After import and merge, the canonical JSON (including pending/rejected records)
+is public in this public repository and static site. Only its reviewed projection
+is rendered as guide findings. Keep nonpublic media and personal information out
+of repository data; browser-only drafts are not uploaded automatically.
 
 ## Structured details
 
