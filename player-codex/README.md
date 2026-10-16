@@ -63,3 +63,14 @@ GitHub Actions checks Steam's public ISteamNews GetNewsForApp v2 endpoint for Ar
 - This does not crawl restricted forums or players' personal data; it does not claim skills, DPS, boss patterns, maps or community rumors have been verified. Those require editorial review or documented gameplay.
 
 A live HTTP check now compares the most recent official article ID and its individual source link against both published landing pages and both news archives on each scheduled run. It retries during CDN propagation and fails the workflow when the site is stale rather than silently reporting a successful update.
+
+## Evidence-reviewed demo findings
+
+Both demo guides now include seven unverified collection targets, a local browser
+draft form and a shared EN/KO findings section generated from typed gameplay
+records. Only evidence-backed, explicitly reviewed records for the active demo
+build can appear as findings. The initial dataset contains no gameplay records
+or measured values. The official-news pipeline is unchanged.
+
+See [PLAYTEST.md](PLAYTEST.md) for the data structure, local draft export/import,
+coordinate and video conventions, review digests and publication commands.

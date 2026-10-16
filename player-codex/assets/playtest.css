@@ -1,0 +1,16 @@
+.playtest-section{margin:0 0 70px;padding-top:18px;border-top:1px solid var(--line)}
+.playtest-section>p{color:var(--muted);max-width:760px}.playtest-section h2{font-size:clamp(24px,3vw,34px);line-height:1.35;letter-spacing:-.03em}
+.field-empty,.field-finding,.field-check,.field-notebook{padding:22px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#152131,#0e1522);margin:18px 0}
+.field-empty{border-left:3px solid var(--gold)}.field-finding{border-color:rgba(159,225,227,.36)}.field-finding h3{font-size:23px;margin:16px 0 8px}.field-finding p{white-space:pre-wrap}
+.field-status{display:inline-flex;border:1px solid rgba(234,208,160,.3);border-radius:99px;padding:4px 10px;font-size:11px;color:var(--gold);font-weight:800}.field-status.verified{color:var(--cyan);border-color:rgba(159,225,227,.4)}
+.field-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field-check{margin:0;min-width:0}.field-check h4{margin:14px 0 8px;font-size:18px}.field-check p{color:var(--muted);font-size:13px;line-height:1.75}
+.field-meta,.field-checksum{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.field-checksum{display:block;margin-top:6px}.field-sources{padding-left:20px}.field-sources li{margin:14px 0;overflow-wrap:anywhere}.field-sources a{color:var(--cyan)}
+.field-table{overflow-x:auto}.field-table table{border-collapse:collapse;width:100%;font-size:14px}.field-table th,.field-table td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top;min-width:90px}
+.field-notebook{margin-top:28px}.field-notebook summary{cursor:pointer;font-size:18px;font-weight:800;color:var(--gold)}.field-notebook p{font-size:14px;color:var(--muted)}
+.field-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.field-notebook label{display:grid;gap:7px;color:#d5deeb;font-size:13px;min-width:0}
+.field-notebook input,.field-notebook select,.field-notebook textarea{font:inherit;color:var(--fg);background:#0a1320;border:1px solid #46536a;padding:11px;border-radius:7px;width:100%;min-width:0;max-width:100%}.field-notebook textarea{resize:vertical}
+.field-notebook :is(input,select,textarea):focus-visible{outline:2px solid var(--gold);outline-offset:2px}.field-notebook fieldset{min-width:0;border:1px solid var(--line);border-radius:10px;padding:18px;margin:22px 0}.field-notebook legend{font-size:13px;padding:0 7px;color:var(--cyan)}
+.field-notebook button{cursor:pointer;font-family:inherit;background:transparent}.field-notebook button.primary{background:#e7cc99}.field-notebook button:disabled{opacity:.45;cursor:default}.field-notebook [hidden]{display:none!important}
+.field-import{cursor:pointer}.field-import input{font-size:12px}.field-notebook #draft-list{padding-left:20px}.field-notebook #draft-list li{padding:12px 0;font-size:14px;overflow-wrap:anywhere}.field-notebook #draft-list .btn{margin:8px 0 0 12px;padding:6px 10px}
+#notebook-message:not(:empty){padding:14px;border-left:3px solid var(--gold);background:rgba(234,208,160,.07);overflow-wrap:anywhere}
+@media(max-width:650px){.field-checks,.field-form-grid{grid-template-columns:1fr}.field-finding,.field-check,.field-notebook,.field-empty{padding:18px}.field-notebook fieldset{padding:13px}.field-notebook .actions{display:grid}.field-notebook #draft-list .btn{display:flex;margin-left:0}}
