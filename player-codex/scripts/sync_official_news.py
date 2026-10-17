@@ -203,7 +203,7 @@ def news_page(entries, ko):
         f'<link rel="alternate" hreflang="ko" href="{CANONICAL}news/ko/">'
         f'<link rel="alternate" hreflang="x-default" href="{CANONICAL}news/">'
         f'<link rel="stylesheet" href="/player-codex/assets/site.css?v=3">'
-        f'<meta name="google-adsense-account" content="ca-pub-9723666081819297"><script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied",analytics_storage:"denied"});</script><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9723666081819297" crossorigin="anonymous"></script></head>'
+        '<meta name="google-adsense-account" content="ca-pub-9723666081819297"><script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied",analytics_storage:"denied"});</script><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9723666081819297" crossorigin="anonymous"></script></head>'
         f'<body><a class="skip" href="#main">{("본문으로 이동" if ko else "Skip to content")}</a>'
         f'<div class="page">{nav}<main id="main"><section class="game-hero">'
         f'<a class="back" href="{back}">{("← 게임 공략" if ko else "← Game guide")}</a>'
