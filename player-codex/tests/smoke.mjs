@@ -46,6 +46,9 @@ try{
   browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||undefined});
   for(const width of [360,390,768,1440]){
     const context=await browser.newContext({viewport:{width,height:900},deviceScaleFactor:1});
+    // Stub only the third-party AdSense library during layout tests: this
+  // prevents external ad runtime errors and never contacts a real ad server.
+  await context.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({status:200,contentType:'application/javascript',body:'/* isolated Auto ads preview */'}));
     const page=await context.newPage();
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
@@ -85,6 +88,9 @@ try{
     assert(html.includes('target="_blank" rel="noopener noreferrer"'),'Video links should open safely: '+locale);
   }
   const context=await browser.newContext({viewport:{width:390,height:844}});
+  // Stub only the third-party AdSense library during layout tests: this
+  // prevents external ad runtime errors and never contacts a real ad server.
+  await context.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({status:200,contentType:'application/javascript',body:'/* isolated Auto ads preview */'}));
   const page=await context.newPage();
   await page.goto(origin+'/player-codex/',{waitUntil:'domcontentloaded'});
   await page.locator('.card-archeage').click();
