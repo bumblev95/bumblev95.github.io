@@ -1,10 +1,10 @@
 name: Then Us Android APK
 on:
   pull_request:
-    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/0.5.2/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
+    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/1.0.0/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
   push:
     branches: [main]
-    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/0.5.2/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
+    paths: ['geuttae-uri/mobile/**', 'geuttae-uri/releases/1.0.0/**', 'geuttae-uri/assets/**', 'geuttae-uri/index.html', 'geuttae-uri/boot-v3.js', '.github/workflows/geuttae-android.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,7 +35,10 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node mobile/tests/browser-qa.mjs
+          node mobile/tests/account-qa.mjs
+          node mobile/tests/billing-qa.mjs
           node mobile/tests/home-qa.mjs
+          node mobile/tests/moderation-qa.mjs
       - name: Install Android SDK packages
         run: |
           sdk_root="$RUNNER_TEMP/then-us-android-sdk"
@@ -52,15 +55,22 @@ jobs:
 
       - name: Assemble installable test APK and lint
         working-directory: geuttae-uri/mobile/android
-        run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon
+        run: ./gradlew :app:assembleDebug :app:lintDebug :app:bundleRelease :app:assembleRelease :app:lintRelease --no-daemon
+      - name: Verify actual ad build configuration and merged permissions
+        working-directory: geuttae-uri/mobile
+        run: node scripts/verify-ad-build.mjs
       - name: Package app
         run: |
           mkdir -p android-delivery
-          cp geuttae-uri/mobile/android/app/build/outputs/apk/debug/app-debug.apk android-delivery/Then-Us-TEST-v0.5.2.apk
+          cp geuttae-uri/mobile/android/app/build/outputs/apk/debug/app-debug.apk android-delivery/Us-Back-Then-v1.0.1-candidate.apk
+          cp geuttae-uri/mobile/android/app/build/outputs/bundle/release/app-release.aab android-delivery/Us-Back-Then-v1.0.1-unsigned.aab
+          cp geuttae-uri/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/Us-Back-Then-v1.0.1-unsigned.apk
           cp geuttae-uri/mobile/README.md android-delivery/README.md
+          cp geuttae-uri/mobile/qa-output/ad-build-report.json android-delivery/ad-build-report.json
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs android-delivery/Us-Back-Then-v1.0.1-candidate.apk > android-delivery/debug-signing-certificate.txt
           sha256sum android-delivery/*.apk > android-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Then-Us-TEST-v0.5.2
+          name: Us-Back-Then-v1.0.1-candidate
           path: android-delivery/
           retention-days: 30

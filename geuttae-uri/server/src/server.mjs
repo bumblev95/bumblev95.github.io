@@ -4,12 +4,15 @@ import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {networkInterfaces} from 'node:os';
-import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor} from '../../releases/0.5.0/logic.js';
+import {meta,questionKey,questionLimitFor,pointsForTime,setup,validateAction,applyAction,viewFor,removeParticipant} from '../../releases/1.0.0/logic.js';
 import {captureMemory,buildMemoryBook} from '../../releases/0.5.0/memory.js';
 import {sanitizeJpeg} from './media.mjs';
 import {createAiProvider,createAiBudget} from './ai.mjs';
 import {validateDraftInput,assembleDraft} from '../../releases/0.3.3/draft.js';
 import {openCommerceLedger,createCommerce,CommerceError} from './commerce.mjs';
+import {catalog as releaseCatalog} from '../../releases/1.0.0/products.js';
+import {openAccounts,AccountError} from './accounts.mjs';
+import {BillingError} from './play-billing.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -46,6 +49,7 @@ export async function createApp(options={}){
  const ledger=await openCommerceLedger(path.join(dataDir,'commerce.sqlite'),{now:options.commerceClock||Date.now});
  let commerce;
  try{commerce=createCommerce({...options.commerceFixture,ledger,fixture:!!options.commerceFixture});ledger.recoverPending();}catch(error){ledger.close();throw error;}
+ let accounts;try{accounts=await openAccounts(path.join(dataDir,'accounts.sqlite'),options.accounts);}catch(error){ledger.close();throw error;}
  const aiFlights=new Map(),aiCache=new Map();
  const aiKey=(code,id)=>code+'|'+id;
  function aiStatus(room){
@@ -117,16 +121,21 @@ export async function createApp(options={}){
  function safeState(room,s){
   const base={code:room.code,title:room.title,expiresAt:room.expiresAt,access:s.status,you:s.id,mediaStatus:room.deletion,version:'0.3.3',revision:room.revision,gameNumber:room.gameNumber||0,rematchSupported:true,multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,mode:room.game.mode||'memory',timeLimitSeconds:room.timeLimitSeconds||0,roundDeadlineAt:room.roundDeadlineAt||null,serverNow:gameNow()};
   if(s.status!=='active')return {...base,nickname:s.name};
+  base.moderationSupported=true;base.hiddenPhotoIds=[...(s.hiddenPhotoIds||[])];
   const connectedIds=[...new Set([...(streams.get(room.code)?.values()||[])])];
   return {...base,view:viewFor(room.game,s.id),connectedIds,ai:aiStatus(room),commerce:commerce.statusFor(room,s),pending:s.id===room.game.hostId?room.sessions.filter(p=>p.status==='pending').map(p=>({id:p.id,name:p.name})):[]};
  }
  function publish(room,memorySnapshot=null){
   for(const [res,id] of streams.get(room.code)||[]){
    const s=room.sessions.find(x=>x.id===id);if(!s)continue;
-   try{res.write('data: '+JSON.stringify({...safeState(room,s),...(s.status==='active'&&memorySnapshot?{memorySnapshot}:{})})+'\n\n');if(!['active','pending'].includes(s.status)){res.end();streams.get(room.code)?.delete(res);}}catch{res.destroy();}
+   try{res.write('data: '+JSON.stringify({...safeState(room,s),...(s.status==='active'&&memorySnapshot?{memorySnapshot:visibleSnapshot(memorySnapshot,s)}:{})})+'\n\n');if(!['active','pending'].includes(s.status)){res.end();streams.get(room.code)?.delete(res);}}catch{res.destroy();}
   }
  }
  function closeStreams(code){for(const [res] of streams.get(code)||[]){try{res.write('event: expired\ndata: {}\n\n');res.end();}catch{res.destroy();}}streams.delete(code);}
+ function visibleSnapshot(snapshot,s){
+  const hidden=new Set(s.hiddenPhotoIds||[]);
+  return {...snapshot,book:{...snapshot.book,entries:snapshot.book.entries.filter(e=>!hidden.has(e.photoId))},images:Object.fromEntries(Object.entries(snapshot.images).filter(([id])=>!hidden.has(id))),missing:snapshot.missing.filter(id=>!hidden.has(id))};
+ }
  async function memorySnapshotFor(room){
   const entries=(room.memories||[]).filter(e=>{
    if(e.media&&e.media!=='photo')return room.sessions.some(s=>s.id===e.authorId&&s.status==='active');
@@ -182,7 +191,15 @@ export async function createApp(options={}){
  async function removeMember(room,id,status){
   cancelAi(room.code,id);
   room.sessions.find(s=>s.id===id).status=status;
-  room.game={...room.game,players:room.game.players.filter(p=>p.id!==id),questions:{...room.game.questions}};for(const [key,q] of Object.entries(room.game.questions))if(q.authorId===id)delete room.game.questions[key];room.game.answerOnlyIds=(room.game.answerOnlyIds||[]).filter(x=>x!==id);
+  const oldRound=room.game.round;
+  room.game=removeParticipant(room.game,id);
+  room.memories=(room.memories||[]).filter(e=>e.authorId!==id);
+  if(room.game.round!==oldRound)room.roundDeadlineAt=room.timeLimitSeconds?gameNow()+room.timeLimitSeconds*1000:null;
+  if(room.game.phase!=='question')room.roundDeadlineAt=null;
+  if(room.game.phase==='reveal'){
+   const q=room.game.questions[room.game.order[room.game.round]],entry=captureMemory(viewFor(room.game,room.game.hostId),q?.allowKeepsake===true);
+   if(entry)room.memories=[...room.memories.filter(e=>e.round!==entry.round),entry];
+  }
   for(const photo of Object.values(room.photos))if(photo.ownerId===id)photo.deleting=true;
   await save(room);
   for(const [photoId,photo] of Object.entries(room.photos))if(photo.ownerId===id)await dropPhoto(room,photoId);
@@ -268,7 +285,21 @@ export async function createApp(options={}){
    }
    if(!['GET','HEAD'].includes(method))check(allowedOrigin,403,'다른 사이트에서 보낸 요청은 처리할 수 없어요.');
    if(u.pathname==='/api/health'&&method==='GET')return respond(res,200,{ok:true,version:'0.3.3',multiQuestionsSupported:true,textQuestionsSupported:false,photoOnlyPolicy:true,partyMissionsSupported:true,timedModesSupported:true,aiEnabled:!!ai,paymentsEnabled:false,commerceMode:commerce.usesCredits?'fixture':'preview',storage:'private-server-files',deployment:'single-instance'});
-   if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,commerce.catalog);
+   if(u.pathname==='/api/commerce/catalog'&&method==='GET')return respond(res,200,options.commerceFixture?commerce.catalog:releaseCatalog);
+   if(u.pathname.startsWith('/api/account/')){
+    const accountToken=req.headers.authorization?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
+    limit(req,'account',40);
+    if(u.pathname==='/api/account/billing/status'&&method==='GET'){limit(req,'billing-status',10);return respond(res,200,await accounts.billing.status(accountToken));}
+    if(u.pathname==='/api/account/billing/context'&&method==='GET'){limit(req,'billing-context',10);return respond(res,200,await accounts.billing.context(accountToken));}
+    if(u.pathname==='/api/account/billing/verify'&&method==='POST'){limit(req,'billing-verify',10);const b=await jsonBody(req);return respond(res,200,await accounts.billing.verify(accountToken,b.purchaseToken));}
+    if(u.pathname==='/api/account/config'&&method==='GET')return respond(res,200,accounts.config());
+    if(u.pathname==='/api/account/challenge'&&method==='POST'){limit(req,'account-sign-in',10);return respond(res,200,accounts.challenge());}
+    if(u.pathname==='/api/account/google'&&method==='POST'){limit(req,'account-verify',10);return respond(res,200,await accounts.signIn(await jsonBody(req)));}
+    if(u.pathname==='/api/account/me'&&method==='GET')return respond(res,200,accounts.me(accountToken));
+    if(u.pathname==='/api/account/logout'&&method==='POST')return respond(res,200,accounts.logout(accountToken));
+    if(u.pathname==='/api/account/delete'&&method==='POST')return respond(res,200,accounts.delete(accountToken,await jsonBody(req)));
+    throw new ApiError(404,'계정 요청 주소를 확인해 주세요.');
+   }
    if(u.pathname==='/api/rooms'&&method==='POST'){
     limit(req,'create',10,3_600_000);const b=await jsonBody(req);
     check(nameValid(b.nickname),400,'닉네임을 1~16자로 적어 주세요.');
@@ -280,7 +311,7 @@ export async function createApp(options={}){
     if(b.familyScoring!==undefined)check(typeof b.familyScoring==='boolean',400,'점수 설정을 확인해 주세요.');
     if(b.partyMissions!==undefined)check(typeof b.partyMissions==='boolean',400,'파티 미션 설정을 확인해 주세요.');
     const code=roomCode(),secret=token(),id=randomUUID();
-    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',timeLimitSeconds:seconds,createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active'}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}],{mode,partyMissions:b.partyMissions===true,scoring:mode!=='family'||b.familyScoring===true})};
+    const room={code,title:(b.title||'우리의 추억 모임').trim()||'우리의 추억 모임',timeLimitSeconds:seconds,createdAt:Date.now(),expiresAt:Date.now()+ttl,sessions:[{id,name:b.nickname.trim(),tokenHash:hash(secret),status:'active',termsVersion:b.termsVersion==='2026-10-15'?b.termsVersion:null}],photos:{},memories:[],deletion:'not-needed',reports:[],game:setup([{id,name:b.nickname.trim(),score:0}],{mode,partyMissions:b.partyMissions===true,scoring:mode!=='family'||b.familyScoring===true})};
     await fs.mkdir(path.join(roomsDir,code),{recursive:false,mode:0o700});await save(room);
     return respond(res,201,{...safeState(room,room.sessions[0]),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
    }
@@ -292,13 +323,13 @@ export async function createApp(options={}){
      const room=await load(code);
      if(route==='join'&&method==='POST'){
       limit(req,'join',20);const b=await jsonBody(req);const old=sessionFor(room,req);
-      if(old){check(old.status!=='blocked'&&old.status!=='left',403,'이 모임에 참여할 수 없어요.');return respond(res,200,safeState(room,old));}
+      if(old){check(!['blocked','kicked','left'].includes(old.status),403,'이 모임에 참여할 수 없어요.');return respond(res,200,safeState(room,old));}
       check(room.game.phase==='lobby',409,'이미 시작한 모임이에요. 다음 모임에 참여해 주세요.');
       check(nameValid(b.nickname)&&b.consent===true,400,'닉네임과 이용 동의를 확인해 주세요.');
       check(room.sessions.filter(s=>s.status==='pending').length<8,409,'입장 대기 인원이 가득 찼어요.');
       check(room.sessions.length<40,429,'입장 요청 한도에 도달했어요. 새 방을 만들어 주세요.');
       check(!room.sessions.some(s=>['active','pending'].includes(s.status)&&s.name.normalize('NFC')===b.nickname.trim().normalize('NFC')),409,'같은 닉네임이 있어요. 다른 이름을 적어 주세요.');
-      const secret=token(),s={id:randomUUID(),name:b.nickname.trim(),tokenHash:hash(secret),status:'pending'};room.sessions.push(s);await save(room);publish(room);
+      const secret=token(),s={id:randomUUID(),name:b.nickname.trim(),tokenHash:hash(secret),status:'pending',termsVersion:b.termsVersion==='2026-10-15'?b.termsVersion:null};room.sessions.push(s);await save(room);publish(room);
       return respond(res,200,{...safeState(room,s),sessionToken:secret},{'Set-Cookie':cookie(code,secret)});
      }
      const sess=sessionFor(room,req);check(sess,401,'방 코드와 닉네임으로 먼저 입장해 주세요.');
@@ -322,7 +353,7 @@ export async function createApp(options={}){
      if(route.startsWith('photo/')&&method==='GET'){
       check(room.game.phase!=='finished'&&room.deletion!=='pending',410,'이 사진은 더 이상 볼 수 없어요.');
       const photo=room.photos[photoId],q=room.game.questions[room.game.order[room.game.round]];
-      check(photo&&!photo.deleting&&(photo.ownerId===s.id||q?.photoId===photoId),403,'지금 볼 수 있는 사진이 아니에요.');
+      check(photo&&!photo.deleting&&!(s.hiddenPhotoIds||[]).includes(photoId)&&(photo.ownerId===s.id||q?.photoId===photoId),403,'지금 볼 수 있는 사진이 아니에요.');
       const bytes=await fs.readFile(mediaOf(code,photoId));return respond(res,200,bytes,{'Content-Type':'image/jpeg','Content-Disposition':'inline'});
      }
      check(method==='POST',405,'지원하지 않는 요청이에요.');limit(req,'write',80);
@@ -341,15 +372,18 @@ export async function createApp(options={}){
      }
      const b=await jsonBody(req);
      if(['approve','deny','kick'].includes(route)){
-      check(s.id===room.game.hostId&&room.game.phase==='lobby',403,'방장만 대기방에서 참가자를 관리할 수 있어요.');
+      check(s.id===room.game.hostId&&(route==='kick'?room.game.phase!=='finished':room.game.phase==='lobby'),403,'방장만 참가자를 관리할 수 있어요.');
+      if(route==='kick')check(b.confirmed===true&&(b.gameNumber??0)===(room.gameNumber||0),409,'강퇴할 참가자와 최종 확인을 선택해 주세요.');
       const person=room.sessions.find(x=>x.id===b.playerId);
       check(person&&person.id!==s.id,400,'참가자를 확인해 주세요.');
       if(route==='approve'){
        check(person.status==='pending',409,'이미 처리한 요청이에요.');check(room.game.players.length<meta.maxPlayers,409,'최대 10명까지 참여할 수 있어요.');
        person.status='active';room.game={...room.game,players:[...room.game.players,{id:person.id,name:person.name,score:0}]};
       }else if(route==='deny'){check(person.status==='pending',409,'이미 처리한 요청이에요.');person.status='blocked';}
-      else{check(person.status==='active',409,'참가자를 확인해 주세요.');await removeMember(room,person.id,'blocked');}
-      await save(room);publish(room);return respond(res,200,safeState(room,s));
+      else{check(person.status==='active',409,'참가자를 확인해 주세요.');await removeMember(room,person.id,'kicked');}
+      const snapshot=room.game.phase==='finished'&&room.game.endReason==='completed'?await memorySnapshotFor(room):null;
+      if(room.game.phase==='finished'){room.deletion='pending';room.memories=[];await save(room);try{await deletePhotos(room);}catch{/* Sweep retries with access already denied. */}}
+      await save(room);publish(room,snapshot);return respond(res,200,{...safeState(room,s),...(snapshot?{memorySnapshot:visibleSnapshot(snapshot,s)}:{})});
      }
      if(route==='leave'){
       check(s.id!==room.game.hostId,400,'방장은 모임 종료 버튼을 이용해 주세요.');
@@ -368,7 +402,15 @@ export async function createApp(options={}){
      const valid=validateAction(room.game,s.id,b);check(valid.ok,409,valid.error);
      if(b.type==='submitQuestion'&&b.photoId){check(room.photos[b.photoId]?.ownerId===s.id&&!room.photos[b.photoId]?.deleting,403,'본인이 올린 사진으로 출제해 주세요.');room.photos[b.photoId].allowKeepsake=b.allowKeepsake===true;}
      if(b.type==='start')check(!room.sessions.some(p=>p.status==='pending'),409,'입장 요청을 먼저 승인하거나 거절해 주세요.');
-     if(b.type==='report')room.reports.push({id:randomUUID(),reporterId:s.id,authorId:room.game.questions[room.game.order[room.game.round]]?.authorId,reason:['privacy','inappropriate','other'].includes(b.reason)?b.reason:'other',at:Date.now()});
+     if(['report','hidePhoto'].includes(b.type)){
+      const q=room.game.questions[room.game.order[room.game.round]];
+      if(b.type==='report'){
+       room.reports||=[];
+       if(!room.reports.some(r=>r.reporterId===s.id&&r.photoId===q.photoId))room.reports.push({id:randomUUID(),reporterId:s.id,authorId:q.authorId,questionId:q.questionId,photoId:q.photoId,reason:b.reason,at:Date.now()});
+      }
+      const hidden=new Set(s.hiddenPhotoIds||[]);if(b.type==='report'||b.hidden)hidden.add(q.photoId);else hidden.delete(q.photoId);s.hiddenPhotoIds=[...hidden];
+      await save(room);publish(room);return respond(res,200,{...safeState(room,s),...(b.type==='report'?{reportReceived:true}:{})});
+     }
      const editedKey=questionKey(s.id,b.slot||0),oldPhoto=room.game.questions[editedKey]?.photoId;
      const serverPoints=pointsForTime(room.roundDeadlineAt,room.timeLimitSeconds,gameNow());
      room.game=applyAction(room.game,s.id,{...b,serverPoints});
@@ -385,7 +427,7 @@ export async function createApp(options={}){
      await save(room);
      if(['submitQuestion','removeQuestion'].includes(b.type)&&oldPhoto&&oldPhoto!==room.game.questions[editedKey]?.photoId&&!Object.values(room.game.questions).some(q=>q.photoId===oldPhoto)){await dropPhoto(room,oldPhoto);}
      if(room.game.phase==='finished'){try{await deletePhotos(room);}catch{room.deletion='pending';await save(room);}}
-     publish(room,memorySnapshot);return respond(res,200,{...safeState(room,s),...(memorySnapshot?{memorySnapshot}:{})});
+     publish(room,memorySnapshot);return respond(res,200,{...safeState(room,s),...(memorySnapshot?{memorySnapshot:visibleSnapshot(memorySnapshot,s)}:{})});
     });
    }
    if(u.pathname.startsWith('/api/'))throw new ApiError(404,'방 주소를 확인해 주세요.');
@@ -393,7 +435,7 @@ export async function createApp(options={}){
    if(u.pathname==='/')return respond(res,302,Buffer.alloc(0),{Location:'/geuttae-uri/'});
    check(u.pathname.startsWith('/geuttae-uri/'),404,'찾을 수 없는 파일이에요.');
    let filename=u.pathname==='/geuttae-uri/'?'index.html':decodeURIComponent(u.pathname.slice('/geuttae-uri/'.length));
-   check(filename==='index.html'||['boot-v1.js','boot-v2.js','boot-v3.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|draft.js|products.js|platform.js|locale.js|en.js|book-viewer.js|vendor\/html2canvas.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
+   check(filename==='index.html'||['boot-v1.js','boot-v2.js','boot-v3.js','shell-v1.css','version.json','runtime-config.json','manifest.webmanifest'].includes(filename)||/^assets\/[a-z0-9.-]+$/.test(filename)||/^releases\/[0-9a-z.-]+\/(client.js|logic.js|memory.js|draft.js|products.js|ads.js|platform.js|locale.js|en.js|book-viewer.js|vendor\/html2canvas.js|style.css)$/.test(filename),404,'찾을 수 없는 파일이에요.');
    let file=path.resolve(publicDir,filename);
    check(file.startsWith(publicDir+path.sep),404,'찾을 수 없는 파일이에요.');
    const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json'};
@@ -403,9 +445,9 @@ export async function createApp(options={}){
    if(method==='HEAD'){res.writeHead(200,{...commonHeaders,'Content-Type':contentType,'Content-Length':bytes.length});res.end();return;}
    return respond(res,200,bytes,{'Content-Type':contentType});
   }catch(e){
-   if(!(e instanceof ApiError)&&!(e instanceof CommerceError))console.error('Request failed safely; no photo or request content logged.');
+   if(!(e instanceof ApiError)&&!(e instanceof CommerceError)&&!(e instanceof AccountError)&&!(e instanceof BillingError))console.error('Request failed safely; no photo or request content logged.');
    if(res.headersSent){res.end();return;}
-   respond(res,e instanceof ApiError||e instanceof CommerceError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
+   respond(res,e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError?e.status:500,{error:e instanceof ApiError||e instanceof CommerceError||e instanceof AccountError||e instanceof BillingError?e.message:'처리 중 문제가 생겼어요. 다시 시도해 주세요.'});
   }
  });
  server.requestTimeout=30_000;server.headersTimeout=15_000;server.keepAliveTimeout=5_000;
@@ -413,7 +455,7 @@ export async function createApp(options={}){
  const roundClock=setInterval(()=>{for(const code of streams.keys())locked(code,()=>load(code)).catch(()=>{});},1000);roundClock.unref();
  const heartbeat=setInterval(()=>{for(const bucket of streams.values())for(const [res] of bucket){try{res.write(': connected\n\n');}catch{res.destroy();}}},15_000);heartbeat.unref();
  await sweep();
- return {server,dataDir,sweep,commerce,async close(){clearInterval(roundClock);clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));ledger.close();}};
+ return {server,dataDir,sweep,commerce,async close(){clearInterval(roundClock);clearInterval(cleanup);clearInterval(heartbeat);const pending=[...aiFlights.values()];for(const flight of pending)flight.control.abort();await Promise.all(pending.map(x=>x.promise));aiCache.clear();for(const code of streams.keys())closeStreams(code);server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));accounts.close();ledger.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const app=await createApp();const port=Number(process.env.PORT||3000),host=process.env.HOST||'127.0.0.1';
