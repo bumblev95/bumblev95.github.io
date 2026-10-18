@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-16T02:04:32Z",
+  "last_post_at": "2026-10-18T01:00:40Z",
   "items": [
+    {
+      "id": "1846651706685895",
+      "title": "A Letter from Producer Ham — Steam Next Fest Demo Details",
+      "published_at": "2026-10-18T01:00:40Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846651706685895",
+      "excerpt": "Hello everyone,As we announced earlier, ArcheAge Chronicles will be part of Steam Next Fest, which begins on October 19th at 10 AM PDT (October 20th at 2 AM KST) and runs for one week…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1846651706679841",
       "title": "ArcheAge Chronicles – Introducing Our Partner Creators",
