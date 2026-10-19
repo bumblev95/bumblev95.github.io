@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-18T01:00:40Z",
+  "last_post_at": "2026-10-19T16:45:04Z",
   "items": [
+    {
+      "id": "1846651706691186",
+      "title": "ArcheAge Chronicles – Steam Next Fest Demo Is Now Live!",
+      "published_at": "2026-10-19T16:45:04Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846651706691186",
+      "excerpt": "The ArcheAge Chronicles Steam Next Fest demo is now live! Step into Auroria and experience the world of ArcheAge Chronicles for yourself. Building on September network test, this demo…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1846651706685895",
       "title": "A Letter from Producer Ham — Steam Next Fest Demo Details",
