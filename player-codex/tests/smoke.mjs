@@ -64,6 +64,35 @@ try{
       }));
       assert(state.heading && state.visible,'Main content visible: '+route+' at '+width+'px');
       assert(state.scroll<=state.viewport+2,'Horizontal overflow: '+route+' at '+width+'px '+JSON.stringify(state));
+      if(route.includes('/demo/')){
+        const release=JSON.parse(readFileSync(path.join(root,'player-codex/archeage-chronicles/data/playtest-records.json'),'utf8')).release;
+        const dates=await page.locator('.demo-times tbody tr').evaluateAll(rows=>rows.map(row=>({
+          zone:row.dataset.timeZone,
+          times:[...row.querySelectorAll('time')].map(t=>({boundary:t.dataset.boundary,instant:t.dateTime,label:t.innerText.replace(/\s+/g,' ').trim()}))
+        })));
+        assert.deepEqual(dates.map(r=>r.zone),['America/Regina','America/Los_Angeles','Asia/Seoul','UTC'],'All demo time zones: '+route);
+        for(const row of dates){
+          assert.deepEqual(row.times.map(t=>t.boundary),['start','end'],'Both demo boundaries: '+route);
+          for(const time of row.times){
+            const expected=time.boundary==='start'?release.starts_at:release.ends_at;
+            assert.equal(time.instant,expected,'Demo date matches evidence release window: '+route);
+            const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:row.zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(expected)).map(p=>[p.type,p.value]));
+            assert.equal(time.label,`${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`,'Correct local demo time: '+row.zone+' '+route);
+          }
+        }
+        const missingAnchors=await page.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].map(a=>a.hash.slice(1)).filter(id=>!document.getElementById(id)));
+        assert.deepEqual(missingAnchors,[],'Guide jump links resolve: '+route);
+        assert.equal(await page.locator('#playtest-findings .field-check').count(),7,'Keep seven gameplay targets: '+route);
+        assert.equal(await page.locator('#hinnon .demo-fact').count(),1,'Dungeon official facts: '+route);
+        assert.equal(await page.locator('#hinnon .demo-pending').count(),1,'Dungeon unknowns remain distinct: '+route);
+        assert(await page.locator('#demo-sources a[href="https://steamcommunity.com/games/3218230/announcements/detail/712289492929610763"]').count(),'Latest individual official source: '+route);
+        await page.locator('.growth-jumps a[href="#pvp"]').click();
+        assert.equal(new URL(page.url()).hash,'#pvp','Mobile/desktop PvP navigation: '+route);
+        await page.locator('.demo-growth summary').click();
+        assert(await page.locator('.demo-growth').evaluate(el=>el.open),'Progression summary expands: '+route);
+        await page.locator('.demo-growth summary').click();
+        await page.evaluate(()=>window.scrollTo(0,0));
+      }
       const shot=(route.replace(/^\//,'').replaceAll('/','-').replace(/-$/,'')||'root')+'-'+width+'.png';
       await page.screenshot({path:path.join(root,'player-codex-test-screens',shot),fullPage:true,animations:'disabled'});
     }
