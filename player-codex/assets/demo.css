@@ -1,0 +1,34 @@
+/* Demo logistics only; evidence forms and other game pages keep their styling. */
+.demo-guide{margin:0 0 48px;line-height:1.8;min-width:0;scroll-margin-top:24px}
+.demo-guide h2,.note h2{font-size:clamp(23px,3vw,30px);line-height:1.35;margin:0 0 18px}
+.demo-guide h3{font-size:18px;line-height:1.4;margin:0 0 10px}
+.demo-guide p,.demo-guide li,.demo-growth p,.demo-growth li{color:var(--muted);overflow-wrap:anywhere}
+.demo-guide a,.demo-growth a{color:var(--gold);text-underline-offset:3px}
+.demo-guide li,.demo-growth li{margin:9px 0}
+.demo-guide strong{color:var(--fg)}
+.demo-source{font-size:13px;border-top:1px solid var(--line);padding-top:14px;margin-top:22px}
+.demo-times{width:100%;border-collapse:collapse;table-layout:fixed;font-size:15px}
+.demo-times caption{text-align:left;color:var(--muted);margin-bottom:14px;font-size:14px}
+.demo-times th,.demo-times td{text-align:left;vertical-align:top;padding:15px;border-bottom:1px solid var(--line)}
+.demo-times th:first-child{width:38%}
+.demo-times tbody tr:first-child{background:rgba(225,188,133,.07)}
+.demo-times small{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:4px}
+.demo-times time{display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+.demo-times time strong{color:var(--gold);font-size:20px;line-height:1.5}
+.demo-facts{display:grid;gap:0;margin:0}
+.demo-facts>div{display:grid;grid-template-columns:minmax(95px,.25fr) minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid var(--line)}
+.demo-facts dt{font-weight:700;color:var(--gold)}
+.demo-facts dd{margin:0;color:var(--muted)}
+.demo-steps{padding-left:25px}
+.demo-contrast{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.demo-fact,.demo-pending{border:1px solid var(--line);border-radius:12px;padding:20px;background:#101724;min-width:0}
+.demo-fact{border-top:3px solid var(--gold)}
+.demo-pending{border-left:3px solid var(--cyan)}
+.demo-contrast p{margin:0}
+.demo-growth{border:1px solid var(--line);border-radius:12px;padding:20px;margin:0 0 48px}
+.demo-growth summary{font-size:17px;line-height:1.6;font-weight:700;color:var(--gold);cursor:pointer;min-height:44px;align-content:center}
+.demo-growth summary:focus-visible{outline:2px solid var(--gold);outline-offset:5px}
+.demo-growth li{scroll-margin-top:24px}
+html[lang="ko"] .game-hero h1,.demo-guide:lang(ko),.demo-growth:lang(ko),#demo-sources:lang(ko){word-break:keep-all}
+#demo-sources li{margin:10px 0;overflow-wrap:anywhere}
+@media(max-width:620px){.demo-contrast{grid-template-columns:1fr}.demo-guide{margin-bottom:38px}.demo-times{font-size:13px}.demo-times th,.demo-times td{padding:12px 5px}.demo-times th:first-child{width:35%}.demo-times small{font-size:11px}.demo-times time strong{font-size:18px}.demo-facts>div{grid-template-columns:90px minmax(0,1fr);gap:12px}.demo-fact,.demo-pending,.demo-growth{padding:16px}}

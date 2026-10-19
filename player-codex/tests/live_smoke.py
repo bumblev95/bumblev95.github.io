@@ -24,6 +24,7 @@ ROUTES = {
 }
 OTHER = {
     "/player-codex/assets/site.css": "@media",
+    "/player-codex/assets/demo.css": ".demo-times",
     "/player-codex/assets/status.js": "data-event-status",
     "/player-codex/sitemap.xml": "/player-codex/archeage-chronicles/demo/ko/",
 }
@@ -65,6 +66,16 @@ def validate() -> None:
         assert phrase in content, f"Missing expected content at {path}: {phrase}"
         for url in OFFICIAL_VIDEOS.get(path, ()):
             assert url in content, f"Missing official video reference: {path} {url}"
+        if "/demo/" in path:
+            for marker in (
+                'id="demo-schedule"', 'id="demo-install"', 'id="demo-access"',
+                'id="demo-content"', 'id="hinnon"', 'id="pvp"', 'id="demo-changes"',
+                'data-time-zone="America/Regina"', '2026-10-19T17:00:00Z',
+                '2026-10-26T17:00:00Z', '2026-10-18 01:00:40 UTC',
+                'https://steamcommunity.com/games/3218230/announcements/detail/712289492929610763',
+                '/player-codex/assets/demo.css?v=1',
+            ):
+                assert marker in content, f"Latest demo guide not deployed: {path} {marker}"
         if path in OFFICIAL_VIDEOS:
             assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
