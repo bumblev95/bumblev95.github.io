@@ -2,7 +2,7 @@
 .demo-guide{margin:0 0 48px;line-height:1.8;min-width:0;scroll-margin-top:24px}
 .demo-guide h2,.note h2{font-size:clamp(23px,3vw,30px);line-height:1.35;margin:0 0 18px}
 .demo-guide h3{font-size:18px;line-height:1.4;margin:0 0 10px}
-.demo-guide p,.demo-guide li,.demo-growth p,.demo-growth li{color:var(--muted);overflow-wrap:anywhere}
+.demo-guide p,.demo-guide li,.demo-growth p,.demo-growth li,.demo-reference-clips li{color:var(--muted);overflow-wrap:anywhere}
 .demo-guide a,.demo-growth a{color:var(--gold);text-underline-offset:3px}
 .demo-guide li,.demo-growth li{margin:9px 0}
 .demo-guide strong{color:var(--fg)}
@@ -25,9 +25,9 @@
 .demo-fact{border-top:3px solid var(--gold)}
 .demo-pending{border-left:3px solid var(--cyan)}
 .demo-contrast p{margin:0}
-.demo-growth{border:1px solid var(--line);border-radius:12px;padding:20px;margin:0 0 48px}
-.demo-growth summary{font-size:17px;line-height:1.6;font-weight:700;color:var(--gold);cursor:pointer;min-height:44px;align-content:center}
-.demo-growth summary:focus-visible{outline:2px solid var(--gold);outline-offset:5px}
+.demo-growth,.demo-reference-clips{border:1px solid var(--line);border-radius:12px;padding:20px;margin:0 0 48px}
+.demo-growth summary,.demo-reference-clips summary{font-size:17px;line-height:1.6;font-weight:700;color:var(--gold);cursor:pointer;min-height:44px;align-content:center}
+.demo-growth summary:focus-visible,.demo-reference-clips summary:focus-visible{outline:2px solid var(--gold);outline-offset:5px}
 .demo-growth li{scroll-margin-top:24px}
 .demo-beta-note{margin-top:24px;max-width:790px;line-height:1.75}
 .demo-beta-note strong{color:var(--cyan)}
@@ -38,8 +38,8 @@
 .demo-clip-links li{margin:0}
 .demo-clip-links a{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;line-height:1.5}
 .demo-clip-links span{flex:none;font-variant-numeric:tabular-nums;color:var(--fg)}
-.demo-reference-clips{margin-bottom:0}
+.demo-community .demo-reference-clips{margin-bottom:0}
 html[lang="ko"] .game-hero h1,.demo-guide:lang(ko),.demo-growth:lang(ko),.demo-beta-note:lang(ko),#demo-sources:lang(ko){word-break:keep-all}
 #demo-sources li{margin:10px 0;overflow-wrap:anywhere}
-@media(max-width:620px){.demo-contrast{grid-template-columns:1fr}.demo-guide{margin-bottom:38px}.demo-times{font-size:13px}.demo-times th,.demo-times td{padding:12px 5px}.demo-times th:first-child{width:35%}.demo-times small{font-size:11px}.demo-times time strong{font-size:18px}.demo-facts>div{grid-template-columns:90px minmax(0,1fr);gap:12px}.demo-fact,.demo-pending,.demo-growth{padding:16px}}
+@media(max-width:620px){.demo-contrast{grid-template-columns:1fr}.demo-guide{margin-bottom:38px}.demo-times{font-size:13px}.demo-times th,.demo-times td{padding:12px 5px}.demo-times th:first-child{width:35%}.demo-times small{font-size:11px}.demo-times time strong{font-size:18px}.demo-facts>div{grid-template-columns:90px minmax(0,1fr);gap:12px}.demo-fact,.demo-pending,.demo-growth,.demo-reference-clips{padding:16px}}
 @media(max-width:620px){.demo-tip-card{padding:16px}.demo-clip-links{grid-template-columns:1fr}}
