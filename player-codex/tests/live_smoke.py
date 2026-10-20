@@ -70,12 +70,17 @@ def validate() -> None:
             for marker in (
                 'id="demo-schedule"', 'id="demo-install"', 'id="demo-access"',
                 'id="demo-content"', 'id="hinnon"', 'id="pvp"', 'id="demo-changes"',
+                'id="community-tips"', 'id="beta-note-title"', 'data-source-kind="community"',
                 'data-time-zone="America/Regina"', '2026-10-19T17:00:00Z',
                 '2026-10-26T17:00:00Z', '2026-10-18 01:00:40 UTC',
                 'https://steamcommunity.com/games/3218230/announcements/detail/712289492929610763',
-                '/player-codex/assets/demo.css?v=1',
             ):
                 assert marker in content, f"Latest demo guide not deployed: {path} {marker}"
+            # Match the reviewed page's cache version instead of pinning an old one.
+            local_page = Path(__file__).resolve().parents[2] / path.lstrip("/") / "index.html"
+            styles = re.findall(r'href="(/player-codex/assets/demo\.css\?v=[^\"]+)"', local_page.read_text(encoding="utf-8"))
+            assert len(styles) == 1, f"Expected one demo stylesheet in source: {path}"
+            assert styles[0] in content, f"Current demo stylesheet not deployed: {path} {styles[0]}"
         if path in OFFICIAL_VIDEOS:
             assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
