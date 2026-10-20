@@ -6,7 +6,7 @@
 
 - 공개 고정 주소: https://bumblev95.github.io/geuttae-uri/
 - 새 프런트엔드 릴리스: v0.3.4, 사진·이야기를 먼저 보여주는 포토북과 뒤쪽의 기억 대결 기록. API는 검증된 v0.3.3을 그대로 사용하며 추억집 데이터·동의·점수·보관 규칙은 같다. 게임·추억집 저장은 무료 체험이며 실제 결제/AI/광고는 꺼져 있다. 이 커밋의 Pages 게시 검사가 통과하면 고정 주소에 반영된다.
-- Railway 멀티플레이 테스트 서버는 2026-10-13 Regina에 v0.3.3 배포 SUCCESS와 실제 API 게임·비활성 구매/AI 검증을 통과했다: https://geuttae-api-test-production.up.railway.app/geuttae-uri/
+- Railway 멀티플레이 테스트 서버는 2026-10-13에 v0.3.3 배포 SUCCESS와 실제 API 게임·비활성 구매/AI 검증을 통과했다: https://geuttae-api-test-production.up.railway.app/geuttae-uri/
 - 저장소의 `runtime-config.json`에는 검증된 Railway HTTPS API origin만 넣는다. 접근 키나 비밀값은 포함하지 않는다. Railway가 제공하는 테스트 페이지도 같은 API를 사용한다.
 - 실제 서버에서 두 독립 API 참가자의 사진 업로드·SSE·재접속·출제 교대·점수·동의된 추억집 전달·종료 후 사진 접근 차단을 통과했다. 2026-10-13 운영 점검에서 종료된 네 방의 실제 JPG 파일 0개, 삭제 대기 0개, 비공개 디렉터리 권한 0700을 확인했다. 사진 볼륨 백업은 없으며 현재 Trial에서는 새 백업·일정을 만들 수 없다. 무료 Trial을 유지하고 유료 요금제 전환은 실행하지 않았다.
 - 사용자가 Railway 테스트 주소에서 정상 동작을 확인했다. 기기 수와 네트워크 조건은 확인하지 않았으므로 실기기 두 대 검증 완료로 기록하지 않는다.
