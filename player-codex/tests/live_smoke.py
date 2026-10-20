@@ -71,11 +71,13 @@ def validate() -> None:
                 'id="demo-schedule"', 'id="demo-install"', 'id="demo-access"',
                 'id="demo-content"', 'id="hinnon"', 'id="pvp"', 'id="demo-changes"',
                 'id="community-tips"', 'id="beta-note-title"', 'data-source-kind="community"',
-                'data-time-zone="America/Regina"', '2026-10-19T17:00:00Z',
+                'data-time-zone="UTC"', '2026-10-19T17:00:00Z',
                 '2026-10-26T17:00:00Z', '2026-10-18 01:00:40 UTC',
                 'https://steamcommunity.com/games/3218230/announcements/detail/712289492929610763',
             ):
                 assert marker in content, f"Latest demo guide not deployed: {path} {marker}"
+            zones = re.findall(r'<tr data-time-zone="([^"]+)">', content)
+            assert zones == ["America/Los_Angeles", "Asia/Seoul", "UTC"], f"Public demo time zones mismatch: {path}"
             # Match the reviewed page's cache version instead of pinning an old one.
             local_page = Path(__file__).resolve().parents[2] / path.lstrip("/") / "index.html"
             styles = re.findall(r'href="(/player-codex/assets/demo\.css\?v=[^\"]+)"', local_page.read_text(encoding="utf-8"))

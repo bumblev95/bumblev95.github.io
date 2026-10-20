@@ -70,7 +70,7 @@ try{
           zone:row.dataset.timeZone,
           times:[...row.querySelectorAll('time')].map(t=>({boundary:t.dataset.boundary,instant:t.dateTime,label:t.innerText.replace(/\s+/g,' ').trim()}))
         })));
-        assert.deepEqual(dates.map(r=>r.zone),['America/Regina','America/Los_Angeles','Asia/Seoul','UTC'],'All demo time zones: '+route);
+        assert.deepEqual(dates.map(r=>r.zone),['America/Los_Angeles','Asia/Seoul','UTC'],'All demo time zones: '+route);
         for(const row of dates){
           assert.deepEqual(row.times.map(t=>t.boundary),['start','end'],'Both demo boundaries: '+route);
           for(const time of row.times){
