@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-21T06:29:13Z",
+  "last_post_at": "2026-10-21T14:03:09Z",
   "items": [
+    {
+      "id": "1847286114028968",
+      "title": "[ArcheAge Chronicles] Early Access Content, Future Plans & Pricing",
+      "published_at": "2026-10-21T14:03:09Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847286114028968",
+      "excerpt": "Executive Producer Ham shares what you can expect from ArcheAge Chronicles as we prepare for Early Access. From the regions you’ll explore to the improvements shaped by your feedback…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847286114027712",
       "title": "[Notice] Black Screen When Launching ArcheAge Chronicles",
