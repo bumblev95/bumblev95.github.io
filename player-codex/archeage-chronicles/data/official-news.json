@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-19T16:45:04Z",
+  "last_post_at": "2026-10-21T06:29:13Z",
   "items": [
+    {
+      "id": "1847286114027712",
+      "title": "[Notice] Black Screen When Launching ArcheAge Chronicles",
+      "published_at": "2026-10-21T06:29:13Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847286114027712",
+      "excerpt": "Hello, Pioneers!We are aware that some players may experience a black screen when launching ArcheAge Chronicles.If you encounter this issue, please allow the game some time to load…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1846651706691186",
       "title": "ArcheAge Chronicles – Steam Next Fest Demo Is Now Live!",
