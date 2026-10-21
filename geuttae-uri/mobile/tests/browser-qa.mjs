@@ -10,18 +10,26 @@ const server=createServer(async(req,res)=>{try{let pathname=new URL(req.url,'htt
 const browser=await chromium.launch({args:['--no-sandbox']}),errors=[];
 try{
  const context=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844},isMobile:true,hasTouch:true}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
- await context.addInitScript(()=>{window.nativeCalls=[];window.__NATIVE__={share:async value=>nativeCalls.push({share:value}),saveFile:async(blob,filename)=>{nativeCalls.push({filename,type:blob.type,size:blob.size,head:(await blob.text()).slice(0,20)});},exit:()=>nativeCalls.push({exit:true})};});
+ await context.addInitScript(()=>{window.nativeCalls=[];window.adCalls=[];window.__ADS_STATUS__={enabled:true,testMode:true};window.__NATIVE__={ads:{privacy:async()=>{adCalls.push('privacy');return {status:'updated'};},ageChoice:async()=>{adCalls.push('age');return {status:'cancelled'};},showAtBreak:async o=>{adCalls.push(o);return {shown:false,status:'not-ready'};}},share:async value=>nativeCalls.push({share:value}),saveFile:async(blob,filename)=>{nativeCalls.push({filename,type:blob.type,size:blob.size,head:(await blob.text()).slice(0,20)});},exit:()=>nativeCalls.push({exit:true})};});
  const outbound=[];page.on('request',req=>outbound.push(req.url()));
- await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.getByText('ANDROID TEST v0.5.2',{exact:true}).waitFor({state:'attached'});
- await page.locator('#settings-toggle').click();await page.locator('#release-notes').click();await page.locator('#close-release').click();
+ await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.locator('#build-label').waitFor({state:'attached'});
+ await page.locator('#settings-toggle').click();await page.locator('#ads-privacy').click();await page.locator('#ads-age').click();await page.locator('#ads-test').click();assert.deepEqual(await page.evaluate(()=>adCalls),['privacy','age',{placement:'test'}]);await page.locator('#release-notes').click();await page.locator('#close-release').click();
  assert.equal(await page.locator('.banner-demo').count(),0);
  await page.locator('[data-action="demo"]').first().click();await page.locator('[data-action="compose"]').first().click();await page.locator('[data-mode="ai"]').click();assert.match(await page.locator('#ai-compose').innerText(),/출시 예정/);
  await page.evaluate(()=>window.dispatchEvent(new Event('thenus-back')));assert.equal(await page.locator('#modal').isVisible(),false);
  await page.locator('[data-action="start"]').click();
  for(let round=0;round<3;round++){if(round<2){await page.locator('[data-action="choose"][data-choice="0"]').click();await page.locator('[data-action="answer"]').click();}else await page.locator('[data-action="demo-answers"]').click();await page.locator('[data-action="next"]').click();}
- assert.equal(await page.locator('#modal').isVisible(),false);await page.locator('[data-action="memory-preview"]').click();
- await page.locator('[data-action="memory-save"]').click();await page.waitForFunction(()=>nativeCalls.length>0);let calls=await page.evaluate(()=>nativeCalls);assert.match(calls[0].head,/<!doctype html>/i);assert.equal(calls[0].filename,'Then-Us-Memory-Book.html');
- await page.locator('[data-action="memory-pdf"]').click();await page.waitForFunction(()=>nativeCalls.length===2);calls=await page.evaluate(()=>nativeCalls);assert.equal(calls[1].filename,'Then-Us-Memory-Book.pdf');assert.match(calls[1].head,/%PDF-1.4/);assert.ok(calls[1].size>10000);
+ assert.equal(await page.locator('#modal').isVisible(),false);
+ await page.locator('#app [data-action="plans"]').click();
+ assert.doesNotMatch(await page.locator('#modal').innerText(),/Ultimate|AI 100|AI 300|7[.]99/);
+ assert.match(await page.locator('#modal').innerText(),/로그인한 뒤 한 번 구매/);
+ await page.locator('.modal-close').click();await page.locator('#settings-toggle').click();await page.locator('[data-language="en"]').click();await page.locator('#close-settings').click();
+ await page.locator('#app [data-action="plans"]').click();const planText=await page.locator('#modal').innerText();
+ assert.match(planText,/Sign in and make a one-time purchase/);assert.match(planText,/Google test ads/);assert.match(planText,/Check account, purchase and restore options in Settings/);assert.doesNotMatch(planText,/[가-힣]|Ultimate|AI 100|AI 300|7[.]99/);
+ await page.locator('.modal-close').click();await page.locator('#settings-toggle').click();await page.locator('[data-language="ko"]').click();await page.locator('#close-settings').click();
+ await page.locator('[data-action="memory-preview"]').click();
+ await page.locator('[data-action="memory-save"]').click();await page.waitForFunction(()=>nativeCalls.length>0);let calls=await page.evaluate(()=>nativeCalls);assert.match(calls[0].head,/<!doctype html>/i);assert.equal(calls[0].filename,'Us-Back-Then-Memory-Book.html');
+ await page.locator('[data-action="memory-pdf"]').click();await page.waitForFunction(()=>nativeCalls.length===2);calls=await page.evaluate(()=>nativeCalls);assert.equal(calls[1].filename,'Us-Back-Then-Memory-Book.pdf');assert.match(calls[1].head,/%PDF-1.4/);assert.ok(calls[1].size>10000);
  await page.locator('[data-action="memory-pdf"]').waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector('[data-action="memory-pdf"]').disabled);
  await page.evaluate(()=>{window.__NATIVE__.saveFile=async()=>{const e=new Error('cancel');e.code='CANCELLED';throw e;};});await page.locator('[data-action="memory-pdf"]').click();await page.waitForFunction(()=>document.getElementById('toast').textContent==='PDF 저장을 중단했어요.');
  await page.screenshot({path:path.join(out,'android-book.png'),fullPage:true});

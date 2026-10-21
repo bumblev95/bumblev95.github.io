@@ -1,34 +1,21 @@
-# 그때 우리 Android TEST
+# Us Back Then / 그때 우리 — Google Play release candidate
 
-기존 웹 클라이언트를 로컬로 묶은 Capacitor 8 앱입니다. 앱을 열 때 원격 웹 코드를 내려받지 않으며, 기존 Railway 서버와 같은 게임 방을 사용합니다. AI는 출시 예정 안내만 보이며 호출하지 않습니다. 앱의 로컬 HTTPS hostname은 기존 서버가 허용하는 `bumblev95.github.io`이며, 해당 호스트의 UI 요청은 Capacitor가 APK 안의 파일로 처리합니다. 서버 CORS 설정 변경 없이 기존 API에 연결합니다.
+Release: com.bumblevai.thenus, version 1.0.1, versionCode 10001. Debug keeps a separate .test package and -TEST version suffix. Android API 24+, target API 36. Java 21 and Node 22+ required.
 
-- 앱 ID: `com.bumblevai.thenus.test` (정식 앱과 나란히 설치할 테스트 패키지)
-- 버전: `0.5.2` / versionCode `502`
-- Android 7.0(API 24) 이상, 최신 Android System WebView 권장
-- 초대: 네이티브 공유 창에 웹 초대 링크 제공; 설치하지 않은 친구도 웹으로 입장
-- 파일: Android 저장 위치 선택 창(`ACTION_CREATE_DOCUMENT`)으로 PDF/HTML 내보내기. 저장을 취소하면 성공 안내 없음
-- 사진: 시스템 파일 선택기, 광범위한 사진첩/저장소/카메라 권한 없음
-- 백그라운드 복귀 시 서버 상태 재연결. 게임 시간은 앱을 나가도 계속 흐름
-- 뒤로가기: 열려 있는 창 닫기 → 모임에서 홈으로 가기 확인 → 홈에서 앱 종료
-- 결제·광고 SDK 없음; 포토북 무료 테스트. 스토어 공개 배포는 아직 하지 않음
+English app name: Us Back Then. Korean app name: 그때 우리. The initial interface follows the primary device locale, with English fallback. An in-app selection persists; player text stays as written.
 
-## 빌드
+The candidate bundles immutable releases/1.0.0. The published web preview stays on its existing version. The approved yellow photo/quiz icon is packaged in all launcher densities and adaptive icons. No broad photo-library, camera, microphone or location permission is requested. AdMob 25.5.0 and UMP 4.0.0 are included; their merged manifest adds advertising/network permissions, including AD_ID. Play Billing 9.1.0 is included, with checkout still disabled.
 
-Node 22+, Java 21, Android SDK 36과 Build Tools 36.0.0을 설치합니다.
+The home screen now links directly to personal ad removal, with optional sign-in at the bottom. Settings separate the ad-removal card from account management at the end. Verified Play prices and account entitlements drive the home card; no price is hard-coded. The Google sign-in button keeps its approved logo and styling.
 
-```sh
-cd geuttae-uri/mobile
-npm ci
-npm run sync
-npm test
-cd android
-./gradlew assembleDebug lintDebug
-```
+## Build
 
-APK: `android/app/build/outputs/apk/debug/app-debug.apk`. GitHub Actions의 **Then Us Android APK** 실행에서도 APK를 받을 수 있습니다. 디버그 서명은 테스트용이며 Play Store 출시에는 정식 앱 ID, 릴리스 서명과 별도 심사가 필요합니다. 서명 키를 저장소에 넣지 마세요.
+Run npm ci, npm run sync, npm test, then android/gradlew assembleDebug bundleRelease assembleRelease lintDebug lintRelease. CI produces a debug APK and unsigned release AAB/APK. Sign privately using the retained upload key; never commit keys or put them in public CI artifacts. Google Play App Signing handles store distribution.
 
-사진·문제·세션 키를 네이티브 영구 저장소에 복제하지 않습니다. 서버 사본 삭제와 포토북 동의 규칙은 웹과 같습니다. 앱 프로세스 종료 후 저장하지 않은 추억집을 복원하지 못하므로 완료 화면에서 파일로 내보내야 합니다.
+## Submission gates
 
-`thenus://room?code=ABCDEFGH` 형태의 선택적 앱 열기 스킴은 방 코드만 읽습니다. 웹 링크 자동 열기(검증된 App Links)는 아직 설정하지 않았습니다. 웹과 앱의 세션은 서로 분리되며 입장 승인을 각각 받아야 합니다.
+See store/SUBMISSION-REVIEW.md. This is a release candidate, not Google approval or a completed submission. The final privacy URL, actual hosting/backup retention, operational moderation channel, Console declarations and physical-device tests must be completed. Deploy and verify the backend photo-hiding/reporting/host-removal change before advertising it as live.
 
-한국어/영어: 첫 실행은 기기 언어에 따르고, 오른쪽 위 설정 메뉴에서 즉시 변경할 수 있습니다. 선택한 언어만 localStorage에 기록하며 게임 세션과 작성 내용은 변경하지 않습니다. 사용자 질문과 이야기를 자동 번역하지 않습니다.
+Current file exports remain free. AI generation and live purchases are not enabled. Debug builds use Google test advertising IDs; the default release build has live ads disabled. Production IDs supplied by the owner are configured, but activation requires an explicit -PthenusLiveAds=true build after policy, consent and device QA gates. Settings include ad privacy/age controls and a debug-only test-ad button. Unknown or under-18 age choices never initialize/request advertising. This age selection is not identity verification. Ads may run only on a confirmed transition to another game after a completed real gathering, once per game and at most once per five minutes; no-fill never delays play. Blocking is room-session scoped, not a global account/device ban.
+
+Personal ad removal purchase/restore code is now included but Play checkout remains disabled pending owner product/price/credential setup. See [the billing setup guide](store/GOOGLE-PLAY-BILLING-SETUP.md). The existing working login APK uses an earlier CI signing certificate; a replacement APK must have its actual certificate registered before OAuth tests.
