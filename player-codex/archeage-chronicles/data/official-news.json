@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-21T14:03:09Z",
+  "last_post_at": "2026-10-23T05:00:32Z",
   "items": [
+    {
+      "id": "1847286114035008",
+      "title": "[Notice] New Server Added",
+      "published_at": "2026-10-23T05:00:32Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847286114035008",
+      "excerpt": "Hello, Pioneers!We’re pleased to announce that a Brazil server has been added to ArcheAge Chronicles!In response to your requests, we’ve added a server located in Brazil to help…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847286114028968",
       "title": "[ArcheAge Chronicles] Early Access Content, Future Plans & Pricing",
