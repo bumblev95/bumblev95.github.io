@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-23T05:00:32Z",
+  "last_post_at": "2026-10-26T17:00:23Z",
   "items": [
+    {
+      "id": "1847286114045726",
+      "title": "ArcheAge Chronicles – Steam Next Fest Demo Has Ended",
+      "published_at": "2026-10-26T17:00:23Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847286114045726",
+      "excerpt": "The ArcheAge Chronicles Steam Next Fest demo has officially come to an end.Thank you to everyone who stepped into Auroria, explored the world, challenged the Throne of Hinnon, and took…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847286114035008",
       "title": "[Notice] New Server Added",
