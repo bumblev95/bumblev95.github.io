@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-27T15:08:42Z",
+  "last_post_at": "2026-10-29T10:20:30Z",
   "items": [
+    {
+      "id": "1847920302234195",
+      "title": "A Letter from Producer Ham — From the Demo to Early Access",
+      "published_at": "2026-10-29T10:20:30Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847920302234195",
+      "excerpt": "Hello, Pioneers! First, thank you to everyone who played the Steam Next Fest demo.It was the first time since the September network test that we opened the game to everyone, and far…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847286114049261",
       "title": "ArcheAge Chronicles Release Date Revealed — Pre-Orders Now Open",
