@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-10-29T10:20:30Z",
+  "last_post_at": "2026-11-02T05:56:25Z",
   "items": [
+    {
+      "id": "1847920302247056",
+      "title": "[Notice] Server Transfers and Cross-Server Play",
+      "published_at": "2026-11-02T05:56:25Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847920302247056",
+      "excerpt": "Hello, Pioneers.We'd like to clarify how server selection, server transfers, and cross-server play will work in ArcheAge Chronicles Early Access.Server TransfersOnce you create a…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847920302234195",
       "title": "A Letter from Producer Ham — From the Demo to Early Access",
