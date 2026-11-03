@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-02T05:56:25Z",
+  "last_post_at": "2026-11-03T06:28:42Z",
   "items": [
+    {
+      "id": "1847920302250804",
+      "title": "[Notice] Language Support and Steam Family Sharing",
+      "published_at": "2026-11-03T06:28:42Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1847920302250804",
+      "excerpt": "Hello, Pioneers.Ahead of the Early Access launch of ArcheAge Chronicles, we'd like to share some updates regarding additional language options and Steam Family Sharing.Machine…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847920302247056",
       "title": "[Notice] Server Transfers and Cross-Server Play",
