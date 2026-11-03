@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-03T13:38:11Z",
+  "last_post_at": "2026-11-03T23:16:31Z",
   "items": [
+    {
+      "id": "1848557880477098",
+      "title": "ArcheAge Chronicles – Early Access Is Now Live!",
+      "published_at": "2026-11-03T23:16:31Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1848557880477098",
+      "excerpt": "Hello, Pioneers. The wait is over. ArcheAge Chronicles is now available in Early Access on Steam! The gates to Auroria are open. Step into a vast open world, take on challenging…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1847920302252017",
       "title": "Early Access Pre-Download Now Available!",
