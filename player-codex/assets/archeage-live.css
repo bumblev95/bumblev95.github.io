@@ -98,3 +98,25 @@
   .live-media-shot figcaption{padding:13px 14px 16px}
 }
 @media(prefers-reduced-motion:reduce){.live-media-shot-image img{transition:none}}
+
+/* Optional third-party gameplay video catalog. All playback needs a click. */
+.live-community-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:22px 0}
+.live-community-card{min-width:0;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:linear-gradient(145deg,#192638,#101923)}
+.live-community-poster{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:radial-gradient(circle at 50% 40%,#374a59,#0e1928 70%)}
+.live-community-poster img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(.79);transition:filter .2s}
+.live-community-poster:hover img{filter:brightness(.95)}
+.live-community-poster iframe{display:block;width:100%;height:100%;border:0}
+.live-community-play{appearance:none;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:0;color:#fff;cursor:pointer;background:linear-gradient(180deg,transparent 45%,rgba(7,15,26,.37));font-size:13px;font-family:inherit;font-weight:800}
+.live-community-triangle{display:grid;place-items:center;width:61px;height:61px;padding-left:4px;border-radius:50%;background:#e8c995;color:#182434;font-size:23px;box-shadow:0 6px 30px rgba(0,0,0,.4);transition:transform .18s}
+.live-community-play:hover .live-community-triangle{transform:scale(1.08)}
+.live-community-play:focus-visible{outline:3px solid #f7d8a2;outline-offset:-5px}
+.live-community-copy{padding:17px 19px 20px;display:flex;flex-direction:column;align-items:flex-start;gap:9px}
+.live-community-badge{font-size:10px;font-weight:850;letter-spacing:.06em;border-radius:6px;padding:5px 9px;line-height:1.45;border:1px solid rgba(209,231,245,.22)}
+.live-community-new{color:#b9ebdf;background:rgba(71,153,131,.12)}
+.live-community-archive{color:#e7c69b;background:rgba(168,111,62,.11)}
+.live-community-byline{font-size:11px;color:#bdcada;line-height:1.55}
+.live-community-copy h3{margin:0;font-size:18px;line-height:1.4;letter-spacing:-.02em;overflow-wrap:anywhere}
+.live-community-copy p{font-size:13px;color:#bac9d9;line-height:1.7;margin:0}
+.live-community-copy a{color:#edce98;font-size:12px;font-weight:800;text-decoration:underline;text-underline-offset:3px;line-height:1.6;margin-top:auto}
+@media(max-width:700px){.live-community-grid{grid-template-columns:1fr;gap:13px}.live-community-copy{padding:16px 17px 20px}.live-community-triangle{width:56px;height:56px}}
+@media(prefers-reduced-motion:reduce){.live-community-poster img,.live-community-triangle{transition:none}}

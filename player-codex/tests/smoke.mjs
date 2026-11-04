@@ -76,7 +76,7 @@ try{
           sectionOrder:[...document.querySelectorAll('main section[id]')].map(x=>x.id),
           galleryScroll:document.querySelector('.live-media-shots')?.scrollWidth,
           galleryClient:document.querySelector('.live-media-shots')?.clientWidth,
-          styleLoaded:[...document.styleSheets].some(x=>x.href?.includes('archeage-live.css?v=2'))
+          styleLoaded:[...document.styleSheets].some(x=>x.href?.includes('archeage-live.css?v=3'))
         }));
         assert.deepEqual(media.frames,[
           'https://www.youtube-nocookie.com/embed/mgidt1SW5Pc',
@@ -89,6 +89,20 @@ try{
         assert(media.sectionOrder.indexOf('media')<media.sectionOrder.indexOf('first-hours'),'Videos before guide text: '+route);
         assert(media.sectionOrder.indexOf('screenshots')<media.sectionOrder.indexOf('sources'),'Gallery before sources: '+route);
         assert(media.styleLoaded,'Versioned media stylesheet: '+route);
+        const creators=await page.locator('#community-videos .live-community-card').evaluateAll(nodes=>nodes.map(n=>({
+          id:n.getAttribute('data-community-id'),
+          edition:n.getAttribute('data-community-build'),
+          source:n.querySelector('.live-community-copy a')?.getAttribute('href'),
+          thumb:n.querySelector('img')?.getAttribute('src'),
+          alt:n.querySelector('img')?.getAttribute('alt')
+        })));
+        assert.deepEqual(creators.map(v=>v.id),['gvTfA_jFJcA','C0FTfnYDqps','RSBdrGTqRpA','RVQmTwtTvcU'],'Creator video IDs: '+route);
+        assert.deepEqual(creators.map(v=>v.edition),['launch','launch','demo','demo'],'Release/demo build labels: '+route);
+        assert(creators.every(v=>v.source==='https://www.youtube.com/watch?v='+v.id),'Every creator card links to source: '+route);
+        assert(creators.every(v=>v.thumb==='https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg' && v.alt),'Creator thumbnails and accessible alt: '+route);
+        assert.equal(await page.locator('#community-videos iframe').count(),0,'Privacy: creator players load only on click: '+route);
+        assert(await page.locator('.live-toc a[href="#community-videos"]').count(),'Creator section is in table of contents: '+route);
+
         if(width<=390)assert(media.galleryScroll>media.galleryClient,'Mobile screenshot strip supports side scrolling: '+route);
       }
       if(route.includes('/demo/')){
@@ -170,8 +184,13 @@ try{
   assert(await page.locator('[data-guide-check]').first().isChecked(),'Checklist persists after reload');
   await page.locator('#live-reset').click();
   assert(!(await page.locator('[data-guide-check]').first().isChecked()),'Checklist reset works');
+  await context.route('https://www.youtube-nocookie.com/**', route => route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Publisher player test stub</title>'}));
+  await page.locator('#community-videos [data-community-play]').first().click();
+  assert.equal(await page.locator('#community-videos iframe').count(),1,'Creator player loads only after click');
+  assert.equal(await page.locator('#community-videos iframe').first().getAttribute('src'),'https://www.youtube-nocookie.com/embed/gvTfA_jFJcA?autoplay=1&rel=0','Creator playback uses original no-cookie embed');
   await page.locator('.lang').click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/guide/','Guide language switch');
+  assert.equal(await page.locator('#community-videos .live-community-card').count(),4,'English page retains creator videos');
   await context.close();
   console.log('PASS: 10 routes × 4 viewport sizes, field-guide checklist, navigation, language links, page errors and horizontal overflow.');
 }finally{
