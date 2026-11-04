@@ -27,6 +27,7 @@ ROUTES = {
 OTHER = {
     "/player-codex/assets/site.css": "@media",
     "/player-codex/assets/archeage-live.css": ".live-head",
+    "/player-codex/assets/archeage-community-videos.js": "data-community-play",
     "/player-codex/assets/demo.css": ".demo-times",
     "/player-codex/assets/status.js": "data-event-status",
     "/player-codex/sitemap.xml": "/player-codex/archeage-chronicles/guide/ko/",
@@ -91,13 +92,20 @@ def validate() -> None:
                 'id="media"', 'id="screenshots"',
                 'https://www.youtube-nocookie.com/embed/mgidt1SW5Pc',
                 'https://www.youtube-nocookie.com/embed/E12uscaQvSA',
-                'href="/player-codex/assets/archeage-live.css?v=2"',
+                'href="/player-codex/assets/archeage-live.css?v=3"',
                 'clan.fastly.steamstatic.com/images/45216791/',
                 'image.api.playstation.com/vulcan/',
             ):
                 assert marker in content, f"Missing official video/gallery element: {path} {marker}"
             assert content.count('class="live-media-shot"') == 6, f"Screenshot count mismatch: {path}"
             assert content.count('class="live-media-frame"') == 2, f"Embedded video count mismatch: {path}"
+            for video_id in ("gvTfA_jFJcA", "C0FTfnYDqps", "RSBdrGTqRpA", "RVQmTwtTvcU"):
+                assert f'data-community-id="{video_id}"' in content, f"Missing sourced player video: {path} {video_id}"
+                assert f'href="https://www.youtube.com/watch?v={video_id}"' in content, f"Missing creator original video: {path} {video_id}"
+            assert 'id="community-videos"' in content, f"Missing player video section: {path}"
+            assert content.count('class="live-community-card"') == 4, f"Creator video count mismatch: {path}"
+            assert content.count('data-community-build="demo"') == 2, f"Missing demo/release source labelling: {path}"
+            assert 'archeage-community-videos.js?v=1' in content, f"Missing opt-in player script: {path}"
         if path in OFFICIAL_VIDEOS:
             assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
