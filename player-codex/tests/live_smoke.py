@@ -15,8 +15,10 @@ BASE = "https://bumblev95.github.io"
 ROUTES = {
     "/player-codex/": ("en", "Explore games"),
     "/player-codex/ko/": ("ko", "게임 선택"),
-    "/player-codex/archeage-chronicles/": ("en", "Guides in development"),
-    "/player-codex/archeage-chronicles/ko/": ("ko", "준비 중인 공략"),
+    "/player-codex/archeage-chronicles/": ("en", "Launch field guides"),
+    "/player-codex/archeage-chronicles/ko/": ("ko", "출시 버전 실전 공략"),
+    "/player-codex/archeage-chronicles/guide/": ("en", "First two hours"),
+    "/player-codex/archeage-chronicles/guide/ko/": ("ko", "처음 2시간"),
     "/player-codex/archeage-chronicles/demo/": ("en", "Seven things to verify"),
     "/player-codex/archeage-chronicles/demo/ko/": ("ko", "데모에서 먼저 확인할"),
     "/player-codex/archeage-chronicles/news/": ("en", "Official Updates"),
@@ -24,9 +26,10 @@ ROUTES = {
 }
 OTHER = {
     "/player-codex/assets/site.css": "@media",
+    "/player-codex/assets/archeage-live.css": ".live-head",
     "/player-codex/assets/demo.css": ".demo-times",
     "/player-codex/assets/status.js": "data-event-status",
-    "/player-codex/sitemap.xml": "/player-codex/archeage-chronicles/demo/ko/",
+    "/player-codex/sitemap.xml": "/player-codex/archeage-chronicles/guide/ko/",
 }
 OFFICIAL_VIDEOS = {
     "/player-codex/archeage-chronicles/": (
