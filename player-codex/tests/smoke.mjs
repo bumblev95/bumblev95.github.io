@@ -51,6 +51,8 @@ try{
     // Stub only the third-party AdSense library during layout tests: this
   // prevents external ad runtime errors and never contacts a real ad server.
   await context.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({status:200,contentType:'application/javascript',body:'/* isolated Auto ads preview */'}));
+    // Keep embedded video visuals offline for the layout test; verify real URLs in HTML instead.
+    await context.route('https://www.youtube-nocookie.com/**', route => route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Official video frame test stub</title>'}));
     const page=await context.newPage();
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
@@ -66,6 +68,29 @@ try{
       }));
       assert(state.heading && state.visible,'Main content visible: '+route+' at '+width+'px');
       assert(state.scroll<=state.viewport+2,'Horizontal overflow: '+route+' at '+width+'px '+JSON.stringify(state));
+      if(route.includes('/guide/')){
+        const media=await page.evaluate(()=>({
+          frames:[...document.querySelectorAll('#media iframe')].map(x=>x.getAttribute('src')),
+          imgs:[...document.querySelectorAll('#screenshots .live-media-shot img')].map(x=>({src:x.getAttribute('src'),alt:x.getAttribute('alt')})),
+          sources:[...document.querySelectorAll('#screenshots .live-media-shot figcaption a')].map(a=>a.href),
+          sectionOrder:[...document.querySelectorAll('main section[id]')].map(x=>x.id),
+          galleryScroll:document.querySelector('.live-media-shots')?.scrollWidth,
+          galleryClient:document.querySelector('.live-media-shots')?.clientWidth,
+          styleLoaded:[...document.styleSheets].some(x=>x.href?.includes('archeage-live.css?v=2'))
+        }));
+        assert.deepEqual(media.frames,[
+          'https://www.youtube-nocookie.com/embed/mgidt1SW5Pc',
+          'https://www.youtube-nocookie.com/embed/E12uscaQvSA'
+        ],'Publisher video embeds: '+route);
+        assert.equal(media.imgs.length,6,'Six official screenshot/still cards: '+route);
+        assert.equal(new Set(media.imgs.map(x=>x.src)).size,6,'Six distinct referenced images: '+route);
+        assert(media.imgs.every(x=>x.alt && x.src.startsWith('https://')),'Image alt and HTTPS source: '+route);
+        assert.equal(media.sources.length,6,'Every image has individual provenance: '+route);
+        assert(media.sectionOrder.indexOf('media')<media.sectionOrder.indexOf('first-hours'),'Videos before guide text: '+route);
+        assert(media.sectionOrder.indexOf('screenshots')<media.sectionOrder.indexOf('sources'),'Gallery before sources: '+route);
+        assert(media.styleLoaded,'Versioned media stylesheet: '+route);
+        if(width<=390)assert(media.galleryScroll>media.galleryClient,'Mobile screenshot strip supports side scrolling: '+route);
+      }
       if(route.includes('/demo/')){
         const release=JSON.parse(readFileSync(path.join(root,'player-codex/archeage-chronicles/data/playtest-records.json'),'utf8')).release;
         const dates=await page.locator('.demo-times tbody tr').evaluateAll(rows=>rows.map(row=>({

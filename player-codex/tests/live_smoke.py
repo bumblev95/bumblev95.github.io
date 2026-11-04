@@ -86,6 +86,18 @@ def validate() -> None:
             styles = re.findall(r'href="(/player-codex/assets/demo\.css\?v=[^\"]+)"', local_page.read_text(encoding="utf-8"))
             assert len(styles) == 1, f"Expected one demo stylesheet in source: {path}"
             assert styles[0] in content, f"Current demo stylesheet not deployed: {path} {styles[0]}"
+        if "/guide/" in path:
+            for marker in (
+                'id="media"', 'id="screenshots"',
+                'https://www.youtube-nocookie.com/embed/mgidt1SW5Pc',
+                'https://www.youtube-nocookie.com/embed/E12uscaQvSA',
+                'href="/player-codex/assets/archeage-live.css?v=2"',
+                'clan.fastly.steamstatic.com/images/45216791/',
+                'image.api.playstation.com/vulcan/',
+            ):
+                assert marker in content, f"Missing official video/gallery element: {path} {marker}"
+            assert content.count('class="live-media-shot"') == 6, f"Screenshot count mismatch: {path}"
+            assert content.count('class="live-media-frame"') == 2, f"Embedded video count mismatch: {path}"
         if path in OFFICIAL_VIDEOS:
             assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
