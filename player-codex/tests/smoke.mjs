@@ -12,6 +12,8 @@ const routes=[
   '/player-codex/ko/',
   '/player-codex/archeage-chronicles/',
   '/player-codex/archeage-chronicles/ko/',
+  '/player-codex/archeage-chronicles/guide/',
+  '/player-codex/archeage-chronicles/guide/ko/',
   '/player-codex/archeage-chronicles/demo/',
   '/player-codex/archeage-chronicles/demo/ko/',
   '/player-codex/archeage-chronicles/news/',
@@ -28,7 +30,7 @@ try{
     assert(html.includes('rel="canonical"'), 'Canonical: '+route);
     assert(html.includes('hreflang="ko"') && html.includes('hreflang="en"'), 'Bilingual hreflang: '+route);
     assert(html.includes('<main id="main">'), 'Main landmark: '+route);
-    if(route.includes('/archeage-chronicles/') && !route.includes('/demo/') && !route.includes('/news/')) {
+    if(route.includes('/archeage-chronicles/') && !route.includes('/demo/') && !route.includes('/news/') && !route.includes('/guide/')) {
       assert(html.includes('<!-- official-news:start -->') && html.includes('<!-- official-news:end -->'),'Safe news markers missing: '+route);
       assert(html.includes('id="official-updates"'),'Latest official updates block missing: '+route);
     }
@@ -128,12 +130,25 @@ try{
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/ko/','Language toggle to Korean');
   assert.equal(await page.locator('.official-video').count(),3,'Korean media cards visible');
   assert.equal(await page.locator('.official-video').first().getAttribute('data-official-video'),'auroria','Newest gameplay video should be the first card');
-  await page.getByRole('link',{name:/준비 가이드 보기/}).click();
+  await page.getByRole('link',{name:/기존 데모 가이드 보기/}).click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/demo/ko/','Korean playtest guide link');
   await page.locator('.lang').click();
   assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/demo/','Guide language switch');
+  // Live guide checklist, localization, browser persistence and reset.
+  await page.goto(origin+'/player-codex/archeage-chronicles/guide/ko/',{waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('[data-guide-check]').count(),8,'Eight first-hours tasks available');
+  const guideLinks=await page.evaluate(()=>[...document.querySelectorAll('.live-toc a[href^="#"]')].map(a=>a.hash.slice(1)).filter(id=>!document.getElementById(id)));
+  assert.deepEqual(guideLinks,[],'All field guide section anchors resolve');
+  await page.locator('[data-guide-check]').first().check();
+  assert((await page.locator('#live-progress').innerText()).startsWith('1 / 8'),'Checklist progress visible');
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert(await page.locator('[data-guide-check]').first().isChecked(),'Checklist persists after reload');
+  await page.locator('#live-reset').click();
+  assert(!(await page.locator('[data-guide-check]').first().isChecked()),'Checklist reset works');
+  await page.locator('.lang').click();
+  assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/guide/','Guide language switch');
   await context.close();
-  console.log('PASS: 8 routes × 4 viewport sizes, internal navigation, language links, page errors and horizontal overflow.');
+  console.log('PASS: 10 routes × 4 viewport sizes, field-guide checklist, navigation, language links, page errors and horizontal overflow.');
 }finally{
   if(browser)await browser.close();
   if(server)server.kill('SIGTERM');
