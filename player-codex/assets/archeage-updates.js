@@ -9,8 +9,8 @@
     try {
       var u = new URL(value);
       return u.protocol === "https:" && (
-        (u.hostname === "steamstore-a.akamaihd.net" && /^\\/news\\/externalpost\\/steam_community_announcements\\/\\d+$/.test(u.pathname)) ||
-        (u.hostname === "steamcommunity.com" && /^\\/(?:games|app)\\/3218230\\//.test(u.pathname))
+        (u.hostname === "steamstore-a.akamaihd.net" && /^\/news\/externalpost\/steam_community_announcements\/\d+$/.test(u.pathname)) ||
+        (u.hostname === "steamcommunity.com" && /^\/(?:games|app)\/3218230\//.test(u.pathname))
       ) ? u.href : "";
     } catch (e) { return ""; }
   }
