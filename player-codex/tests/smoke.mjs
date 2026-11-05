@@ -14,6 +14,8 @@ const routes=[
   '/player-codex/archeage-chronicles/ko/',
   '/player-codex/archeage-chronicles/guide/',
   '/player-codex/archeage-chronicles/guide/ko/',
+  '/player-codex/archeage-chronicles/media/',
+  '/player-codex/archeage-chronicles/media/ko/',
   '/player-codex/archeage-chronicles/demo/',
   '/player-codex/archeage-chronicles/demo/ko/',
   '/player-codex/archeage-chronicles/news/',
@@ -30,7 +32,7 @@ try{
     assert(html.includes('rel="canonical"'), 'Canonical: '+route);
     assert(html.includes('hreflang="ko"') && html.includes('hreflang="en"'), 'Bilingual hreflang: '+route);
     assert(html.includes('<main id="main">'), 'Main landmark: '+route);
-    if(route.includes('/archeage-chronicles/') && !route.includes('/demo/') && !route.includes('/news/') && !route.includes('/guide/')) {
+    if(route.includes('/archeage-chronicles/') && !route.includes('/demo/') && !route.includes('/news/') && !route.includes('/guide/') && !route.includes('/media/')) {
       assert(html.includes('<!-- official-news:start -->') && html.includes('<!-- official-news:end -->'),'Safe news markers missing: '+route);
       assert(html.includes('id="official-updates"'),'Latest official updates block missing: '+route);
     }
@@ -69,26 +71,35 @@ try{
       assert(state.heading && state.visible,'Main content visible: '+route+' at '+width+'px');
       assert(state.scroll<=state.viewport+2,'Horizontal overflow: '+route+' at '+width+'px '+JSON.stringify(state));
       if(route.includes('/guide/')){
+        const info=await page.evaluate(()=>({
+          ids:[...document.querySelectorAll('.pc-guide-sidebar a[href^="#"]')].map(a=>a.hash.slice(1)),
+          style:[...document.styleSheets].some(x=>x.href?.includes('archeage-live.css?v=4')),
+          feed:!!document.querySelector('[data-pc-official-feed]'),
+          mediaLink:document.querySelector('#media-preview a[href*="/media/"]')?.getAttribute('href'),
+          noMedia:!document.querySelector('#media iframe, #screenshots .live-media-shot'),
+          patched:document.querySelector('#fixes')?.textContent?.includes(document.documentElement.lang==='ko'?'튜토리얼':'Tutorial'),
+          guideViewport:document.querySelector('.pc-guide-sidebar')?.clientWidth
+        }));
+        const ids=new Set([...await page.locator('[id]').evaluateAll(nodes=>nodes.map(n=>n.id))]);
+        assert(info.ids.every(id=>ids.has(id)),'Left/mobile menu anchors resolve: '+route);
+        assert(info.style && info.feed && info.noMedia && info.mediaLink && info.patched,'Redesigned guide and latest patches: '+route);
+        assert(await page.locator('[data-guide-check]').count()===8,'Checklist preserved: '+route);
+      }
+      if(route.includes('/media/')){
         const media=await page.evaluate(()=>({
           frames:[...document.querySelectorAll('#media iframe')].map(x=>x.getAttribute('src')),
           imgs:[...document.querySelectorAll('#screenshots .live-media-shot img')].map(x=>({src:x.getAttribute('src'),alt:x.getAttribute('alt')})),
           sources:[...document.querySelectorAll('#screenshots .live-media-shot figcaption a')].map(a=>a.href),
-          sectionOrder:[...document.querySelectorAll('main section[id]')].map(x=>x.id),
           galleryScroll:document.querySelector('.live-media-shots')?.scrollWidth,
           galleryClient:document.querySelector('.live-media-shots')?.clientWidth,
-          styleLoaded:[...document.styleSheets].some(x=>x.href?.includes('archeage-live.css?v=3'))
+          style:[...document.styleSheets].some(x=>x.href?.includes('archeage-live.css?v=4'))
         }));
-        assert.deepEqual(media.frames,[
-          'https://www.youtube-nocookie.com/embed/mgidt1SW5Pc',
-          'https://www.youtube-nocookie.com/embed/E12uscaQvSA'
-        ],'Publisher video embeds: '+route);
+        assert.deepEqual(media.frames,['https://www.youtube-nocookie.com/embed/mgidt1SW5Pc','https://www.youtube-nocookie.com/embed/E12uscaQvSA'],'Publisher video embeds: '+route);
         assert.equal(media.imgs.length,6,'Six official screenshot/still cards: '+route);
-        assert.equal(new Set(media.imgs.map(x=>x.src)).size,6,'Six distinct referenced images: '+route);
-        assert(media.imgs.every(x=>x.alt && x.src.startsWith('https://')),'Image alt and HTTPS source: '+route);
-        assert.equal(media.sources.length,6,'Every image has individual provenance: '+route);
-        assert(media.sectionOrder.indexOf('media')<media.sectionOrder.indexOf('first-hours'),'Videos before guide text: '+route);
-        assert(media.sectionOrder.indexOf('screenshots')<media.sectionOrder.indexOf('sources'),'Gallery before sources: '+route);
-        assert(media.styleLoaded,'Versioned media stylesheet: '+route);
+        assert.equal(new Set(media.imgs.map(x=>x.src)).size,6,'Six distinct reference images: '+route);
+        assert(media.imgs.every(x=>x.alt && x.src.startsWith('https://')),'Image alt and HTTPS: '+route);
+        assert.equal(media.sources.length,6,'Every image has provenance: '+route);
+        assert(media.style,'Versioned media stylesheet: '+route);
         const creators=await page.locator('#community-videos .live-community-card').evaluateAll(nodes=>nodes.map(n=>({
           id:n.getAttribute('data-community-id'),
           edition:n.getAttribute('data-community-build'),
@@ -96,14 +107,13 @@ try{
           thumb:n.querySelector('img')?.getAttribute('src'),
           alt:n.querySelector('img')?.getAttribute('alt')
         })));
-        assert.deepEqual(creators.map(v=>v.id),['gvTfA_jFJcA','C0FTfnYDqps','RSBdrGTqRpA','RVQmTwtTvcU'],'Creator video IDs: '+route);
-        assert.deepEqual(creators.map(v=>v.edition),['launch','launch','demo','demo'],'Release/demo build labels: '+route);
-        assert(creators.every(v=>v.source==='https://www.youtube.com/watch?v='+v.id),'Every creator card links to source: '+route);
-        assert(creators.every(v=>v.thumb==='https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg' && v.alt),'Creator thumbnails and accessible alt: '+route);
-        assert.equal(await page.locator('#community-videos iframe').count(),0,'Privacy: creator players load only on click: '+route);
-        assert(await page.locator('.live-toc a[href="#community-videos"]').count(),'Creator section is in table of contents: '+route);
-
-        if(width<=390)assert(media.galleryScroll>media.galleryClient,'Mobile screenshot strip supports side scrolling: '+route);
+        assert.deepEqual(creators.map(v=>v.id),['gvTfA_jFJcA','C0FTfnYDqps','RSBdrGTqRpA','RVQmTwtTvcU'],'Creator IDs: '+route);
+        assert.deepEqual(creators.map(v=>v.edition),['launch','launch','demo','demo'],'Edition labels: '+route);
+        assert(creators.every(v=>v.source==='https://www.youtube.com/watch?v='+v.id),'Original creator video links: '+route);
+        assert(creators.every(v=>v.thumb==='https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg' && v.alt),'Thumbnail attribution: '+route);
+        assert.equal(await page.locator('#community-videos iframe').count(),0,'Community embeds load on click only: '+route);
+        assert(await page.locator('.pc-media-nav a[href="#community-videos"]').count(),'Media tabs link to creator videos: '+route);
+        if(width<=390)assert(media.galleryScroll>media.galleryClient,'Mobile screenshot strip scrolls: '+route);
       }
       if(route.includes('/demo/')){
         const release=JSON.parse(readFileSync(path.join(root,'player-codex/archeage-chronicles/data/playtest-records.json'),'utf8')).release;
@@ -185,14 +195,15 @@ try{
   await page.locator('#live-reset').click();
   assert(!(await page.locator('[data-guide-check]').first().isChecked()),'Checklist reset works');
   await context.route('https://www.youtube-nocookie.com/**', route => route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Publisher player test stub</title>'}));
+  await page.goto(origin+'/player-codex/archeage-chronicles/media/ko/',{waitUntil:'domcontentloaded'});
   await page.locator('#community-videos [data-community-play]').first().click();
   assert.equal(await page.locator('#community-videos iframe').count(),1,'Creator player loads only after click');
   assert.equal(await page.locator('#community-videos iframe').first().getAttribute('src'),'https://www.youtube-nocookie.com/embed/gvTfA_jFJcA?autoplay=1&rel=0','Creator playback uses original no-cookie embed');
   await page.locator('.lang').click();
-  assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/guide/','Guide language switch');
+  assert.equal(new URL(page.url()).pathname,'/player-codex/archeage-chronicles/media/','Media language switch');
   assert.equal(await page.locator('#community-videos .live-community-card').count(),4,'English page retains creator videos');
   await context.close();
-  console.log('PASS: 10 routes × 4 viewport sizes, field-guide checklist, navigation, language links, page errors and horizontal overflow.');
+  console.log('PASS: 12 routes × 4 viewports, redesigned guide, official updates, media library, checklist, language navigation, no horizontal overflow.');
 }finally{
   if(browser)await browser.close();
   if(server)server.kill('SIGTERM');
