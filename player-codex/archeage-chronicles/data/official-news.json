@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-04T19:53:17Z",
+  "last_post_at": "2026-11-05T10:19:08Z",
   "items": [
+    {
+      "id": "1848664643340629",
+      "title": "[Notice] Account Sanction Notice for Terms of Service Violation",
+      "published_at": "2026-11-05T10:19:08Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1848664643340629",
+      "excerpt": "Hello, Pioneers. To maintain a pleasant and fair gaming environment, we are continuously monitoring abnormal in-game activities and violations of our Operating Policy. During our…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1848557880480627",
       "title": "Temporary Maintenance Completed",
