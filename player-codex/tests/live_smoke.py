@@ -15,10 +15,12 @@ BASE = "https://bumblev95.github.io"
 ROUTES = {
     "/player-codex/": ("en", "Explore games"),
     "/player-codex/ko/": ("ko", "게임 선택"),
-    "/player-codex/archeage-chronicles/": ("en", "Launch field guides"),
-    "/player-codex/archeage-chronicles/ko/": ("ko", "출시 버전 실전 공략"),
+    "/player-codex/archeage-chronicles/": ("en", "Choose what you need"),
+    "/player-codex/archeage-chronicles/ko/": ("ko", "필요한 공략부터 바로"),
     "/player-codex/archeage-chronicles/guide/": ("en", "First two hours"),
     "/player-codex/archeage-chronicles/guide/ko/": ("ko", "처음 2시간"),
+    "/player-codex/archeage-chronicles/media/": ("en", "Gameplay & video library"),
+    "/player-codex/archeage-chronicles/media/ko/": ("ko", "플레이 영상과 게임 화면"),
     "/player-codex/archeage-chronicles/demo/": ("en", "Seven things to verify"),
     "/player-codex/archeage-chronicles/demo/ko/": ("ko", "데모에서 먼저 확인할"),
     "/player-codex/archeage-chronicles/news/": ("en", "Official Updates"),
@@ -27,6 +29,8 @@ ROUTES = {
 OTHER = {
     "/player-codex/assets/site.css": "@media",
     "/player-codex/assets/archeage-live.css": ".live-head",
+    "/player-codex/assets/archeage-updates.js": "data-pc-official-feed",
+    "/player-codex/assets/archeage-community-videos.js": "data-community-play",
     "/player-codex/assets/archeage-community-videos.js": "data-community-play",
     "/player-codex/assets/demo.css": ".demo-times",
     "/player-codex/assets/status.js": "data-event-status",
@@ -89,23 +93,33 @@ def validate() -> None:
             assert styles[0] in content, f"Current demo stylesheet not deployed: {path} {styles[0]}"
         if "/guide/" in path:
             for marker in (
-                'id="media"', 'id="screenshots"',
+                'id="first-hours"', 'id="fixes"', 'id="latest"',
+                'data-pc-official-feed', 'class="pc-guide-layout"',
+                'href="/player-codex/assets/archeage-live.css?v=4"',
+                'archeage-updates.js?v=1', 'id="media-preview"',
+                '1848557880480627',
+            ):
+                assert marker in content, f"Missing organized guide or update: {path} {marker}"
+            assert 'id="community-videos"' not in content, f"Creator library should not crowd guide: {path}"
+            assert 'id="screenshots"' not in content, f"Screenshot gallery should be separate: {path}"
+        if "/media/" in path:
+            for marker in (
+                'id="media"', 'id="community-videos"', 'id="screenshots"',
                 'https://www.youtube-nocookie.com/embed/mgidt1SW5Pc',
                 'https://www.youtube-nocookie.com/embed/E12uscaQvSA',
-                'href="/player-codex/assets/archeage-live.css?v=3"',
+                'href="/player-codex/assets/archeage-live.css?v=4"',
                 'clan.fastly.steamstatic.com/images/45216791/',
                 'image.api.playstation.com/vulcan/',
             ):
-                assert marker in content, f"Missing official video/gallery element: {path} {marker}"
+                assert marker in content, f"Missing publisher media in library: {path} {marker}"
             assert content.count('class="live-media-shot"') == 6, f"Screenshot count mismatch: {path}"
             assert content.count('class="live-media-frame"') == 2, f"Embedded video count mismatch: {path}"
             for video_id in ("gvTfA_jFJcA", "C0FTfnYDqps", "RSBdrGTqRpA", "RVQmTwtTvcU"):
-                assert f'data-community-id="{video_id}"' in content, f"Missing sourced player video: {path} {video_id}"
-                assert f'href="https://www.youtube.com/watch?v={video_id}"' in content, f"Missing creator original video: {path} {video_id}"
-            assert 'id="community-videos"' in content, f"Missing player video section: {path}"
-            assert content.count('class="live-community-card"') == 4, f"Creator video count mismatch: {path}"
-            assert content.count('data-community-build="demo"') == 2, f"Missing demo/release source labelling: {path}"
-            assert 'archeage-community-videos.js?v=1' in content, f"Missing opt-in player script: {path}"
+                assert f'data-community-id="{video_id}"' in content, f"Creator missing from media page: {path} {video_id}"
+                assert f'href="https://www.youtube.com/watch?v={video_id}"' in content, f"Original creator source missing: {path} {video_id}"
+            assert content.count('class="live-community-card"') == 4, f"Creator count mismatch: {path}"
+            assert content.count('data-community-build="demo"') == 2, f"Missing demo vs release labels: {path}"
+            assert 'archeage-community-videos.js?v=1' in content, f"Opt-in player script not linked: {path}"
         if path in OFFICIAL_VIDEOS:
             assert content.index('data-official-video="auroria"') < content.index('data-official-video="developer"') < content.index('data-official-video="reveal"'), f"Official gameplay showcase must lead: {path}"
         print(f"PASS page {path}", flush=True)
