@@ -2,8 +2,26 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-07T08:30:53Z",
+  "last_post_at": "2026-11-09T13:28:48Z",
   "items": [
+    {
+      "id": "1848664643355427",
+      "title": "[Notice] Incorrect Stats Applied When Tempering Certain Equipment Items",
+      "published_at": "2026-11-09T13:28:48Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1848664643355427",
+      "excerpt": "Hello, Pioneers.We have identified an issue where certain Equipment items receive higher stats than intended when tempered.We are currently conducting a comprehensive review of all…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
+    {
+      "id": "1848664643354637",
+      "title": "[Notice] Account Sanction Notice for Terms of Service Violation",
+      "published_at": "2026-11-09T08:17:42Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1848664643354637",
+      "excerpt": "Hello, Pioneers.To maintain a pleasant and fair gaming environment, we are continuously monitoring abnormal in-game activities and violations of our Operation Policy.We recently…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1848664643348762",
       "title": "Temporary Maintenance Completed",
