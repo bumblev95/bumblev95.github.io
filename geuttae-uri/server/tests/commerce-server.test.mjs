@@ -27,7 +27,7 @@ async function harness(t,{preview=false,generate=async()=>output,dailyLimit=8}={
  return {dir,fixture,request,call,create,join,purchase,question,scopeFor,get app(){return app;},get calls(){return calls;},get time(){return at;},setTime(n){at=n;},async restart(){await app.close();await start();}};
 }
 test('public preview has no checkout, trusted account or purchasable entitlement even with forged client flags',async t=>{
- const h=await harness(t,{preview:true}),a=await h.create();const catalog=await h.request('/api/commerce/catalog');assert.equal(catalog.status,200);assert.equal(catalog.data.paymentEnabled,false);
+ const h=await harness(t,{preview:true}),a=await h.create();const catalog=await h.request('/api/commerce/catalog');assert.equal(catalog.status,200);assert.equal(catalog.data.paymentEnabled,false);assert.deepEqual(catalog.data.products.map(p=>p.id),['memory_book','ad_free']);assert.equal(catalog.data.adsEnabled,false);
  const state=(await h.call(a,'state')).data;assert.equal(state.commerce.mode,'preview');assert.equal(state.commerce.accountLinked,false);assert.equal(state.commerce.ownAi.total,0);assert.equal(state.commerce.hasBookRight,false);assert.equal(state.commerce.freeExportTrial,true);
  for(const body of [{receipt:'fake'},{verified:true,paid:true,credits:999,accountId:a.accountId},{testMode:true,productId:'ultimate_monthly'}])assert.equal((await h.call(a,'verify-purchase',body)).status,503);
  assert.equal(h.app.commerce.ledger.stats().purchases,0);assert.equal((await h.request('/api/health')).data.paymentsEnabled,false);

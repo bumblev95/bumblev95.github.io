@@ -85,7 +85,7 @@ test('timeouts are bounded even if a provider ignores cancellation, and do not c
 for(const action of ['kick','leave','end'])test(`${action} completes during generation and revokes the pending draft without consuming allowance`,async t=>{
  const entered=deferred();const h=await harness(t,{roomLimit:1,dailyLimit:2,generate:()=>{entered.resolve();return new Promise(()=>{});}}),a=await h.create(),b=await h.join(a);
  const actor=action==='end'?a:b,running=h.call(actor,'ai-draft',input());await entered.promise;
- const change=action==='kick'?await h.call(a,'kick',{playerId:b.id}):action==='leave'?await h.call(b,'leave',{}):await h.call(a,'action',{type:'end'});
+ const change=action==='kick'?await h.call(a,'kick',{playerId:b.id,confirmed:true}):action==='leave'?await h.call(b,'leave',{}):await h.call(a,'action',{type:'end'});
  assert.equal(change.status,200);assert.equal((await running).status,409);assert.equal((await h.call(a,'state')).data.ai.remaining,1);
 });
 test('starting the game cancels a pending draft without delaying gameplay or revealing it',async t=>{

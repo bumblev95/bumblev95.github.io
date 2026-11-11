@@ -1,7 +1,1 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">그때 우리 TEST</string>
-    <string name="title_activity_main">그때 우리 TEST</string>
-    <string name="package_name" translatable="false">com.bumblevai.thenus.test</string>
-    <string name="custom_url_scheme" translatable="false">com.bumblevai.thenus.test</string>
-</resources>
+<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Us Back Then</string><string name="title_activity_main">Us Back Then</string><string name="package_name" translatable="false">com.bumblevai.thenus</string><string name="custom_url_scheme" translatable="false">com.bumblevai.thenus</string></resources>

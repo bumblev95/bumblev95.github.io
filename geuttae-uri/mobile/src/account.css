@@ -1,0 +1,44 @@
+
+#home-account-tools{display:none}
+body[data-screen="home"] #home-account-tools{display:grid;flex:none;gap:3px;margin-top:8px}
+#home-ad-removal{display:flex;align-items:center;gap:11px;width:100%;min-height:64px;padding:10px 13px;border:1px solid #d5ddc8;border-radius:17px;background:#edf1e4;text-align:left;color:#46553b}
+.ad-removal-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;background:#fffdf5;color:#63794f}
+.ad-removal-icon svg{width:23px;height:23px}
+.ad-removal-copy{flex:1;min-width:0}
+.ad-removal-copy strong{display:block;font-size:14px;font-weight:750;line-height:1.5}
+.ad-removal-copy small{display:block;margin-top:2px;font-size:11px;line-height:1.5;color:#617052}
+#home-billing-badge{flex:none;font-size:10px;font-weight:650;line-height:1.5;max-width:28%;text-align:center;overflow-wrap:anywhere}
+#home-billing-badge:empty{display:none}
+.ad-removal-arrow{flex:none;font-size:25px;line-height:1;color:#697e55}
+#home-account{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;width:100%;font-size:12px;color:#66715d}
+#home-account svg{width:15px;height:15px}
+#home-account:disabled{opacity:.65}
+#billing-settings{padding:18px;border:1px solid #d8dfcd;border-radius:18px;background:#f0f3e9}
+#billing-settings>.ad-removal-icon{margin-bottom:10px}
+#billing-settings h3{font-size:20px;color:var(--ink);margin-bottom:7px}
+#billing-description{font-size:13px;line-height:1.8;color:#606e53}
+#billing-price{margin-top:8px}
+#billing-status{font-size:12px;line-height:1.8;margin:14px 0;overflow-wrap:anywhere}
+#billing-settings>button{display:block;min-height:46px;width:100%;padding:11px 12px;border-radius:12px;font-size:14px;font-weight:650}
+#billing-buy,#billing-login{background:#647b50;color:#fff}
+#billing-restore{background:#fffdf7;border:1px solid #d7ddcd;margin-top:8px;color:#536547}
+#account-settings{padding:20px 16px 16px;border:1px solid var(--line);border-radius:18px;background:#fffdf7;scroll-margin:12px}
+#settings-dialog #account-settings{margin-top:22px}
+.account-card-heading{display:flex;align-items:center;gap:12px;min-width:0}
+.account-card-heading>div{min-width:0}
+.account-avatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:50%;background:#eee7da;color:#81705a}
+.account-avatar svg{width:22px;height:22px}
+#account-settings h3{font-size:16px;color:var(--ink);margin-bottom:3px}
+#account-status{font-size:12px;color:#6e7765;overflow-wrap:anywhere;line-height:1.7}
+#account-purchases{margin:12px 0 15px;font-size:12px;line-height:1.8}
+#account-sign-in{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:1px solid #747775;border-radius:4px;padding:0 12px;min-height:44px;color:#1f1f1f;font-family:Arial,sans-serif;font-size:14px;font-weight:500;line-height:20px}
+#account-sign-in:disabled{opacity:.65}
+.google-logo{display:block;position:relative;width:20px;height:20px;flex:0 0 20px;overflow:hidden;background:#fff}
+.google-logo img{position:absolute;max-width:none;left:-10px;top:-10px;width:40px;height:40px}
+#account-note{font-size:11px;line-height:1.8;margin-top:10px;color:#6e7765;overflow-wrap:anywhere}
+.account-management{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.account-management>button{min-height:44px;font-size:12px;padding:10px 0;color:#66715d}
+#account-delete{color:#956452}
+@media(max-height:780px){body[data-screen="home"] .home-screen{gap:6px}body[data-screen="home"] .home-screen .eyebrow{display:none}body[data-screen="home"] .home-screen .home-title{font-size:29px}body[data-screen="home"] .home-screen .intro-sub{font-size:12px;margin-top:6px}body[data-screen="home"] .home-screen .memory-collage{min-height:60px}}
+@media(max-height:650px){body[data-screen="home"] .home-screen{gap:4px}body[data-screen="home"] .home-screen .intro-sub,body[data-screen="home"] .home-screen .home-facts{display:none}body[data-screen="home"] .home-screen .home-title{font-size:27px}body[data-screen="home"] .home-screen .memory-collage{min-height:36px}body[data-screen="home"] .home-screen .button{min-height:44px;padding:9px 14px}#home-ad-removal{min-height:60px;padding:8px 11px}body[data-screen="home"] #home-account-tools{margin-top:5px}}
+@media(max-width:350px){#home-ad-removal{gap:8px}.ad-removal-copy strong{font-size:13px}.ad-removal-copy small{font-size:10px}#home-billing-badge{font-size:9px}.ad-removal-icon{width:30px;height:30px}}

@@ -15,7 +15,7 @@ try{
   await page.addStyleTag({content:':root{--safe-area-inset-top:28px;--safe-area-inset-bottom:24px}'});
   for(const [width,height] of [[360,640],[390,700],[412,650],[412,732],[390,844],[320,568],[768,720]]){
    await page.setViewportSize({width,height});await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(100);
-   const geometry=await page.evaluate(()=>({w:innerWidth,h:innerHeight,sw:document.documentElement.scrollWidth,sh:document.documentElement.scrollHeight,buttons:[...document.querySelectorAll('.home-screen [data-action]')].map(x=>{const r=x.getBoundingClientRect();return {action:x.dataset.action,bottom:r.bottom,height:r.height};})}));
+   const geometry=await page.evaluate(()=>({w:innerWidth,h:innerHeight,sw:document.documentElement.scrollWidth,sh:document.documentElement.scrollHeight,buttons:[...document.querySelectorAll('.home-screen [data-action],#home-account-tools>button')].map(x=>{const r=x.getBoundingClientRect();return {action:x.dataset.action||x.id,bottom:r.bottom,height:r.height};})}));
    assert.ok(geometry.sw<=width,JSON.stringify(geometry));assert.ok(geometry.sh<=height+1,JSON.stringify(geometry));for(const b of geometry.buttons){assert.ok(b.bottom<=height-24+1,JSON.stringify(geometry));assert.ok(b.height>=43.9,JSON.stringify(geometry));}
   }
   await page.setViewportSize({width:412,height:650});await page.screenshot({path:path.join(out,`home-${locale}.png`)});
