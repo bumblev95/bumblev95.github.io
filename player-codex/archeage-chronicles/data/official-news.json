@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-12T09:01:46Z",
+  "last_post_at": "2026-11-13T09:22:36Z",
   "items": [
+    {
+      "id": "1849192144186491",
+      "title": "Jay's Notes — Class and Crafting Balance Improvements",
+      "published_at": "2026-11-13T09:22:36Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1849192144186491",
+      "excerpt": "Answering Your FeedbackHello, Pioneers.This is Jay Lee, Design Team Lead for ArcheAge Chronicles.You’ve sent us a lot of feedback recently through the community, Discord, and streams…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1849192144182122",
       "title": "Temporary Maintenance Completed",
