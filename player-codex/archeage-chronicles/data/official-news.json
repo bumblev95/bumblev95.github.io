@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-17T08:57:53Z",
+  "last_post_at": "2026-11-18T12:06:22Z",
   "items": [
+    {
+      "id": "1849827110423959",
+      "title": "Client Update Notice",
+      "published_at": "2026-11-18T12:06:22Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1849827110423959",
+      "excerpt": "Hello, Pioneers.We have fixed an issue where logging in with certain characters caused repeated crashes, and a new client update is now available.Please update the client to the latest…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1849458702692830",
       "title": "[Notice] Account Sanction Notice for Terms of Service Violation",
