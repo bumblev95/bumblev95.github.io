@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-18T12:06:22Z",
+  "last_post_at": "2026-11-20T02:09:19Z",
   "items": [
+    {
+      "id": "1849827110430546",
+      "title": "Temporary Maintenance Notice",
+      "published_at": "2026-11-20T02:09:19Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1849827110430546",
+      "excerpt": "Hello, Pioneers.We will be conducting temporary maintenance to resolve the issues currently affecting the game and add new content.Maintenance ScheduleDate & Time: November 19, 23:00…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1849827110423959",
       "title": "Client Update Notice",
