@@ -2,8 +2,35 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-20T02:09:19Z",
+  "last_post_at": "2026-11-20T09:22:03Z",
   "items": [
+    {
+      "id": "1849827110431414",
+      "title": "Jay's Notes — About the Shop Sell Price Adjustment",
+      "published_at": "2026-11-20T09:22:03Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1849827110431414",
+      "excerpt": "Why We Adjusted Shop Sell Prices and Our Plans Going ForwardHello, Pioneers.This is Jay Lee, Design Team Lead for ArcheAge Chronicles.We have heard your concerns that the cost of…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
+    {
+      "id": "1849827110431317",
+      "title": "[Notice] Account Sanctions for Use of Unauthorized Programs",
+      "published_at": "2026-11-20T08:45:12Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1849827110431317",
+      "excerpt": "Hello, Pioneers.To maintain a pleasant and fair gaming environment, we are continuously monitoring abnormal in-game activities and violations of our Operation Policy.During our recent…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
+    {
+      "id": "1849827110431312",
+      "title": "Temporary Maintenance Completed",
+      "published_at": "2026-11-20T08:40:24Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1849827110431312",
+      "excerpt": "Hello, Pioneers.Temporary maintenance has been completed, and the game is now available again.Please update the game through your Steam Library before launching it.※ If the update…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1849827110430546",
       "title": "Temporary Maintenance Notice",
