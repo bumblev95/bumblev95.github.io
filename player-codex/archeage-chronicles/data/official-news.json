@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-25T01:58:53Z",
+  "last_post_at": "2026-11-25T08:41:17Z",
   "items": [
+    {
+      "id": "1850460852980300",
+      "title": "Temporary Maintenance Completed",
+      "published_at": "2026-11-25T08:41:17Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1850460852980300",
+      "excerpt": "Hello, Pioneers.Temporary maintenance has been completed, and the game is now available again.Please update the game through your Steam Library before launching it.※ If the update…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1850460852979447",
       "title": "Temporary Maintenance Notice",
