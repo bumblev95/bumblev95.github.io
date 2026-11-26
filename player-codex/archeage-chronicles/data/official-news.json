@@ -2,8 +2,17 @@
   "game": "archeage-chronicles",
   "appid": 3218230,
   "source": "Steam ISteamNews/GetNewsForApp/v2 · publisher announcements only",
-  "last_post_at": "2026-11-25T08:41:17Z",
+  "last_post_at": "2026-11-26T06:00:30Z",
   "items": [
+    {
+      "id": "1850460852984142",
+      "title": "[Ham’s Letter] On Recent Balance Changes and Upcoming Updates",
+      "published_at": "2026-11-26T06:00:30Z",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1850460852984142",
+      "excerpt": "Hello, Pioneers. This is Yongjin Ham, Producer of ArcheAge Chronicles.Thanks to all of your concern, I received good care and have been discharged from the hospital. Thank you very…",
+      "source": "Steam · official publisher announcements",
+      "review_status": "official_source_not_gameplay_verified"
+    },
     {
       "id": "1850460852980300",
       "title": "Temporary Maintenance Completed",
